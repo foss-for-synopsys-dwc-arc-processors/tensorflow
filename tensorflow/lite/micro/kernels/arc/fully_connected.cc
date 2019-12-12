@@ -22,7 +22,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/reference/integer_ops/fully_connected.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
-#include "tensorflow/lite/experimental/micro/mli_tf_utils.h"
+#include "tensorflow/lite/micro/mli_tf_utils.h"
 #include "mli_api.h"
 
 namespace tflite {

@@ -23,7 +23,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/kernels/padding.h"
-#include "tensorflow/lite/experimental/micro/mli_tf_utils.h"
+#include "tensorflow/lite/micro/mli_tf_utils.h"
 
 namespace tflite {
 namespace ops {
