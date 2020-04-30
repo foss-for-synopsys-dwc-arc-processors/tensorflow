@@ -50,7 +50,7 @@ from tensorflow.python.util.tf_export import tf_export
 newaxis = None
 tf_export("newaxis").export_constant(__name__, "newaxis")
 
-# We override the 'slice' for the "slice" op, so we keep python's
+# We override the 'slice' for the "slice" op, so we keep Python's
 # existing 'slice' for later use in this module.
 _BaseSlice = slice
 
@@ -199,6 +199,8 @@ def reshape(tensor, shape, name=None):  # pylint: disable=redefined-outer-name
 def fill(dims, value, name=None):
   r"""Creates a tensor filled with a scalar value.
 
+  See also `tf.ones`, `tf.zeros`, `tf.one_hot`, `tf.eye`.
+
   This operation creates a tensor of shape `dims` and fills it with `value`.
 
   For example:
@@ -294,7 +296,7 @@ def expand_dims(input, axis=None, name=None, dim=None):
   """Returns a tensor with a length 1 axis inserted at index `axis`.
 
   Given a tensor `input`, this operation inserts a dimension of length 1 at the
-  dimension index `axis` of `input`'s shape. The dimension index follows python
+  dimension index `axis` of `input`'s shape. The dimension index follows Python
   indexing rules: It's zero-based, a negative index it is counted backward
   from the end.
 
@@ -320,14 +322,14 @@ def expand_dims(input, axis=None, name=None, dim=None):
   >>> tf.expand_dims(image, axis=1).shape.as_list()
   [10, 1, 10, 3]
 
-  Following standard python indexing rules, a negative `axis` counts from the
+  Following standard Python indexing rules, a negative `axis` counts from the
   end so `axis=-1` adds an inner most dimension:
 
   >>> tf.expand_dims(image, -1).shape.as_list()
   [10, 10, 3, 1]
 
   This operation requires that `axis` is a valid index for `input.shape`,
-  following python indexing rules:
+  following Python indexing rules:
 
   ```
   -1-tf.rank(input) <= axis <= tf.rank(input)
@@ -366,7 +368,7 @@ def expand_dims_v2(input, axis, name=None):
   """Returns a tensor with a length 1 axis inserted at index `axis`.
 
   Given a tensor `input`, this operation inserts a dimension of length 1 at the
-  dimension index `axis` of `input`'s shape. The dimension index follows python
+  dimension index `axis` of `input`'s shape. The dimension index follows Python
   indexing rules: It's zero-based, a negative index it is counted backward
   from the end.
 
@@ -392,14 +394,14 @@ def expand_dims_v2(input, axis, name=None):
   >>> tf.expand_dims(image, axis=1).shape.as_list()
   [10, 1, 10, 3]
 
-  Following standard python indexing rules, a negative `axis` counts from the
+  Following standard Python indexing rules, a negative `axis` counts from the
   end so `axis=-1` adds an inner most dimension:
 
   >>> tf.expand_dims(image, -1).shape.as_list()
   [10, 10, 3, 1]
 
   This operation requires that `axis` is a valid index for `input.shape`,
-  following python indexing rules:
+  following Python indexing rules:
 
   ```
   -1-tf.rank(input) <= axis <= tf.rank(input)
@@ -551,7 +553,7 @@ def shape_v2(input, out_type=dtypes.int32, name=None):
   # pylint: disable=redefined-builtin
   """Returns the shape of a tensor.
   
-  See also `tf.size`.
+  See also `tf.size`, `tf.rank`.
 
   This operation returns a 1-D integer tensor representing the shape of `input`.
   This represents the minimal set of known information at definition time.
@@ -774,6 +776,8 @@ def size_internal(input, name=None, optimize=True, out_type=dtypes.int32):
 def rank(input, name=None):
   # pylint: disable=redefined-builtin
   """Returns the rank of a tensor.
+
+  See also `tf.shape`.
 
   Returns a 0-D `int32` `Tensor` representing the rank of `input`.
 
@@ -1006,6 +1010,8 @@ def slice(input_, begin, size, name=None):
   # pylint: disable=redefined-builtin
   """Extracts a slice from a tensor.
 
+  See also `tf.strided_slice`.
+
   This operation extracts a slice of size `size` from a tensor `input_` starting
   at the location specified by `begin`. The slice `size` is represented as a
   tensor shape, where `size[i]` is the number of elements of the 'i'th dimension
@@ -1066,7 +1072,9 @@ def strided_slice(input_,
                   shrink_axis_mask=0,
                   var=None,
                   name=None):
-  """Extracts a strided slice of a tensor (generalized python array indexing).
+  """Extracts a strided slice of a tensor (generalized Python array indexing).
+
+  See also `tf.slice`.
 
   **Instead of calling this op directly most users will want to use the
   NumPy-style slicing syntax (e.g. `tensor[..., 3:4:-1, tf.newaxis, 3]`), which
@@ -1810,6 +1818,8 @@ def sparse_mask(a, mask_indices, name=None):
 def unique(x, out_idx=dtypes.int32, name=None):
   """Finds unique elements in a 1-D tensor.
 
+  See also `tf.unique_with_counts`.
+
   This operation returns a tensor `y` containing all of the unique elements
   of `x` sorted in the same order that they occur in `x`. This operation
   also returns a tensor `idx` the same size as `x` that contains the index
@@ -1854,6 +1864,8 @@ unique.__doc__ = gen_array_ops.unique.__doc__
 @tf_export("unique_with_counts")
 def unique_with_counts(x, out_idx=dtypes.int32, name=None):
   """Finds unique elements in a 1-D tensor.
+
+  See also `tf.unique`.
 
   This operation returns a tensor `y` containing all of the unique elements
   of `x` sorted in the same order that they occur in `x`. This operation
@@ -2208,7 +2220,7 @@ def matrix_transpose(a, name="matrix_transpose", conjugate=False):
 
     # If we know the number of dimensions (statically), we can do two things:
     # 1. Check that `a` is a (batch) matrix.
-    # 2. Use a python list for perm.  This preserves static shape information
+    # 2. Use a Python list for perm.  This preserves static shape information
     #    and avoids extra computations.
     a_shape = a.get_shape()
     ndims = a_shape.ndims
@@ -2702,6 +2714,8 @@ def _tag_zeros_tensor(fun):
 def zeros(shape, dtype=dtypes.float32, name=None):
   """Creates a tensor with all elements set to zero.
 
+  See also `tf.zeros_like`, `tf.ones`, `tf.fill`, `tf.eye`.
+
   This operation returns a tensor of type `dtype` with shape `shape` and
   all elements set to zero.
 
@@ -2951,7 +2965,7 @@ def ones_like_impl(tensor, dtype, name, optimize=True):
 def ones(shape, dtype=dtypes.float32, name=None):
   """Creates a tensor with all elements set to one (1).
 
-  See also `tf.ones_like`.
+  See also `tf.ones_like`, `tf.zeros`, `tf.fill`, `tf.eye`.
 
   This operation returns a tensor of type `dtype` with shape `shape` and
   all elements set to one.
@@ -3085,7 +3099,8 @@ def sparse_placeholder(dtype, shape=None, name=None):
     print(sess.run(y, feed_dict={
       x: (indices, values, shape)}))  # Will succeed.
 
-    sp = tf.SparseTensor(indices=indices, values=values, dense_shape=shape)
+    sp = tf.sparse.SparseTensor(indices=indices, values=values,
+                                dense_shape=shape)
     sp_value = sp.eval(session=sess)
     print(sess.run(y, feed_dict={x: sp_value}))  # Will succeed.
   ```
@@ -3389,6 +3404,9 @@ def meshgrid(*args, **kwargs):
     ndim = len(args)
     s0 = (1,) * ndim
 
+    if not ndim:
+      return []
+
     # Prepare reshape by inserting dimensions with size 1 where needed
     output = []
     for i, x in enumerate(args):
@@ -3487,7 +3505,7 @@ def edit_distance(hypothesis, truth, normalize=True, name="edit_distance"):
   # 'hypothesis' is a tensor of shape `[2, 1]` with variable-length values:
   #   (0,0) = ["a"]
   #   (1,0) = ["b"]
-  hypothesis = tf.SparseTensor(
+  hypothesis = tf.sparse.SparseTensor(
       [[0, 0, 0],
        [1, 0, 0]],
       ["a", "b"],
@@ -3498,7 +3516,7 @@ def edit_distance(hypothesis, truth, normalize=True, name="edit_distance"):
   #   (0,1) = ["a"]
   #   (1,0) = ["b", "c"]
   #   (1,1) = ["a"]
-  truth = tf.SparseTensor(
+  truth = tf.sparse.SparseTensor(
       [[0, 1, 0],
        [1, 0, 0],
        [1, 0, 1],
@@ -3875,6 +3893,8 @@ def one_hot(indices,
             dtype=None,
             name=None):
   """Returns a one-hot tensor.
+
+  See also `tf.fill`, `tf.eye`.
 
   The locations represented by indices in `indices` take value `on_value`,
   while all other locations take value `off_value`.
@@ -5242,8 +5262,8 @@ def extract_image_patches_v2(images, sizes, strides, rates, padding, name=None):
     # We generate two outputs as follows:
     # 1. 3x3 patches with stride length 5
     # 2. Same as above, but the rate is increased to 2
-    tf.extract_image_patches(images=images,
-                             ksizes=[1, 3, 3, 1],
+    tf.image.extract_patches(images=images,
+                             sizes=[1, 3, 3, 1],
                              strides=[1, 5, 5, 1],
                              rates=[1, 1, 1, 1],
                              padding='VALID')
@@ -5272,7 +5292,7 @@ def extract_image_patches_v2(images, sizes, strides, rates, padding, name=None):
   ```
 
   ```
-    tf.extract_image_patches(images=images,
+    tf.image.extract_patches(images=images,
                              sizes=[1, 3, 3, 1],
                              strides=[1, 5, 5, 1],
                              rates=[1, 2, 2, 1],

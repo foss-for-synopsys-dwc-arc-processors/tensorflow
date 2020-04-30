@@ -196,6 +196,18 @@ cc_library(
 )
 
 cc_library(
+    name = "test_cluster",
+    testonly = True,
+    srcs = ["test_cluster.cc"],
+    hdrs = ["test_cluster.h"],
+    deps = [
+        ":server_lib",
+        "//tensorflow/core/platform:errors",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "test_util",
     testonly = True,
     srcs = ["test_util.cc"],
@@ -263,12 +275,38 @@ cc_library(
     name = "server_lib",
     srcs = ["server_lib.cc"],
     hdrs = ["server_lib.h"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         ":credentials_factory",
         ":grpc_master_impl",
+        ":grpc_util",
         ":grpc_worker_impl",
+        ":local_credentials_factory",
         "//tensorflow/core:lib",
         "//tensorflow/core:tensorflow",
+        tf_grpc_cc_dependency(),
+    ],
+)
+
+cc_library(
+    name = "data_service",
+    srcs = ["data_service.cc"],
+    hdrs = [
+        "data_service.h",
+    ],
+    deps = [
+        ":credentials_factory",
+        ":grpc_util",
+        ":master_cc_grpc_proto",
+        ":master_proto_cc",
+        ":worker_cc_grpc_proto",
+        ":worker_proto_cc",
+        "//tensorflow/core:framework",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:lib_internal",
+        "//tensorflow/core:protos_all_cc",
         tf_grpc_cc_dependency(),
     ],
 )
@@ -279,6 +317,7 @@ tf_cc_test(
     tags = ["no_windows"],
     deps = [
         ":compression_utils",
+        ":data_service",
         ":grpc_master_impl",
         ":grpc_util",
         ":grpc_worker_impl",
@@ -286,6 +325,7 @@ tf_cc_test(
         ":master_cc_grpc_proto",
         ":master_proto_cc",
         ":server_lib",
+        ":test_cluster",
         ":test_util",
         ":worker_cc_grpc_proto",
         ":worker_proto_cc",

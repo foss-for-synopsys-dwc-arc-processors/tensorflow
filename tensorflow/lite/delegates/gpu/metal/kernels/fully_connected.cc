@@ -42,9 +42,10 @@ std::string GetFullyConnectedCode(const DeviceInfo& device_info,
   bool shared_memory =
       device_info.IsAppleGPU() &&
       device_info.apple_info.IsLocalMemoryPreferredOverGlobal();
-  const std::string barrier =
-      device_info.IsAppleGPU() ? "BARRIER" : "threadgroup_barrier";
-  const int src_depth = IntegralDivideRoundUp(src_channels, 4);
+  const std::string barrier = device_info.IsWaveSizeEqualTo32()
+                                  ? "SIMDGROUP_BARRIER"
+                                  : "threadgroup_barrier";
+  const int src_depth = DivideRoundUp(src_channels, 4);
   std::stringstream code;
   code << R"(
     #include <metal_stdlib>
@@ -109,15 +110,14 @@ std::string GetFullyConnectedCode(const DeviceInfo& device_info,
     const int linear_index = ugid.x / 4;
     FLT4 value = FLT4(temp[tid.x][0], temp[tid.x + 1][0], temp[tid.x + 2][0], temp[tid.x + 3][0]) +
       biases[linear_index];
-    uint3 gid = uint3(1u, 1u, uint(linear_index));
+    uint3 gid = uint3(0u, 0u, uint(linear_index));
     $$2
     result[linear_index] = value;
   }
 }
   )";
-  const int src_depth_sub_groups = shared_memory
-                                       ? IntegralDivideRoundUp(src_depth, 32)
-                                       : IntegralDivideRoundUp(src_depth, 4);
+  const int src_depth_sub_groups = shared_memory ? DivideRoundUp(src_depth, 32)
+                                                 : DivideRoundUp(src_depth, 4);
   return absl::Substitute(code.str(), src_depth_sub_groups, barrier);
 }
 }  // namespace
@@ -145,7 +145,7 @@ std::vector<ComputeTaskDescriptorPtr> FullyConnected(
   bool shared_memory =
       device_info.IsAppleGPU() &&
       device_info.apple_info.IsLocalMemoryPreferredOverGlobal();
-  const int src_depth = IntegralDivideRoundUp(attr.weights.shape.i, 4);
+  const int src_depth = DivideRoundUp(attr.weights.shape.i, 4);
   const int src_depth_aligned = AlignByN(src_depth, shared_memory ? 32 : 4);
   const int dst_channels_aligned = AlignByN(attr.weights.shape.o, 8);
 
@@ -178,8 +178,7 @@ std::vector<ComputeTaskDescriptorPtr> FullyConnected(
       {"constant uniforms& params",
        [attr](const std::map<ValueId, BHWC>& buffers) {
          std::vector<uint32_t> uniform_params{
-             static_cast<uint32_t>(
-                 IntegralDivideRoundUp(attr.weights.shape.i, 4)),
+             static_cast<uint32_t>(DivideRoundUp(attr.weights.shape.i, 4)),
              static_cast<uint32_t>(AlignByN(attr.weights.shape.o, 8)),
              static_cast<uint32_t>(attr.weights.shape.o),
              static_cast<uint32_t>(0),
@@ -191,7 +190,7 @@ std::vector<ComputeTaskDescriptorPtr> FullyConnected(
   desc->resize_function = [attr](const std::map<ValueId, BHWC>& buffers) {
     const uint3 groups_size{8, 4, 1};
     const int dst_channels_aligned = AlignByN(attr.weights.shape.o, 8);
-    int groups_x = IntegralDivideRoundUp(dst_channels_aligned, groups_size.x);
+    int groups_x = DivideRoundUp(dst_channels_aligned, groups_size.x);
     return std::make_pair(groups_size, uint3{groups_x, 1, 1});
   };
 

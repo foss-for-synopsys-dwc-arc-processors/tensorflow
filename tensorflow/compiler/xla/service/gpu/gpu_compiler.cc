@@ -86,7 +86,6 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/hlo_subcomputation_unification.h"
 #include "tensorflow/compiler/xla/service/hlo_verifier.h"
 #include "tensorflow/compiler/xla/service/llvm_ir/llvm_util.h"
-#include "tensorflow/compiler/xla/service/reshape_mover.h"
 #include "tensorflow/compiler/xla/service/rng_bit_generator_expander.h"
 #include "tensorflow/compiler/xla/service/rng_expander.h"
 #include "tensorflow/compiler/xla/service/slice_sinker.h"
@@ -153,9 +152,11 @@ Status GpuCompiler::OptimizeHloModule(
 
     pipeline.AddPass<Convolution4DExpander>();
 
-    auto cost_model = [](HloInstruction*) {
-      // We need a cost model for GPUs. Currently, do nothing.
-      return false;
+    auto cost_model = [](HloInstruction* conv) {
+      auto operand = conv->operand(0);
+      return operand->shape().dimensions(conv->convolution_dimension_numbers()
+                                             .input_batch_dimension()) ==
+             conv->batch_group_count();
     };
     pipeline.AddPass<DepthwiseConvolutionConverter>(cost_model);
 
@@ -215,6 +216,7 @@ Status GpuCompiler::OptimizeHloModule(
       // bitcast. This leads to having to linearize and then delinearize the
       // index.
       options.set_replace_transpose_with_bitcast(false);
+      options.set_enable_conv_operand_swap(false);
       pass.AddPass<AlgebraicSimplifier>(options);
       // AlgebraicSimplifier may add contracting dimensions to a dot.
       pass.AddPass<DotDecomposer>();
@@ -227,7 +229,6 @@ Status GpuCompiler::OptimizeHloModule(
       // pass.AddPass<SliceSinker>();
 
       pass.AddPass<HloDCE>();
-      pass.AddPass<ReshapeMover>();
       pass.AddPass<HloConstantFolding>();
       pass.AddPass<ConditionalSimplifier>();
     }
@@ -321,7 +322,9 @@ Status GpuCompiler::OptimizeHloModule(
     HloPassPipeline pipeline("final_algebraic_simplifier");
     AlgebraicSimplifierOptions options;
     options.set_is_layout_sensitive(true);
+    options.set_enable_conv_operand_swap(false);
     pipeline.AddPass<AlgebraicSimplifier>(options);
+    TF_RETURN_IF_ERROR(pipeline.Run(hlo_module).status());
   }
   return Status::OK();
 }
@@ -398,6 +401,7 @@ Status GpuCompiler::OptimizeHloPostLayoutAssignment(
   // bitcast. This leads to having to linearize and then delinearize the
   // index.
   options.set_replace_transpose_with_bitcast(false);
+  options.set_enable_conv_operand_swap(false);
   pipeline.AddPass<HloPassFix<AlgebraicSimplifier>>(options);
 
   if (RequireDeterminism() ||

@@ -46,7 +46,8 @@ TfLiteStatus CalculateSoftmaxParams(TfLiteContext* context,
 
     int input_left_shift;
     tflite::PreprocessSoftmaxScaling(
-        params->beta, input->params.scale, kScaledDiffIntegerBits,
+        static_cast<double>(params->beta),
+        static_cast<double>(input->params.scale), kScaledDiffIntegerBits,
         &op_data->input_multiplier, &input_left_shift);
     op_data->input_left_shift = input_left_shift;
     op_data->diff_min =
@@ -81,10 +82,13 @@ void SoftmaxFloat(const TfLiteTensor* input, TfLiteTensor* output,
 
 void SoftmaxQuantized(const TfLiteTensor* input, TfLiteTensor* output,
                       const SoftmaxParams& op_data) {
+  const auto input_shape = GetTensorShape(input);
+  const auto output_shape = GetTensorShape(output);
+
   if (input->type == kTfLiteUInt8) {
-    tflite::reference_ops::Softmax(
-        op_data, GetTensorShape(input), GetTensorData<uint8_t>(input),
-        GetTensorShape(output), GetTensorData<uint8_t>(output));
+    tflite::reference_ops::Softmax(op_data, input_shape,
+                                   GetTensorData<uint8_t>(input), output_shape,
+                                   GetTensorData<uint8_t>(output));
   } else {
     const unsigned int num_dims = NumDimensions(input);
 
@@ -117,14 +121,12 @@ TfLiteStatus SoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
     }
     case kTfLiteInt8:
     case kTfLiteUInt8: {
-      SoftmaxQuantized(input, output, params, op_data);
+      SoftmaxQuantized(input, output, op_data);
       return kTfLiteOk;
     }
     default:
-      TF_LITE_KERNEL_LOG(
-          context,
-          "Only float32, uint8_t and int8_t input supported currently, got %d.",
-          input->type);
+      TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
+                         TfLiteTypeGetName(input->type), input->type);
       return kTfLiteError;
   }
 }

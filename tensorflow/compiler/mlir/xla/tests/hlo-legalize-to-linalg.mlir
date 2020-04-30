@@ -1,4 +1,4 @@
-// RUN: tf-opt %s -hlo-legalize-to-linalg -split-input-file | FileCheck %s
+// RUN: xla-opt %s -hlo-legalize-to-linalg -split-input-file | FileCheck %s
 
 // CHECK: #map0 = affine_map<(d0, d1) -> (d0, d1)>
 // CHECK-LABEL: func @float_add
@@ -126,7 +126,7 @@ func @float_abs(%arg0: tensor<2x2xf32>) -> tensor<2x2xf32> {
 func @float_exp(%arg0: tensor<2x2xf32>) -> tensor<2x2xf32> {
   // CHECK: linalg.generic
   // CHECK: exp
-  %0 = "xla_hlo.exp"(%arg0) : (tensor<2x2xf32>) -> tensor<2x2xf32>
+  %0 = "xla_hlo.exponential"(%arg0) : (tensor<2x2xf32>) -> tensor<2x2xf32>
   return %0 : tensor<2x2xf32>
 }
 
@@ -156,7 +156,7 @@ func @float_ceil(%arg0: tensor<2x2xf32>) -> tensor<2x2xf32> {
 func @float_neg(%arg0: tensor<2x2xf32>) -> tensor<2x2xf32> {
   // CHECK: linalg.generic
   // CHECK: negf
-  %0 = "xla_hlo.neg"(%arg0) : (tensor<2x2xf32>) -> tensor<2x2xf32>
+  %0 = "xla_hlo.negate"(%arg0) : (tensor<2x2xf32>) -> tensor<2x2xf32>
   return %0 : tensor<2x2xf32>
 }
 
@@ -216,7 +216,7 @@ func @int_cmp(%lhs: tensor<2x2xi32>,
 func @float_cos(%arg0: tensor<2x2xf32>) -> tensor<2x2xf32> {
   // CHECK: linalg.generic
   // CHECK: cos
-  %0 = "xla_hlo.cos"(%arg0) : (tensor<2x2xf32>) -> tensor<2x2xf32>
+  %0 = "xla_hlo.cosine"(%arg0) : (tensor<2x2xf32>) -> tensor<2x2xf32>
   return %0 : tensor<2x2xf32>
 }
 
@@ -243,6 +243,32 @@ func @select(%pred: tensor<2x2xi1>, %lhs: tensor<2x2xf32>,
 // CHECK-NEXT: ^bb0(%[[PRED_IN:.*]]: i1, %[[LHS_IN:.*]]: f32, %[[RHS_IN:.*]]: f32):
 // CHECK-NEXT:   %[[RESULT:.*]] = select %[[PRED_IN]], %[[LHS_IN]], %[[RHS_IN]] : f32
 // CHECK-NEXT:   linalg.yield %[[RESULT]] : f32
+
+// -----
+
+// CHECK-DAG: #[[OPERAND_MAP:.+]] = affine_map<(d0, d1, d2) -> ()>
+// CHECK-DAG: #[[RESULT_MAP:.+]] = affine_map<(d0, d1, d2) -> (d0, d1, d2)>
+// CHECK-LABEL: func @broadcast_scalar
+func @broadcast_scalar(%arg: tensor<f32>) -> tensor<4x2x1xf32> {
+  %0 = "xla_hlo.broadcast"(%arg) {broadcast_sizes = dense<[4, 2, 1]> : tensor<3xi64>} : (tensor<f32>) -> tensor<4x2x1xf32>
+  return %0: tensor<4x2x1xf32>
+}
+// CHECK: linalg.generic {{{.*}}indexing_maps = [#[[OPERAND_MAP]], #[[RESULT_MAP]]]
+// CHECK-NEXT: ^bb0(%[[OPERAND:.*]]: f32):
+// CHECK-NEXT:   linalg.yield %[[OPERAND]] : f32
+
+// -----
+
+// CHECK-DAG: #[[OPERAND_MAP:.+]] = affine_map<(d0, d1, d2, d3, d4, d5) -> (d3, d4, d5)>
+// CHECK-DAG: #[[RESULT_MAP:.+]] = affine_map<(d0, d1, d2, d3, d4, d5) -> (d0, d1, d2, d3, d4, d5)>
+// CHECK-LABEL: func @broadcast
+func @broadcast(%arg: tensor<4x?x16xf32>) -> tensor<4x2x1x4x?x16xf32> {
+  %0 = "xla_hlo.broadcast"(%arg) {broadcast_sizes = dense<[4, 2, 1]> : tensor<3xi64>} : (tensor<4x?x16xf32>) -> tensor<4x2x1x4x?x16xf32>
+  return %0: tensor<4x2x1x4x?x16xf32>
+}
+// CHECK: linalg.generic {{{.*}}indexing_maps = [#[[OPERAND_MAP]], #[[RESULT_MAP]]]
+// CHECK-NEXT: ^bb0(%[[OPERAND:.*]]: f32):
+// CHECK-NEXT:   linalg.yield %[[OPERAND]] : f32
 
 // -----
 
@@ -359,3 +385,62 @@ func @add_scalar(%lhs: tensor<f32>, %rhs: tensor<f32>) -> tensor<f32> {
 // CHECK-NEXT: ^bb0(%[[LHS:.*]]: f32, %[[RHS:.*]]: f32):
 // CHECK: %[[RESULT:.*]] = addf %[[LHS]], %[[RHS]]
 // CHECK-NEXT:   linalg.yield %[[RESULT]] : f32
+
+// -----
+
+func @reshape_collapse_single_dim
+  (%arg0: tensor<1x28x28x1xf32>) -> tensor<1x784xf32> {
+  %0 = "xla_hlo.reshape"(%arg0) : (tensor<1x28x28x1xf32>) -> tensor<1x784xf32>
+  return %0 : tensor<1x784xf32>
+}
+//   CHECK-DAG: #[[MAP0:.*]] = affine_map<(d0, d1, d2, d3) -> (d0)>
+//   CHECK-DAG: #[[MAP1:.*]] = affine_map<(d0, d1, d2, d3) -> (d1, d2, d3)>
+// CHECK-LABEL: func @reshape_collapse_single_dim
+//       CHECK: linalg.tensor_reshape %{{.*}} [#[[MAP0]], #[[MAP1]]]
+
+// -----
+
+func @reshape_collapse(%arg0: tensor<2x2x2x3xf32>) -> tensor<2x4x3xf32> {
+    %0 = "xla_hlo.reshape"(%arg0) : (tensor<2x2x2x3xf32>) -> tensor<2x4x3xf32>
+    return %0 : tensor<2x4x3xf32>
+}
+//   CHECK-DAG: #[[MAP0:.*]] = affine_map<(d0, d1, d2, d3) -> (d0)>
+//   CHECK-DAG: #[[MAP1:.*]] = affine_map<(d0, d1, d2, d3) -> (d1, d2)>
+//   CHECK-DAG: #[[MAP2:.*]] = affine_map<(d0, d1, d2, d3) -> (d3)>
+// CHECK-LABEL: func @reshape_collapse
+//       CHECK: linalg.tensor_reshape %{{.*}} [#[[MAP0]], #[[MAP1]], #[[MAP2]]]
+
+// -----
+
+func @reshape_expand(%arg0: tensor<2x8xf32>) -> tensor<2x4x2xf32> {
+    %0 = "xla_hlo.reshape"(%arg0) : (tensor<2x8xf32>) -> tensor<2x4x2xf32>
+    return %0 : tensor<2x4x2xf32>
+}
+//   CHECK-DAG: #[[MAP0:.*]] = affine_map<(d0, d1, d2) -> (d0)>
+//   CHECK-DAG: #[[MAP1:.*]] = affine_map<(d0, d1, d2) -> (d1, d2)>
+// CHECK-LABEL: func @reshape_expand
+//       CHECK: linalg.tensor_reshape %{{.*}} [#[[MAP0]], #[[MAP1]]]
+
+// -----
+
+func @reshape_single_expand(%arg0 : tensor<8xf32>) -> tensor<1x4x2xf32> {
+    %0 = "xla_hlo.reshape"(%arg0) : (tensor<8xf32>) -> tensor<1x4x2xf32>
+    return %0 : tensor<1x4x2xf32>
+}
+//       CHECK: #[[MAP0:.*]] = affine_map<(d0, d1, d2) -> (d0, d1, d2)>
+// CHECK-LABEL: func @reshape_single_expand
+//       CHECK: linalg.tensor_reshape %{{.*}} [#[[MAP0]]]
+
+// -----
+
+func @reshape_multiple_collapse
+  (%arg0 : tensor<1x2x2x5x3x2xf32>) -> tensor<1x4x5x6xf32> {
+    %0 = "xla_hlo.reshape"(%arg0) : (tensor<1x2x2x5x3x2xf32>) -> tensor<1x4x5x6xf32>
+    return %0 : tensor<1x4x5x6xf32>
+}
+//   CHECK-DAG: #[[MAP0:.*]] = affine_map<(d0, d1, d2, d3, d4, d5) -> (d0)>
+//   CHECK-DAG: #[[MAP1:.*]] = affine_map<(d0, d1, d2, d3, d4, d5) -> (d1, d2)>
+//   CHECK-DAG: #[[MAP2:.*]] = affine_map<(d0, d1, d2, d3, d4, d5) -> (d3)>
+//   CHECK-DAG: #[[MAP3:.*]] = affine_map<(d0, d1, d2, d3, d4, d5) -> (d4, d5)>
+// CHECK-LABEL: func @reshape_multiple_collapse
+//       CHECK: linalg.tensor_reshape %{{.*}} [#[[MAP0]], #[[MAP1]], #[[MAP2]], #[[MAP3]]]
