@@ -1,7 +1,6 @@
 # Description:
 #   Contains experimental kernels for datasets and iterators.
 
-load("//tensorflow:tensorflow.bzl", "tf_grpc_cc_dependency")
 load(
     "//tensorflow:tensorflow.bzl",
     "tf_cc_test",
@@ -122,6 +121,30 @@ tf_kernel_library(
 )
 
 tf_kernel_library(
+    name = "data_service_dataset_op",
+    srcs = ["data_service_dataset_op.cc"],
+    hdrs = ["data_service_dataset_op.h"],
+    deps = [
+        "//tensorflow/core:experimental_dataset_ops_op_lib",
+        "//tensorflow/core:framework",
+        "//tensorflow/core:framework_internal",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:lib_internal",
+        "//tensorflow/core:protos_all_cc",
+        "//tensorflow/core/data/service:common_proto_cc",
+        "//tensorflow/core/data/service:compression_utils",
+        "//tensorflow/core/data/service:data_service",
+        "//tensorflow/core/distributed_runtime/rpc:grpc_util",
+        "//tensorflow/core/kernels/data:dataset_utils",
+        "//tensorflow/core/kernels/data:name_utils",
+        "//tensorflow/core/kernels/data:serialization_utils",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+tf_kernel_library(
     name = "data_service_ops",
     srcs = ["data_service_ops.cc"],
     hdrs = ["data_service_ops.h"],
@@ -130,13 +153,9 @@ tf_kernel_library(
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
         "//tensorflow/core:lib_internal",
-        "//tensorflow/core/data/service:credentials_factory",
-        "//tensorflow/core/data/service:grpc_util",
-        "//tensorflow/core/data/service:master_cc_grpc_proto",
-        "//tensorflow/core/data/service:master_proto_cc",
+        "//tensorflow/core/data/service:data_service",
         "//tensorflow/core/kernels/data:dataset_utils",
         "//tensorflow/core/kernels/data:iterator_ops",
-        tf_grpc_cc_dependency(),
     ],
 )
 
@@ -498,9 +517,11 @@ cc_library(
         "//tensorflow/core:lib",
         "//tensorflow/core:lib_internal",
         "//tensorflow/core:protos_all_cc",
+        "//tensorflow/core/kernels/data:name_utils",
         "//tensorflow/core/platform:coding",
         "//tensorflow/core/platform:random",
         "//tensorflow/core/profiler/lib:traceme",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -638,6 +659,16 @@ tf_cc_test(
         "//tensorflow/core:testlib",
         "//tensorflow/core/kernels/data:dataset_test_base",
         "//third_party/eigen3",
+    ],
+)
+
+tf_kernel_library(
+    # data service kernels depend on GRPC, so we package them separately
+    # so that downstream rules can avoid depending on GRPC.
+    name = "data_service_kernels",
+    deps = [
+        ":data_service_dataset_op",
+        ":data_service_ops",
     ],
 )
 

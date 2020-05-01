@@ -28,6 +28,7 @@ limitations under the License.
 #include "tensorflow/core/common_runtime/pending_counts.h"
 #include "tensorflow/core/common_runtime/propagator_state.h"
 #include "tensorflow/core/common_runtime/renamed_device.h"
+#include "tensorflow/core/common_runtime/simple_propagator_state.h"
 #include "tensorflow/core/common_runtime/step_stats_collector.h"
 #include "tensorflow/core/framework/allocator.h"
 #include "tensorflow/core/framework/cancellation.h"
@@ -199,9 +200,9 @@ class ExecutorImpl : public Executor {
     // Initial time (in CPU cycles) we expect an operation to take.  Used to
     // determine whether an operation should be place in a threadpool.
     // Operations start out "expensive".
-    static const uint64 kInitialCostEstimateCycles = 100 * 1000 * 1000;
-    static const uint64 kOpIsExpensiveThresholdCycles = 5000;
-    static const uint64 kCostDecay = 10;
+    static constexpr uint64 kInitialCostEstimateCycles = 100 * 1000 * 1000;
+    static constexpr uint64 kOpIsExpensiveThresholdCycles = 5000;
+    static constexpr uint64 kCostDecay = 10;
 
     std::unique_ptr<std::atomic<bool>[]> is_expensive_;
     std::unique_ptr<std::atomic_uint_fast64_t[]> cost_estimates_;
@@ -301,7 +302,7 @@ class ExecutorState {
 
   // After item->kernel computation is done, processes its outputs.
   Status ProcessOutputs(const NodeItem& item, OpKernelContext* ctx,
-                        EntryVector* outputs, NodeExecStatsInterface* stats);
+                        Entry* outputs, NodeExecStatsInterface* stats);
 
   // Called after each node finishes. Takes ownership of "stats". Returns true
   // if execution has completed.
@@ -315,6 +316,8 @@ class ExecutorState {
   // nodes in 'ready' into 'inline_ready'.
   //
   // This method will clear `*ready` before returning.
+  //
+  // REQUIRES: `!ready->empty()`.
   void ScheduleReady(TaggedNodeSeq* ready, TaggedNodeReadyQueue* inline_ready);
 
   // Clean up when this executor is done.
@@ -530,8 +533,6 @@ Status ExecutorState<PropagatorStateType>::ProcessSync(
         },
         profiler::GetTFTraceMeLevel(is_expensive));
     device->Compute(op_kernel, &ctx);
-    nodestats::SetOpEnd(stats);
-    s = ProcessOutputs(item, &ctx, outputs, stats);
   } else {
     // In the common case, avoid creating any tracing objects.
     if (is_expensive) {
@@ -541,9 +542,10 @@ Status ExecutorState<PropagatorStateType>::ProcessSync(
     } else {
       device->Compute(op_kernel, &ctx);
     }
-    nodestats::SetOpEnd(stats);
-    s = ProcessOutputs(item, &ctx, outputs, stats);
   }
+  nodestats::SetOpEnd(stats);
+  if (outputs->size() < item.num_outputs) outputs->resize(item.num_outputs);
+  s = ProcessOutputs(item, &ctx, outputs->data(), stats);
   nodestats::SetMemory(stats, &ctx);
   return s;
 }
@@ -564,8 +566,8 @@ void ExecutorState<PropagatorStateType>::ProcessAsync(
     Entry* first_input = state->first_input;       // Shorthand
 
     nodestats::SetOpEnd(stats);
-    EntryVector outputs;
-    Status s = ProcessOutputs(*state->item, &state->ctx, &outputs, stats);
+    EntryVector outputs(state->item->num_outputs);
+    Status s = ProcessOutputs(*state->item, &state->ctx, outputs.data(), stats);
     nodestats::SetMemory(stats, &state->ctx);
     if (vlog_) {
       VLOG(2) << "Async kernel done: " << state->item->node_id << " step "
@@ -614,7 +616,6 @@ void ExecutorState<PropagatorStateType>::ProcessConstTensor(
     const NodeItem& item, EntryVector* outputs, NodeExecStatsInterface* stats) {
   nodestats::SetOpStart(stats);
   nodestats::SetOpEnd(stats);
-  outputs->resize(1);
   Entry& output = (*outputs)[0];
   output.state = Entry::State::HAS_CONST_TENSOR;
   output.const_tensor = item.const_tensor;
@@ -625,7 +626,14 @@ template <class PropagatorStateType>
 void ExecutorState<PropagatorStateType>::Process(TaggedNode tagged_node,
                                                  int64 scheduled_nsec) {
   profiler::TraceMe activity(
-      [&] { return absl::StrCat("ExecutorState::Process#id=", step_id_, "#"); },
+      [&] {
+        // NOTE: This tracing uses the iteration number from the first tagged
+        // node that executes during this call to `Process()`. In principle,
+        // subsequent nodes could have different values of `iter_num` that
+        // will not be traced.
+        return absl::StrCat("ExecutorState::Process#id=", step_id_,
+                            ",iter_num=", tagged_node.get_iter_num(), "#");
+      },
       2);
   WithContext wc(context_);
   TaggedNodeSeq ready;
@@ -687,7 +695,8 @@ void ExecutorState<PropagatorStateType>::Process(TaggedNode tagged_node,
   Status s;
   NodeExecStatsInterface* stats = nullptr;
 
-  EntryVector outputs;
+  EntryVector outputs(1);
+
   bool completed = false;
   inline_ready.push_back(tagged_node);
   while (!inline_ready.empty()) {
@@ -717,14 +726,13 @@ void ExecutorState<PropagatorStateType>::Process(TaggedNode tagged_node,
     }
 
     Entry* first_input = propagator_.GetInputTensors(tagged_node);
-    outputs.clear();
 
     // Only execute this node if it is not dead or it is a send/recv
     // transfer node. For transfer nodes, we need to propagate the "dead"
     // bit even when the node is dead.
     bool launched_asynchronously = false;
     if (tagged_node.get_is_dead() && !item.is_transfer_node) {
-      outputs.resize(item.num_outputs);
+      if (outputs.size() < item.num_outputs) outputs.resize(item.num_outputs);
     } else if (TF_PREDICT_FALSE(item.is_noop)) {
       ProcessNoop(stats);
     } else if (item.const_tensor != nullptr && !params.track_allocations) {
@@ -780,7 +788,13 @@ void ExecutorState<PropagatorStateType>::Process(TaggedNode tagged_node,
       if (s.ok()) {
         propagator_.PropagateOutputs(tagged_node, &outputs, &ready);
       }
-      outputs.clear();
+
+      // Clear outputs without deallocating the `outputs` vector.
+      const int num_outputs = item.num_outputs;
+      for (int i = 0; i < num_outputs; ++i) {
+        outputs[i].ClearVal();
+      }
+
       if (stats) {
         scheduled_nsec = nodestats::NowInNsec();
       }
@@ -906,11 +920,8 @@ Status ExecutorState<PropagatorStateType>::PrepareInputs(
 
 template <class PropagatorStateType>
 Status ExecutorState<PropagatorStateType>::ProcessOutputs(
-    const NodeItem& item, OpKernelContext* ctx, EntryVector* outputs,
+    const NodeItem& item, OpKernelContext* ctx, Entry* outputs,
     NodeExecStatsInterface* stats) {
-  DCHECK_EQ(0, outputs->size());
-  outputs->resize(item.num_outputs);
-
   Status s = ctx->status();
   if (!s.ok()) {
     s = AttachDef(s, item.kernel->def());
@@ -918,7 +929,6 @@ Status ExecutorState<PropagatorStateType>::ProcessOutputs(
     // add better optional debugging support.
     if (vlog_ && VLOG_IS_ON(1)) {
       LOG(WARNING) << this << " Compute status: " << s;
-      propagator_.DumpState();
     }
     if (s.code() == error::RESOURCE_EXHAUSTED) {
       if (stats_collector_) {
@@ -940,6 +950,9 @@ Status ExecutorState<PropagatorStateType>::ProcessOutputs(
 
   for (int i = 0; i < item.num_outputs; ++i) {
     const TensorValue val = ctx->release_output(i);
+    Entry* out = &outputs[i];
+    DCHECK(out->state == Entry::State::NO_VALUE);
+
     if (val.tensor == nullptr) {
       // Unless it's a Switch or a Recv, or the executor has marked the output
       // as not required, the node must produce a tensor value at i-th output.
@@ -949,8 +962,6 @@ Status ExecutorState<PropagatorStateType>::ProcessOutputs(
                                   FormatNodeDefForError(item.kernel->def())));
       }
     } else {
-      Entry* out = &((*outputs)[i]);
-
       // Set the allocator attributes of the output entry.
       out->alloc_attr = ctx->output_alloc_attr(i);
 
@@ -1006,73 +1017,80 @@ template <class PropagatorStateType>
 bool ExecutorState<PropagatorStateType>::NodeDone(
     const Status& s, TaggedNodeSeq* ready, NodeExecStatsInterface* stats,
     TaggedNodeReadyQueue* inline_ready) {
-  nodestats::SetAllEnd(stats);
   if (stats) {
-    if (stats_collector_) {
-      stats->Done(immutable_state_.params().device->name());
-    } else {
-      delete stats;
-    }
+    nodestats::SetAllEnd(stats);
+    DCHECK_NE(stats_collector_, nullptr);
+    stats->Done(immutable_state_.params().device->name());
   }
 
-  bool abort_run = false;
-  if (!s.ok()) {
-    // Some error happened. This thread of computation is done.
-    mutex_lock l(mu_);
-    if (status_.ok()) {
-      abort_run = true;
+  if (TF_PREDICT_TRUE(s.ok())) {
+    const size_t ready_size = ready->size();
+    if (ready_size == 0) {
+      return num_outstanding_ops_.fetch_sub(1) == 1;
+    } else {
+      // NOTE: Avoid touching the atomic counter if only one node becomes ready.
+      if (ready_size > 1) {
+        num_outstanding_ops_.fetch_add(ready_size - 1,
+                                       std::memory_order_relaxed);
+      }
 
-      // If execution has been cancelled, mark any new errors as being derived.
-      // This ensures any errors triggered by cancellation are marked as
-      // derived.
-      if (cancellation_manager_ && cancellation_manager_->IsCancelled()) {
-        status_ = StatusGroup::MakeDerived(s);
-      } else {
-        status_ = s;
+      // Schedule the ready nodes in 'ready'.
+      ScheduleReady(ready, inline_ready);
+
+      return false;
+    }
+  } else {
+    bool abort_run = false;
+
+    // Some error happened. This thread of computation is done.
+    {
+      mutex_lock l(mu_);
+      if (status_.ok()) {
+        // If this is the first node to fail in this run, we are responsible for
+        // aborting all other execution in the step.
+        abort_run = true;
+
+        // If execution has been cancelled, mark any new errors as being
+        // derived. This ensures any errors triggered by cancellation are marked
+        // as derived.
+        if (cancellation_manager_ && cancellation_manager_->IsCancelled()) {
+          status_ = StatusGroup::MakeDerived(s);
+        } else {
+          status_ = s;
+        }
       }
     }
-  }
-  if (abort_run) {
-    TRACEPRINTF("StartAbort: %s", s.ToString().c_str());
-    if (cancellation_manager_) {
-      // only log when the abort happens during the actual run time.
-      auto device_name = immutable_state_.params().device->name();
-      // Use VLOG instead of LOG(warning) because error status is expected when
-      // the executor is run under the grappler optimization phase or when
-      // iterating through a tf.data input pipeline.
-      VLOG(1) << "[" << device_name << "] Executor start aborting: " << s;
+
+    if (abort_run) {
+      TRACEPRINTF("StartAbort: %s", s.ToString().c_str());
+      if (cancellation_manager_) {
+        // Only log when the abort happens during the actual run time.
+        // Use VLOG instead of LOG(warning) because error status is expected
+        // when the executor is run under the grappler optimization phase or
+        // when iterating through a tf.data input pipeline.
+        VLOG(1) << "[" << immutable_state_.params().device->name()
+                << "] Executor start aborting: " << s;
+      }
+
+      if (rendezvous_) {
+        rendezvous_->StartAbort(s);
+      }
+      if (collective_executor_) {
+        collective_executor_->StartAbort(s);
+      }
+      if (cancellation_manager_) {
+        cancellation_manager_->StartCancel();
+      }
     }
 
-    if (rendezvous_) {
-      rendezvous_->StartAbort(s);
-    }
-    if (collective_executor_) {
-      collective_executor_->StartAbort(s);
-    }
-    if (cancellation_manager_) {
-      cancellation_manager_->StartCancel();
-    }
+    return num_outstanding_ops_.fetch_sub(1) == 1;
   }
-
-  bool completed = false;
-  const size_t ready_size = ready->size();
-  if (ready_size == 0 || !s.ok()) {
-    completed = (num_outstanding_ops_.fetch_sub(1) == 1);
-  } else if (ready_size > 1) {
-    num_outstanding_ops_.fetch_add(ready_size - 1, std::memory_order_relaxed);
-  }
-
-  // Schedule the ready nodes in 'ready'.
-  if (s.ok()) {
-    ScheduleReady(ready, inline_ready);
-  }
-  return completed;
 }
 
 template <class PropagatorStateType>
 void ExecutorState<PropagatorStateType>::ScheduleReady(
     TaggedNodeSeq* ready, TaggedNodeReadyQueue* inline_ready) {
-  if (ready->empty()) return;
+  DCHECK(!ready->empty());
 
   int64 scheduled_nsec = 0;
   if (stats_collector_) {
@@ -1164,6 +1182,12 @@ void ExecutorState<PropagatorStateType>::Finish() {
   CHECK(done_cb != nullptr);
   Device* device = immutable_state_.params().device;
 
+  if (vlog_ && !status.ok() && VLOG_IS_ON(1)) {
+    // Logs verbose information about the current state of active and pending
+    // nodes in the propagator.
+    propagator_.DumpState();
+  }
+
   // There are several potential race conditions below. To name a few:
   // 1. Even if the device's status is OK at the precise moment when
   // num_deferred_ops_ reaches 0, it could go bad before device->RefreshStatus()
@@ -1249,8 +1273,14 @@ void ExecutorState<PropagatorStateType>::Finish() {
 }
 
 void ExecutorImpl::RunAsync(const Args& args, DoneCallback done) {
-  (new ExecutorState<PropagatorState>(args, immutable_state_, &kernel_stats_))
-      ->RunAsync(std::move(done));
+  if (immutable_state_.requires_control_flow_support()) {
+    (new ExecutorState<PropagatorState>(args, immutable_state_, &kernel_stats_))
+        ->RunAsync(std::move(done));
+  } else {
+    (new ExecutorState<SimplePropagatorState>(args, immutable_state_,
+                                              &kernel_stats_))
+        ->RunAsync(std::move(done));
+  }
 }
 
 }  // namespace

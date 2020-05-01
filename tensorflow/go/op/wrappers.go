@@ -2576,6 +2576,15 @@ func CheckNumerics(scope *Scope, tensor tf.Output, message string) (output tf.Ou
 // In the above example, the input Tensor with the shape of `[1, 3]`
 // is broadcasted to output Tensor with shape of `[3, 3]`.
 //
+// When doing broadcasted operations such as multiplying a tensor
+// by a scalar, broadcasting (usually) confers some time or space
+// benefit, as the broadcasted tensor is never materialized.
+//
+// However, `broadcast_to` does not carry with it any such benefits.
+// The newly-created tensor takes the full memory of the broadcasted
+// shape. (In a graph context, `broadcast_to` might be fused to
+// subsequent operation and then be optimized away, however.)
+//
 // Arguments:
 //	input: A Tensor to broadcast.
 //	shape: An 1-D `int` Tensor. The shape of the desired output.
@@ -6915,9 +6924,7 @@ func GetSessionHandle(scope *Scope, value tf.Output) (handle tf.Output) {
 	return op.Output(0)
 }
 
-// Copy a tensor setting everything outside a central band in each innermost matrix
-//
-// to zero.
+// Copy a tensor setting everything outside a central band in each innermost matrix to zero.
 //
 // The `band` part is computed as follows:
 // Assume `input` has `k` dimensions `[I, J, K, ..., M, N]`, then the output is a
@@ -9848,32 +9855,17 @@ func EncodeProto(scope *Scope, sizes tf.Output, values []tf.Output, field_names 
 // Creates an iterator for reading from the tf.data service.
 //
 // Returns the created operation.
-func MakeDataServiceIterator(scope *Scope, dataset tf.Output, epoch_id tf.Output, iterator tf.Output) (o *tf.Operation) {
+func MakeDataServiceIterator(scope *Scope, dataset tf.Output, job_token tf.Output, iterator tf.Output) (o *tf.Operation) {
 	if scope.Err() != nil {
 		return
 	}
 	opspec := tf.OpSpec{
 		Type: "MakeDataServiceIterator",
 		Input: []tf.Input{
-			dataset, epoch_id, iterator,
+			dataset, job_token, iterator,
 		},
 	}
 	return scope.AddOperation(opspec)
-}
-
-// Begins a tf.data service dataset epoch.
-func BeginEpoch(scope *Scope, dataset_id tf.Output, address tf.Output, protocol tf.Output) (epoch_id tf.Output) {
-	if scope.Err() != nil {
-		return
-	}
-	opspec := tf.OpSpec{
-		Type: "BeginEpoch",
-		Input: []tf.Input{
-			dataset_id, address, protocol,
-		},
-	}
-	op := scope.AddOperation(opspec)
-	return op.Output(0)
 }
 
 // Registers a dataset with the tf.data service.
@@ -9893,12 +9885,26 @@ func RegisterDataset(scope *Scope, dataset tf.Output, address tf.Output, protoco
 	return op.Output(0)
 }
 
+// DataServiceDatasetAttr is an optional argument to DataServiceDataset.
+type DataServiceDatasetAttr func(optionalAttr)
+
+// DataServiceDatasetTaskRefreshIntervalHintMs sets the optional task_refresh_interval_hint_ms attribute to value.
+// If not specified, defaults to -1
+func DataServiceDatasetTaskRefreshIntervalHintMs(value int64) DataServiceDatasetAttr {
+	return func(m optionalAttr) {
+		m["task_refresh_interval_hint_ms"] = value
+	}
+}
+
 // Creates a dataset that reads data from the tf.data service.
-func DataServiceDataset(scope *Scope, address tf.Output, protocol tf.Output, max_outstanding_requests tf.Output, output_types []tf.DataType, output_shapes []tf.Shape) (handle tf.Output) {
+func DataServiceDataset(scope *Scope, address tf.Output, protocol tf.Output, max_outstanding_requests tf.Output, output_types []tf.DataType, output_shapes []tf.Shape, optional ...DataServiceDatasetAttr) (handle tf.Output) {
 	if scope.Err() != nil {
 		return
 	}
 	attrs := map[string]interface{}{"output_types": output_types, "output_shapes": output_shapes}
+	for _, a := range optional {
+		a(attrs)
+	}
 	opspec := tf.OpSpec{
 		Type: "DataServiceDataset",
 		Input: []tf.Input{
@@ -11894,75 +11900,6 @@ func ExtractGlimpse(scope *Scope, input tf.Output, size tf.Output, offsets tf.Ou
 	return op.Output(0)
 }
 
-// Converts one or more images from RGB to HSV.
-//
-// Outputs a tensor of the same shape as the `images` tensor, containing the HSV
-// value of the pixels. The output is only well defined if the value in `images`
-// are in `[0,1]`.
-//
-// `output[..., 0]` contains hue, `output[..., 1]` contains saturation, and
-// `output[..., 2]` contains value. All HSV values are in `[0,1]`. A hue of 0
-// corresponds to pure red, hue 1/3 is pure green, and 2/3 is pure blue.
-//
-// Usage Example:
-//
-// >>> blue_image = tf.stack([
-// ...    tf.zeros([5,5]),
-// ...    tf.zeros([5,5]),
-// ...    tf.ones([5,5])],
-// ...    axis=-1)
-// >>> blue_hsv_image = tf.image.rgb_to_hsv(blue_image)
-// >>> blue_hsv_image[0,0].numpy()
-// array([0.6666667, 1. , 1. ], dtype=float32)
-//
-//
-// Arguments:
-//	images: 1-D or higher rank. RGB data to convert. Last dimension must be size 3.
-//
-// Returns `images` converted to HSV.
-func RGBToHSV(scope *Scope, images tf.Output) (output tf.Output) {
-	if scope.Err() != nil {
-		return
-	}
-	opspec := tf.OpSpec{
-		Type: "RGBToHSV",
-		Input: []tf.Input{
-			images,
-		},
-	}
-	op := scope.AddOperation(opspec)
-	return op.Output(0)
-}
-
-// Decode the frame(s) of a GIF-encoded image to a uint8 tensor.
-//
-// GIF images with frame or transparency compression are not supported.
-// On Linux and MacOS systems, convert animated GIFs from compressed to
-// uncompressed by running:
-//
-//     convert $src.gif -coalesce $dst.gif
-//
-// This op also supports decoding JPEGs and PNGs, though it is cleaner to use
-// `tf.io.decode_image`.
-//
-// Arguments:
-//	contents: 0-D.  The GIF-encoded image.
-//
-// Returns 4-D with shape `[num_frames, height, width, 3]`. RGB channel order.
-func DecodeGif(scope *Scope, contents tf.Output) (image tf.Output) {
-	if scope.Err() != nil {
-		return
-	}
-	opspec := tf.OpSpec{
-		Type: "DecodeGif",
-		Input: []tf.Input{
-			contents,
-		},
-	}
-	op := scope.AddOperation(opspec)
-	return op.Output(0)
-}
-
 // SampleDistortedBoundingBoxAttr is an optional argument to SampleDistortedBoundingBox.
 type SampleDistortedBoundingBoxAttr func(optionalAttr)
 
@@ -12117,6 +12054,75 @@ func SampleDistortedBoundingBox(scope *Scope, image_size tf.Output, bounding_box
 	}
 	op := scope.AddOperation(opspec)
 	return op.Output(0), op.Output(1), op.Output(2)
+}
+
+// Converts one or more images from RGB to HSV.
+//
+// Outputs a tensor of the same shape as the `images` tensor, containing the HSV
+// value of the pixels. The output is only well defined if the value in `images`
+// are in `[0,1]`.
+//
+// `output[..., 0]` contains hue, `output[..., 1]` contains saturation, and
+// `output[..., 2]` contains value. All HSV values are in `[0,1]`. A hue of 0
+// corresponds to pure red, hue 1/3 is pure green, and 2/3 is pure blue.
+//
+// Usage Example:
+//
+// >>> blue_image = tf.stack([
+// ...    tf.zeros([5,5]),
+// ...    tf.zeros([5,5]),
+// ...    tf.ones([5,5])],
+// ...    axis=-1)
+// >>> blue_hsv_image = tf.image.rgb_to_hsv(blue_image)
+// >>> blue_hsv_image[0,0].numpy()
+// array([0.6666667, 1. , 1. ], dtype=float32)
+//
+//
+// Arguments:
+//	images: 1-D or higher rank. RGB data to convert. Last dimension must be size 3.
+//
+// Returns `images` converted to HSV.
+func RGBToHSV(scope *Scope, images tf.Output) (output tf.Output) {
+	if scope.Err() != nil {
+		return
+	}
+	opspec := tf.OpSpec{
+		Type: "RGBToHSV",
+		Input: []tf.Input{
+			images,
+		},
+	}
+	op := scope.AddOperation(opspec)
+	return op.Output(0)
+}
+
+// Decode the frame(s) of a GIF-encoded image to a uint8 tensor.
+//
+// GIF images with frame or transparency compression are not supported.
+// On Linux and MacOS systems, convert animated GIFs from compressed to
+// uncompressed by running:
+//
+//     convert $src.gif -coalesce $dst.gif
+//
+// This op also supports decoding JPEGs and PNGs, though it is cleaner to use
+// `tf.io.decode_image`.
+//
+// Arguments:
+//	contents: 0-D.  The GIF-encoded image.
+//
+// Returns 4-D with shape `[num_frames, height, width, 3]`. RGB channel order.
+func DecodeGif(scope *Scope, contents tf.Output) (image tf.Output) {
+	if scope.Err() != nil {
+		return
+	}
+	opspec := tf.OpSpec{
+		Type: "DecodeGif",
+		Input: []tf.Input{
+			contents,
+		},
+	}
+	op := scope.AddOperation(opspec)
+	return op.Output(0)
 }
 
 // DecodeBmpAttr is an optional argument to DecodeBmp.
@@ -16983,6 +16989,17 @@ func QuantizedAdd(scope *Scope, x tf.Output, y tf.Output, min_x tf.Output, max_x
 	return op.Output(0), op.Output(1), op.Output(2)
 }
 
+// ShuffleAndRepeatDatasetAttr is an optional argument to ShuffleAndRepeatDataset.
+type ShuffleAndRepeatDatasetAttr func(optionalAttr)
+
+// ShuffleAndRepeatDatasetReshuffleEachIteration sets the optional reshuffle_each_iteration attribute to value.
+// If not specified, defaults to true
+func ShuffleAndRepeatDatasetReshuffleEachIteration(value bool) ShuffleAndRepeatDatasetAttr {
+	return func(m optionalAttr) {
+		m["reshuffle_each_iteration"] = value
+	}
+}
+
 // Creates a dataset that shuffles and repeats elements from `input_dataset`
 //
 // pseudorandomly.
@@ -17000,11 +17017,14 @@ func QuantizedAdd(scope *Scope, x tf.Output, y tf.Output, min_x tf.Output, max_x
 // should be repeated. The default is `-1`, which results in infinite repetition.
 //
 //
-func ShuffleAndRepeatDataset(scope *Scope, input_dataset tf.Output, buffer_size tf.Output, seed tf.Output, seed2 tf.Output, count tf.Output, output_types []tf.DataType, output_shapes []tf.Shape) (handle tf.Output) {
+func ShuffleAndRepeatDataset(scope *Scope, input_dataset tf.Output, buffer_size tf.Output, seed tf.Output, seed2 tf.Output, count tf.Output, output_types []tf.DataType, output_shapes []tf.Shape, optional ...ShuffleAndRepeatDatasetAttr) (handle tf.Output) {
 	if scope.Err() != nil {
 		return
 	}
 	attrs := map[string]interface{}{"output_types": output_types, "output_shapes": output_shapes}
+	for _, a := range optional {
+		a(attrs)
+	}
 	opspec := tf.OpSpec{
 		Type: "ShuffleAndRepeatDataset",
 		Input: []tf.Input{
@@ -20741,7 +20761,7 @@ func Print(scope *Scope, input tf.Output, data []tf.Output, optional ...PrintAtt
 //
 //     with tf.Session() as sess:
 //       # Define (COO format) SparseTensor over Numpy array.
-//       a_st = tf.SparseTensor(a_indices, a_values, a_dense_shape)
+//       a_st = tf.sparse.SparseTensor(a_indices, a_values, a_dense_shape)
 //
 //       # Convert SparseTensors to CSR SparseMatrix.
 //       a_sm = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
@@ -26808,7 +26828,7 @@ func Reverse(scope *Scope, tensor tf.Output, dims tf.Output) (output tf.Output) 
 //
 // @tf.function
 // def foo(x, y):
-//   return = mlir_passthrough_op([x, y], mlir_module, Toutputs=[tf.float32])
+//   return mlir_passthrough_op([x, y], mlir_module, Toutputs=[tf.float32])
 //
 // graph_def = foo.get_concrete_function(tf.TensorSpec([10], tf.float32), tf.TensorSpec([10], tf.float32)).graph.as_graph_def()
 // ```
@@ -29651,6 +29671,14 @@ func ResourceSparseApplyFtrlUseLocking(value bool) ResourceSparseApplyFtrlAttr {
 	}
 }
 
+// ResourceSparseApplyFtrlMultiplyLinearByLr sets the optional multiply_linear_by_lr attribute to value.
+// If not specified, defaults to false
+func ResourceSparseApplyFtrlMultiplyLinearByLr(value bool) ResourceSparseApplyFtrlAttr {
+	return func(m optionalAttr) {
+		m["multiply_linear_by_lr"] = value
+	}
+}
+
 // Update relevant entries in '*var' according to the Ftrl-proximal scheme.
 //
 // That is for rows we have grad for, we update var, accum and linear as follows:
@@ -30661,6 +30689,14 @@ type ResourceApplyFtrlV2Attr func(optionalAttr)
 func ResourceApplyFtrlV2UseLocking(value bool) ResourceApplyFtrlV2Attr {
 	return func(m optionalAttr) {
 		m["use_locking"] = value
+	}
+}
+
+// ResourceApplyFtrlV2MultiplyLinearByLr sets the optional multiply_linear_by_lr attribute to value.
+// If not specified, defaults to false
+func ResourceApplyFtrlV2MultiplyLinearByLr(value bool) ResourceApplyFtrlV2Attr {
+	return func(m optionalAttr) {
+		m["multiply_linear_by_lr"] = value
 	}
 }
 
@@ -32098,8 +32134,8 @@ func SparseMatrixSparseMatMulAdjointB(value bool) SparseMatrixSparseMatMulAttr {
 //
 //     with tf.Session() as sess:
 //       # Define (COO format) Sparse Tensors over Numpy arrays
-//       a_st = tf.SparseTensor(a_indices, a_values, a_dense_shape)
-//       b_st = tf.SparseTensor(b_indices, b_values, b_dense_shape)
+//       a_st = tf.sparse.SparseTensor(a_indices, a_values, a_dense_shape)
+//       b_st = tf.sparse.SparseTensor(b_indices, b_values, b_dense_shape)
 //
 //       # Convert SparseTensors to CSR SparseMatrix
 //       a_sm = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
@@ -36054,6 +36090,14 @@ func ResourceApplyFtrlUseLocking(value bool) ResourceApplyFtrlAttr {
 	}
 }
 
+// ResourceApplyFtrlMultiplyLinearByLr sets the optional multiply_linear_by_lr attribute to value.
+// If not specified, defaults to false
+func ResourceApplyFtrlMultiplyLinearByLr(value bool) ResourceApplyFtrlAttr {
+	return func(m optionalAttr) {
+		m["multiply_linear_by_lr"] = value
+	}
+}
+
 // Update '*var' according to the Ftrl-proximal scheme.
 //
 // accum_new = accum + grad * grad
@@ -37615,7 +37659,7 @@ func RecvTPUEmbeddingActivations(scope *Scope, num_outputs int64, config string)
 //
 //     with tf.Session() as sess:
 //       # Define (COO format) SparseTensor over Numpy array.
-//       a_st = tf.SparseTensor(a_indices, a_values, a_dense_shape)
+//       a_st = tf.sparse.SparseTensor(a_indices, a_values, a_dense_shape)
 //
 //       # Convert SparseTensors to CSR SparseMatrix.
 //       a_sm = sparse_csr_matrix_ops.sparse_tensor_to_csr_sparse_matrix(
@@ -40121,9 +40165,9 @@ func ResourceApplyMomentumUseNesterov(value bool) ResourceApplyMomentumAttr {
 	}
 }
 
-// Update '*var' according to the momentum scheme. Set use_nesterov = True if you
+// Update '*var' according to the momentum scheme.
 //
-// want to use Nesterov momentum.
+// Set use_nesterov = True if you want to use Nesterov momentum.
 //
 // accum = accum * momentum + grad
 // var -= lr * accum
@@ -42254,6 +42298,14 @@ type ResourceSparseApplyFtrlV2Attr func(optionalAttr)
 func ResourceSparseApplyFtrlV2UseLocking(value bool) ResourceSparseApplyFtrlV2Attr {
 	return func(m optionalAttr) {
 		m["use_locking"] = value
+	}
+}
+
+// ResourceSparseApplyFtrlV2MultiplyLinearByLr sets the optional multiply_linear_by_lr attribute to value.
+// If not specified, defaults to false
+func ResourceSparseApplyFtrlV2MultiplyLinearByLr(value bool) ResourceSparseApplyFtrlV2Attr {
+	return func(m optionalAttr) {
+		m["multiply_linear_by_lr"] = value
 	}
 }
 
@@ -46788,6 +46840,21 @@ func LoadTPUEmbeddingFTRLParameters(scope *Scope, parameters tf.Output, accumula
 	return scope.AddOperation(opspec)
 }
 
+// Creates a tf.data service job.
+func CreateJob(scope *Scope, dataset_id tf.Output, address tf.Output, protocol tf.Output, processing_mode tf.Output) (job_token tf.Output) {
+	if scope.Err() != nil {
+		return
+	}
+	opspec := tf.OpSpec{
+		Type: "CreateJob",
+		Input: []tf.Input{
+			dataset_id, address, protocol, processing_mode,
+		},
+	}
+	op := scope.AddOperation(opspec)
+	return op.Output(0)
+}
+
 // Conv3DBackpropInputAttr is an optional argument to Conv3DBackpropInput.
 type Conv3DBackpropInputAttr func(optionalAttr)
 
@@ -47053,7 +47120,7 @@ func ResourceApplyAdagradV2UpdateSlots(value bool) ResourceApplyAdagradV2Attr {
 // Update '*var' according to the adagrad scheme.
 //
 // accum += grad * grad
-// var -= lr * grad * (1 / sqrt(accum))
+// var -= lr * grad * (1 / (sqrt(accum) + epsilon))
 //
 // Arguments:
 //	var_: Should be from a Variable().
@@ -48480,7 +48547,7 @@ func MaxPool3DGradDataFormat(value string) MaxPool3DGradAttr {
 	}
 }
 
-// Computes gradients of max pooling function.
+// Computes gradients of 3D max pooling function.
 //
 // Arguments:
 //	orig_input: The original input tensor.

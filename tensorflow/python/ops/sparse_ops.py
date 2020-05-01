@@ -16,7 +16,7 @@
 # pylint: disable=g-short-docstring-punctuation
 """Sparse Tensor Representation.
 
-See also `tf.SparseTensor`.
+See also `tf.sparse.SparseTensor`.
 """
 
 from __future__ import absolute_import
@@ -860,14 +860,19 @@ def sparse_reshape(sp_input, shape, name=None):
       original_reshaped_shape = list(reshaped_shape_const)  # A copy
       in_shape_size = np.prod(sp_input.shape.as_list())
       num_implied = sum(dim is None for dim in reshaped_shape_const)
-      if num_implied == 1:
+
+      # If there is a 0 dim in the user-provided shape, we cannot infer the
+      # unknown dim reliably. This is why we skip the `if` branch below when
+      # a 0 is present in `reshaped_shape_const`. Same below.
+      if num_implied == 1 and 0 not in reshaped_shape_const:
         implied_idx = original_reshaped_shape.index(None)
         non_implied_idx = (
             original_reshaped_shape[:implied_idx] +
             original_reshaped_shape[implied_idx + 1:])
         reshaped_shape_const[implied_idx] = int(
             in_shape_size // np.prod(non_implied_idx))
-      if num_implied <= 1:
+      if num_implied == 0 or (num_implied == 1 and
+                              0 not in reshaped_shape_const):
         reshaped_size = np.prod(reshaped_shape_const)
         if reshaped_size != in_shape_size:
           raise ValueError(
@@ -2510,7 +2515,7 @@ def sparse_softmax(sp_input, name=None):
   values = np.asarray([[[0., np.e], [1., 0.]], [[np.e, 0.], [np.e, np.e]]])
   indices = np.vstack(np.where(values)).astype(np.int64).T
 
-  result = tf.sparse.softmax(tf.SparseTensor(indices, values, shape))
+  result = tf.sparse.softmax(tf.sparse.SparseTensor(indices, values, shape))
   # ...returning a 3-D SparseTensor, equivalent to:
   # [?   1.]     [1    ?]
   # [1.  ? ] and [.5  .5]
@@ -2644,8 +2649,8 @@ def sparse_transpose(sp_input, perm=None, name=None):
   """
   with ops.name_scope(name, "SparseTranspose", [sp_input]) as name:
     if perm is None:
-      if sp_input.shape.is_fully_defined():
-        rank = len(sp_input.shape)
+      if sp_input.shape.rank is not None:
+        rank = sp_input.shape.rank
         perm = (rank - 1) - np.arange(0, rank, 1)
       else:
         rank = array_ops.rank(sp_input)
