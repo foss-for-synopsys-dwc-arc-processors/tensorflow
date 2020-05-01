@@ -66,16 +66,14 @@ If you want to self-boot your application (start it independently from a debugge
 ### Connect the Board
 
 1.	Make sure Boot switches of the board (S3) are configured in the next way:
-<center>
 
 | Switch #  |   Switch position  |
 | :-------: | :----------------: | 
 |     1     |       Low (0)      | 
 |     2     |       Low (0)      | 
-|     3     |       Low (0)      | 
+|     3     |       High (1)     | 
 |     4     |       Low (0)      | 
 
-</center>
 
 2.	Connect the power supply included in the product package to the ARC EM SDP.  
 3.	Connect the USB cable to connector J10 on the ARC EM SDP (near the RST and CFG buttons) and to an available USB port on your development host.
