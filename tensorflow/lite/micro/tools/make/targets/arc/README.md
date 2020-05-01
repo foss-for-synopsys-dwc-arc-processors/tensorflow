@@ -6,7 +6,7 @@ This document contains the general information on building and running TensorFlo
 
 -   [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
 -   [ARC EM Software Development Platform (ARC EM SDP)](#ARC-EM-Software-Development-Platform-ARC-EM-SDP)
--   [Custom ARC EM/HS Platform](#Custom-ARC-EM/HS-Platform)
+-   [Custom ARC EM or HS Platform](#Custom-ARC-EMHS-Platform)
 
 
 ## Install the Synopsys DesignWare ARC MetaWare Development Toolkit
@@ -105,7 +105,7 @@ Info on generating and building example applications for EM SDP (*tensorflow/lit
 
 The [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) is used by default to speed up execution of some kernels for asymmetrically quantized layers. Kernels which use MLI-based implementations are kept in the *tensorflow/lite/micro/kernels/arc_mli*  folder. For applications which may not benefit from MLI library, the project can be generated without these implementations by adding `TAGS=no_arc_mli` in the command line.  This can reduce code size when the optimized kernels are not required.
 
-For more options on embARC MLI usage see [arc_mli/README.md](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/kernels/arc_mli/README.md).
+For more options on embARC MLI usage see [kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md).
 
 ### Build the Application
 
@@ -162,14 +162,14 @@ To with custom ARC EM/HS platform, you need the following :
 * Make tool (make or gmake)
 
 See [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit) section for instructions on toolchain installation.
-See [MetaWare Development Toolkit](####MetaWare-Development-Toolkit) and [Make Tool](####Make-Tool) sections for instructions on toolchain installation and comments about make versions.
+See [MetaWare Development Toolkit](#MetaWare-Development-Toolkit) and [Make Tool](#Make-Tool) sections for instructions on toolchain installation and comments about make versions.
 
 ### Generate Application Project
 
 Before building the application itself, you need to generate the project for this application from TensorFlow sources and external dependencies. To generate it for a custom TCF you need to set the following variables in the make command line:
 * TARGET_ARCH=arc
-* TCF_FILE=<path_to TCF file>
-* (optional) LCF_FILE=<path_to LCF file> 
+* TCF_FILE=<path to TCF file>
+* (optional) LCF_FILE=<path to LCF file> 
 
 If you don’t supply an external LCF, the one embedded in the TCF will be used instead
 
@@ -181,7 +181,7 @@ The application project will be generated into *tensorflow/lite/micro/tools/make
 
 The [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) is used by default to speed up execution of some kernels for asymmetrically quantized layers. Kernels which use MLI-based implementations are kept in the *tensorflow/lite/micro/kernels/arc_mli*  folder. For applications which may not benefit from MLI library, the project can be generated without these implementations by adding `TAGS=no_arc_mli` in the command line.  This can reduce code size when the optimized kernels are not required.
 
-For more options on embARC MLI usage see [arc_mli/README.md](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/kernels/arc_mli/README.md).
+For more options on embARC MLI usage see [kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md).
 
 ### Build the Application
 

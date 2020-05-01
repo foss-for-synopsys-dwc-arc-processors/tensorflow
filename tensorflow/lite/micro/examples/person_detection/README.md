@@ -19,7 +19,7 @@ run on systems with small amounts of memory such as microcontrollers and DSPs.
 The following instructions will help you to build and deploy this example to
 [ARC EM SDP](https://www.synopsys.com/dw/ipdir.php?ds=arc-em-software-development-platform) board. General information and instructions on using the board with TensorFlow Lite Micro can be found in the common [ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
 
-This example is quantized with symmetric uint8 scheme. As noted in [kernels/arc_mli/README.md](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/kernels/arc_mli/README.md), embARC MLI supports optimized kernels for int8 quantization only.  Therefore, this example will only use TFLM reference kernels.
+This example is quantized with symmetric uint8 scheme. As noted in [kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md), embARC MLI supports optimized kernels for int8 quantization only.  Therefore, this example will only use TFLM reference kernels.
 
 The ARC EM SDP board contains the reach set of extension interfaces. 
 You can choose any compatible camera and modify [image_provider.cc](/tensorflow/lite/micro/examples/person_detection/image_provider.cc) file accordingly to use input from your specific camera. By default, results of running this example are printed to the console.  If you would like to instead implement some target-specific actions, you need to modify [detection_responder.cc](/tensorflow/lite/micro/examples/person_detection/detection_responder.cc) accordingly. 
@@ -61,7 +61,7 @@ For more detailed information on building and running examples see the appropria
 
 6. If you have the MetaWare Debugger installed in your environment:
     * To run application from the console using it type `make run`. 
-    * To stop the execution type `Ctrl+C` several times in the console several times. 
+    * To stop the execution type `Ctrl+C` in the console several times. 
 
 In both cases (step 5 and 6) you will see the application output in the serial terminal.
 

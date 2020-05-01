@@ -10,7 +10,7 @@ for details on how projects like this can be generated from the main source tree
 
 ## Usage
 
-See [Custom ARC EM/HS Platform](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/tools/make/targets/arc/README.md#Custom-ARC-EM/HS-Platform) section for more detailed information on requirements and usage of this project. 
+See [Custom ARC EM/HS Platform](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro/tools/make/targets/arc/README.md#Custom-ARC-EMHS-Platform) section for more detailed information on requirements and usage of this project. 
 
 The Makefile contains all the information on building and running the project. One can modify it to satisfy specific needs. Next actions are available out of the box. You may need to adjust the following commands in order to use the appropriate make tool available in your environment, ie: `make` or `gmake`
 

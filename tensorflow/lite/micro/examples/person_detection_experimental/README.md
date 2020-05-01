@@ -62,7 +62,7 @@ For more detailed information on building and running examples see the appropria
 
 6. If you have the MetaWare Debugger installed in your environment:
     * To run application from the console using it type `make run`. 
-    * To stop the execution type `Ctrl+C` several times in the console several times. 
+    * To stop the execution type `Ctrl+C` in the console several times. 
 
 In both cases (step 5 and 6) you will see the application output in the serial terminal.
 

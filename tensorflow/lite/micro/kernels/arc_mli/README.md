@@ -36,7 +36,7 @@ Currently, the MLI Library provides optimized implementation only for int8 (asym
 4.	Max Pooling
 5.	Fully Connected
 
-Currently only [tensorflow/lite/micro/examples/person_detection_experimental](tensorflow/lite/micro/examples/person_detection_experimental) is quantized using this specification. Other examples can be executed on ARC-based targets, but will only use reference kernels.
+Currently only [/tensorflow/lite/micro/examples/person_detection_experimental](/tensorflow/lite/micro/examples/person_detection_experimental) is quantized using this specification. Other examples can be executed on ARC-based targets, but will only use reference kernels.
 
 
 ##	Scratch Buffers and Slicing
