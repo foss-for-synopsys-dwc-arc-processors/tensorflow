@@ -16,6 +16,7 @@ load(
     "//tensorflow/core/platform:build_config_root.bzl",
     "tf_cuda_tests_tags",
 )
+load("@local_config_cuda//cuda:build_defs.bzl", "if_cuda")
 
 package(
     licenses = ["notice"],  # Apache 2.0
@@ -316,7 +317,8 @@ tf_cuda_cc_test(
     ],
     extra_copts = tfe_xla_copts(),
     tags = [
-        "guitar",
+        "noguitar",  # TODO(b/155445984): flaky
+        #"guitar",
         "multi_gpu",
     ],
     deps = [
@@ -345,6 +347,10 @@ tf_cuda_cc_test(
         "c_api_remote_test.cc",
     ],
     extra_copts = tfe_xla_copts(),
+    tags = [
+        "noasan",  # TODO(b/155406516): flaky
+        "notsan",  # TODO(b/155406516): flaky
+    ],
     deps = [
         ":c_api",
         ":c_api_experimental",
