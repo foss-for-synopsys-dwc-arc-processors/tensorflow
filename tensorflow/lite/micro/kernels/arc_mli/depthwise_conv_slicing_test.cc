@@ -55,7 +55,7 @@ TfLiteStatus ValidateDepthwiseConvGoldens(const T* expected_output_data,
   int output_depth = tensors[1].dims->data[3];
   int depth_mul = output_depth / input_depth;
   TfLiteDepthwiseConvParams builtin_data;
-  builtin_data.padding = kTfLitePaddingValid;
+  builtin_data.padding = kTfLitePaddingSame;
   builtin_data.activation = activation;
   builtin_data.stride_height = 1;
   builtin_data.stride_width = 1;
@@ -135,10 +135,42 @@ void TestDepthwiseConvQuantizedPerChannel(
       filter_data, filter_data_quantized, filter_dims, filter_scales,
       filter_zero_points, &filter_quant, 3 /* quantized dimension */,
       "filter_tensor");
+
+  // DN: to replace scales and quantized data to avoid second quantization
+  int channel_count = filter_dims->data[3];
+  float true_filter_scales[10] = {1.0, 1.0, 1.0, 1.0, 1.0,
+                                  1.0, 1.0, 1.0, 1.0, 1.0};
+  true_filter_scales[0] = static_cast<float>(channel_count);
+  TfLiteAffineQuantization *params = (TfLiteAffineQuantization *)filter_tensor.quantization.params;
+  params->scale = FloatArrayFromFloats(true_filter_scales);
+
+  int filter_size = filter_tensor.bytes;
+  for(int i = 0; i < filter_size; ++i) {
+    filter_tensor.data.int8[i] = static_cast<int8_t>(filter_data[i]);    
+  }
+
   TfLiteTensor bias_tensor = CreatePerChannelQuantizedBiasTensor(
       bias_data, bias_data_quantized, bias_dims, input_scale, &filter_scales[1],
       bias_scales, bias_zero_points, &bias_quant, 3 /* quantized dimension */,
       "bias_tensor");
+
+
+  // TfLiteTensor bias_tensor = CreatePerChannelQuantizedBiasTensor(
+  //     bias_data, bias_data_quantized, bias_dims, input_scale, &true_filter_scales[1],
+  //     bias_scales, bias_zero_points, &bias_quant, 0 /* quantized dimension */,
+  //     "bias_tensor");
+
+  int bias_size = bias_tensor.dims->data[3];
+  float true_bias_scales[10] = {1.0, 1.0, 1.0, 1.0, 1.0,
+                                1.0, 1.0, 1.0, 1.0, 1.0};
+  true_bias_scales[0] = static_cast<float>(bias_size);
+
+  params = (TfLiteAffineQuantization *)bias_tensor.quantization.params;
+  params->scale = FloatArrayFromFloats(true_bias_scales);
+  for(int i = 0; i < bias_size; ++i) {
+    bias_tensor.data.i32[i] = static_cast<int32_t>(bias_data[i]);
+  }
+
   TfLiteTensor output_tensor =
       CreateQuantizedTensor(output_data, output_dims, output_scale,
                             input_zero_point, "output_tensor");
@@ -195,11 +227,11 @@ TF_LITE_MICRO_TEST(SystemTestQuantizedPerChannel1) {
                                  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
                                  2, 2, 2, 2, 2, 2};
   const int bias_elements = 2;
-  const int bias_shape[] = {4, 1, 1, 1, 2};
+  const int bias_shape[] = {4, 1, 1, 1, 2}; //{1, 2}; // {4, 1, 1, 1, 2};
   const int output_elements = 20;
   const float bias_values[] = {2, 2};
-  const float golden[] = {34, 34, 34, 34, 50, 50, 50, 50, 50, 50,
-                          50, 50, 50, 50, 50, 50, 34, 34, 34, 34};
+  const float golden[] = {18, 18, 18, 18, 26, 26, 26, 26, 26, 26,
+                          26, 26, 26, 26, 26, 26, 18, 18, 18, 18};
   const int output_shape[] = {4, 1, 5, 2, 2};
   const int output_dims_count = 20;
   int8_t output_data[output_dims_count];
@@ -234,29 +266,33 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel1) {
   const int output_shape[] = {4, 1, 5, 2, 2};
   const int output_dims_count = 20;
 
-#pragma Bss(".Zdata")  
-  const float input_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+
+  float input_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-  const float filter_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  float filter_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
                                  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
                                  2, 2, 2, 2, 2, 2};
-  const float bias_values[] = {2, 2};
-  int8_t output_data[output_dims_count];
-#pragma Bss()
+  float bias_values[] = {2, 2};
+  
 
-  const float golden[] = {34, 34, 34, 34, 50, 50, 50, 50, 50, 50,
-                          50, 50, 50, 50, 50, 50, 34, 34, 34, 34};
+
+  const float golden[] = {18, 18, 18, 18, 26, 26, 26, 26, 26, 26,
+                          26, 26, 26, 26, 26, 26, 18, 18, 18, 18};
   
   const float input_scale = 1.0;
   const float output_scale = 1.0f;
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-  int8_t input_quantized[input_elements];
-  int8_t filter_quantized[filter_elements];
-  int32_t bias_quantized[bias_elements];
-  int8_t golden_quantized[output_elements];
+#pragma Bss(".Zdata")  
+  static int8_t input_quantized[input_elements];
+  static int8_t filter_quantized[filter_elements];
+  static int32_t bias_quantized[bias_elements];
+  static int8_t golden_quantized[output_elements];
+  static int8_t output_data[output_dims_count];
+#pragma Bss()
+
   int zero_points[bias_elements + 1];
   float scales[bias_elements + 1];
 
@@ -289,14 +325,14 @@ TF_LITE_MICRO_TEST(SystemTestQuantizedPerChannel2) {
   const int bias_shape[] = {4, 1, 1, 1, 2};
   const int output_elements = 80;
   const float bias_values[] = {2, 2};
-  const float golden[] = {34, 34, 34, 34, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 34, 34, 34, 34};
+  const float golden[] = {18, 18, 18, 18, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 18, 18, 18, 18};
   const int output_shape[] = {4, 1, 20, 2, 2};
   const int output_dims_count = 80;
   int8_t output_data[output_dims_count];
@@ -331,7 +367,7 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel2) {
   const int output_shape[] = {4, 1, 20, 2, 2};
   const int output_dims_count = 80;
 
-#pragma Bss(".Zdata")  
+  
   float input_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                           2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                           2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -345,27 +381,31 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel2) {
                            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
                            2, 2, 2, 2, 2, 2};
   float bias_values[] = {2, 2};
-  int8_t output_data[output_dims_count];
-#pragma Bss()
+  
 
-  const float golden[] = {34, 34, 34, 34, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
-                          50, 50, 50, 50, 50, 50, 34, 34, 34, 34};
+
+  const float golden[] = {18, 18, 18, 18, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 
+                          26, 26, 26, 26, 26, 26, 18, 18, 18, 18};
   
   const float input_scale = 1.0;
   const float output_scale = 1.0f;
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-  int8_t input_quantized[input_elements];
-  int8_t filter_quantized[filter_elements];
-  int32_t bias_quantized[bias_elements];
-  int8_t golden_quantized[output_elements];
+#pragma Bss(".Zdata")
+  static int8_t input_quantized[input_elements];
+  static int8_t filter_quantized[filter_elements];
+  static int32_t bias_quantized[bias_elements];
+  static int8_t golden_quantized[output_elements];
+  static int8_t output_data[output_dims_count];
+#pragma Bss()
+
   int zero_points[bias_elements + 1];
   float scales[bias_elements + 1];
 
@@ -434,7 +474,7 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
   const int output_shape[] = {4, 1, 2, 2, 1};
   const int output_dims_count = 4;
 
-#pragma Bss(".Zdata")  
+ 
   float input_values[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -449,8 +489,8 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
                            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                            1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
   float bias_values[] = {1};
-  int8_t output_data[output_dims_count];
-#pragma Bss()
+
+
 
   const float golden[] = {41, 41, 41, 41};
   
@@ -459,10 +499,14 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-  int8_t input_quantized[input_elements];
-  int8_t filter_quantized[filter_elements];
-  int32_t bias_quantized[bias_elements];
-  int8_t golden_quantized[output_elements];
+#pragma Bss(".Zdata") 
+  static int8_t input_quantized[input_elements];
+  static int8_t filter_quantized[filter_elements];
+  static int32_t bias_quantized[bias_elements];
+  static int8_t golden_quantized[output_elements];
+  static int8_t output_data[output_dims_count];
+#pragma Bss()
+
   int zero_points[bias_elements + 1];
   float scales[bias_elements + 1];
 
@@ -535,7 +579,7 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
   const int output_shape[] = {4, 1, 4, 2, 1};
   const int output_dims_count = 8;
 
-#pragma Bss(".Zdata")  
+
   float input_values[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -554,8 +598,8 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
                            1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                            1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
   float bias_values[] = {1};
-  int8_t output_data[output_dims_count];
-#pragma Bss()
+
+
 
   const float golden[] = {41, 41, 61, 61, 61, 61, 41, 41};
   
@@ -564,10 +608,14 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-  int8_t input_quantized[input_elements];
-  int8_t filter_quantized[filter_elements];
-  int32_t bias_quantized[bias_elements];
-  int8_t golden_quantized[output_elements];
+#pragma Bss(".Zdata")  
+  static int8_t input_quantized[input_elements];
+  static int8_t filter_quantized[filter_elements];
+  static int32_t bias_quantized[bias_elements];
+  static int8_t golden_quantized[output_elements];
+  static int8_t output_data[output_dims_count];
+#pragma Bss()
+
   int zero_points[bias_elements + 1];
   float scales[bias_elements + 1];
 

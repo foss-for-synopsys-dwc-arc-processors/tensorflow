@@ -238,7 +238,12 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized2) {
   int8_t output_data_local_2[output_dims_count_local_2];
 #pragma Bss()
 
-  const int8_t expected_output_data_local_2[] = {41,41,41,41,41,41};
+  const int8_t expected_output_data_local_2[] = {17,17,17,17,17,17,17,17,17,17,
+                                                 17,17,17,17,17,17,17,17,17,17,
+                                                 17,17,17,17,17,17,17,17,17,17,
+                                                 17,17,17,17,17,17,17,17,17,17,
+                                                 17,17,17,17,17,17,17,17,17,17,
+                                                 17,17,17,17,17,17,17,17,17,17};
 
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
       input_dims_data_local_2, input_data_local_2, input_min, input_max, weights_dims_data_local_2,
