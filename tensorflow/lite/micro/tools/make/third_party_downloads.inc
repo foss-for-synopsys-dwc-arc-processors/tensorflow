@@ -56,8 +56,8 @@ SIFIVE_FE310_LIB_MD5 := "06ee24c4956f8e21670ab3395861fe64"
 KISSFFT_URL="https://github.com/mborgerding/kissfft/archive/v130.zip"
 KISSFFT_MD5="438ba1fef5783cc5f5f201395cc477ca"
 
-RUY_URL="https://github.com/google/ruy/archive/4bdb31ab484e624deef9620ecde2156ca17f6567.zip"
-RUY_MD5="191d6a173a4fde9742f597f0f4e1f08b"
+RUY_URL="https://github.com/google/ruy/archive/1b313682ef8b8fc8ed08719c610d1c3503b016bf.zip"
+RUY_MD5="2d54f058f8f7120dfc1ecee79dbf259e"
 
 CIFAR10_DATASET_URL="https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz"
 CIFAR10_DATASET_MD5="c32a1d4ab5d03f1284b67883e8d87530"
@@ -71,11 +71,11 @@ PERSON_MODEL_MD5 := "fe2934bd0788f1dcc7af3f0a954542ab"
 PERSON_MODEL_INT8_URL := "https://storage.googleapis.com/download.tensorflow.org/data/tf_lite_micro_person_data_int8_grayscale_2020_01_13.zip"
 PERSON_MODEL_INT8_MD5 := "8a7d2c70325f53136faea6dde517b8cc"
 
-EMBARC_MLI_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/archive/7026ad09bb7f967324eb29e069f776bc44a08886.zip"
-EMBARC_MLI_MD5 := "7eebd730db79c6834399f87e509115fb"
+EMBARC_MLI_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/archive/58284867ca52d1f43b25045e8601999d7359d986.zip"
+EMBARC_MLI_MD5 := "2bf4982a327fdaa9d475803ce014d1ef"
 
-EMBARC_MLI_PRE_COMPILED_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/releases/download/Release_1.1_RC1/embARC_MLI_package.zip"
-EMBARC_MLI_PRE_COMPILED_MD5 := "b85b8b89446757735342795367e37d22"
+EMBARC_MLI_PRE_COMPILED_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/releases/download/Release_1.1_RC2/embARC_MLI_package.zip"
+EMBARC_MLI_PRE_COMPILED_MD5 := "a95ff9e0370434484f14e7e4114327f6"
 
 XTENSA_HIFI4_URL :="https://github.com/foss-xtensa/nnlib-hifi4/raw/master/archive/xa_nnlib_04_07.zip"
 XTENSA_HIFI4_MD5 :="f234764928f9a42901df33a27e118c8b"

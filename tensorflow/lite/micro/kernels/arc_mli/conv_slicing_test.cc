@@ -13,6 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// This test checks that slicing logic doesn`t affect result of convolution
+// kernel
+//
+// This test doesn`t replace default convolution test
+// (tensorflow/lite/micro/kernels/conv_test.cc). It is added to the whole
+// testset only in case MLI for ARC platform is used during generation (which is
+// handled in arc_mli.inc). So such tests won`t be generated for other
+// platforms. 
+
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/all_ops_resolver.h"
@@ -247,7 +256,6 @@ void TestConvQuantizedPerChannel(
       CreateQuantizedTensor(output_data, output_dims, output_scale,
                             output_zero_point, "output_tensor");
 
-  // TODO(njeff): Affine Quantization Params should be set on tensor creation.
   float input_scales[] = {1, input_scale};
   int input_zero_points[] = {1, input_zero_point};
   TfLiteAffineQuantization input_quant = {FloatArrayFromFloats(input_scales),

@@ -124,11 +124,13 @@ endef
 # 6 - Linker flags required.
 # 7 - C++ compilation flags needed.
 # 8 - C compilation flags needed.
+
 # Calling eval on the output will create a <Name>_makefile target that you
 # can invoke to create the standalone project.
 define generate_arc_project
 
 ifeq ($(TARGET_ARCH), arc)
+
 $(PRJDIR)$(3)/$(1)/Makefile: tensorflow/lite/micro/tools/make/templates/arc/arc_app_makefile.tpl
 	@mkdir -p $$(dir $$@)
 	@sed -E 's#\%\{SRCS\}\%#$(4)#g' $$< | \
@@ -152,8 +154,12 @@ $(PRJDIR)$(3)/$(1)/%: tensorflow/lite/micro/tools/make/templates/arc/%.tpl
 	@cp $$< $$@
 
 $(foreach var,$(ARC_TARGET_FILES_DIRS),$(eval $(call path_changing_copy_file,$(PRJDIR)$(3)/$(1),$(var))))
+
 endif
 endef
+
+
+
 
 # Creates a set of rules to build a standalone Arduino project for an
 # executable, including all of the source and header files required in a
