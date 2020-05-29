@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "tensorflow/lite/kernels/internal/reference/conv.h"
 
-#include "mli_api.h"
+#include "mli_api.h"  // NOLINT
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/common.h"
@@ -73,7 +73,6 @@ inline PaddingType RuntimePaddingType(TfLitePadding padding) {
   }
 }
 
-
 bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                      const TfLiteTensor* filter, const TfLiteTensor* bias,
                      const TfLiteConvParams* params) {
@@ -81,9 +80,8 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
       reinterpret_cast<TfLiteAffineQuantization*>(filter->quantization.params);
   // MLI optimized version only supports int8 dataype, dilation factor of 1 and
   // per-axis quantization of weights (no broadcasting/per-tensor)
-  bool ret_val = (filter->type == kTfLiteInt8) && 
-                 (input->type == kTfLiteInt8) &&
-                 (bias->type == kTfLiteInt32) &&
+  bool ret_val = (filter->type == kTfLiteInt8) &&
+                 (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
                  (params->dilation_width_factor == 1) &&
                  (params->dilation_height_factor == 1) &&
                  (affine_quantization->scale->size ==
@@ -91,7 +89,6 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                  affine_quantization->scale->size <= (kMaxChannels * 2);
   return ret_val;
 }
-
 
 TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node,
                              TfLiteConvParams* params, int width, int height,
@@ -135,9 +132,10 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node,
 
 TfLiteStatus EvalQuantized(TfLiteContext* context, TfLiteNode* node,
                            TfLiteConvParams* params, OpData* data,
-                           const TfLiteTensor* input, const TfLiteTensor* filter,
-                           const TfLiteTensor* bias, TfLiteTensor* im2col,
-                           TfLiteTensor* hwcn_weights, TfLiteTensor* output) {
+                           const TfLiteTensor* input,
+                           const TfLiteTensor* filter, const TfLiteTensor* bias,
+                           TfLiteTensor* im2col, TfLiteTensor* hwcn_weights,
+                           TfLiteTensor* output) {
 #if !defined(TF_LITE_STRIP_REFERENCE_IMPL)
   const int32_t input_offset = -input->params.zero_point;
   const int32_t filter_offset = -filter->params.zero_point;
@@ -166,7 +164,8 @@ TfLiteStatus EvalQuantized(TfLiteContext* context, TfLiteNode* node,
                       GetTensorData<uint8_t>(im2col), nullptr);
   return kTfLiteOk;
 #else
-  TF_LITE_KERNEL_LOG(context, "Type %s (%d) is not supported by ARC MLI Library.",
+  TF_LITE_KERNEL_LOG(context,
+                     "Type %s (%d) is not supported by ARC MLI Library.",
                      TfLiteTypeGetName(input->type), input->type);
   return kTfLiteError;
 #endif
@@ -236,12 +235,12 @@ TfLiteStatus EvalMliQuantizedPerChannel(
 
     // for weight slicing (on output channels)
     // NHWC layout for weigths, output channel dimension is the first dimension.
-    const int weight_out_ch_dimension = 0;        
+    const int weight_out_ch_dimension = 0;
     int slice_channels =
         static_cast<int>(mli_weights.shape[weight_out_ch_dimension]);
-    // Batch-Height-Width-Channel layout means last dimension is output channels.
+    // Batch-Height-Width-Channel layout means last dimension is output
+    // channels.
     const int out_tensor_ch_dimension = 3;
-            
 
     // Tensors for data in fast (local) memory and config to copy data from
     // external to local memory
@@ -395,7 +394,8 @@ TfLiteStatus EvalFloat(TfLiteContext* context, TfLiteNode* node,
                       GetTensorData<float>(im2col));
   return kTfLiteOk;
 #else
-  TF_LITE_KERNEL_LOG(context, "Type %s (%d) is not supported by ARC MLI Library.",
+  TF_LITE_KERNEL_LOG(context,
+                     "Type %s (%d) is not supported by ARC MLI Library.",
                      TfLiteTypeGetName(input->type), input->type);
   return kTfLiteError;
 #endif
@@ -437,7 +437,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     TF_LITE_ENSURE_EQ(context, affine_quantization->scale->size,
                       affine_quantization->zero_point->size);
   }
-  bool mli_is_applicable = IsMliApplicable(context, input, filter, bias, params);
+  bool mli_is_applicable =
+      IsMliApplicable(context, input, filter, bias, params);
   TF_LITE_ENSURE_STATUS(
       CalculateOpData(context, node, params, input_width, input_height,
                       filter_width, filter_height, output_width, output_height,
@@ -445,8 +446,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   switch (input->type) {  // Already know in/out types are same.
     case kTfLiteFloat32:
-      return EvalFloat(context, node, params, &data, input, filter, bias, nullptr,
-                nullptr, output);
+      return EvalFloat(context, node, params, &data, input, filter, bias,
+                       nullptr, nullptr, output);
       break;
     case kTfLiteInt8:
       if (mli_is_applicable) {
@@ -459,8 +460,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       }
       break;
     case kTfLiteUInt8:
-      return EvalQuantized(context, node, params, &data, input, filter, bias, nullptr,
-                    nullptr, output);
+      return EvalQuantized(context, node, params, &data, input, filter, bias,
+                           nullptr, nullptr, output);
       break;
     default:
       TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",

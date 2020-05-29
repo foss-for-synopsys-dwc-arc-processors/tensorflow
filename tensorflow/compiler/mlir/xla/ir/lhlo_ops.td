@@ -19,7 +19,7 @@ limitations under the License.
 #define LHLO_OPS
 
 include "mlir/IR/OpBase.td"
-include "mlir/Interfaces/SideEffects.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 include "tensorflow/compiler/mlir/xla/ir/hlo_ops_base.td"
 
 def LHLO_Dialect : Dialect {
@@ -194,6 +194,19 @@ def LHLO_ReduceWindowOp: LHLO_Op<"reduce_window", [
   );
 
   let regions = (region SizedRegion<1>:$body);
+}
+
+def LHLO_CaseOp: LHLO_Op<"case", [
+      SingleBlockImplicitTerminator<"TerminatorOp">
+    ]>, BASE_HLO_CaseOp {
+
+  let arguments = (ins
+    Arg<LHLO_Buffer, "", [MemRead]>:$index,
+    Arg<Variadic<LHLO_BufferOrTuple>, "", [MemRead]>:$branch_operands,
+    Arg<LHLO_BufferOrTuple, "", [MemWrite]>:$out
+  );
+
+  let regions = (region VariadicRegion<SizedRegion<1>>:$branches);
 }
 
 //===----------------------------------------------------------------------===//
@@ -431,6 +444,10 @@ def TerminatorOp :
   let description = [{
     Terminator operation for the LHLO dialect.
   }];
+  let builders = [OpBuilder<
+    "OpBuilder &b, OperationState &result, ValueRange operands",
+    [{ build(b, result, llvm::None, operands, llvm::None); }]
+  >];
 }
 
 #endif // LHLO_OPS

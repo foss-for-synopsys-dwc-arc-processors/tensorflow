@@ -486,7 +486,7 @@ def skip_if_error(test_obj, error_type, messages=None):
   try:
     yield
   except error_type as e:
-    if not messages or any([message in str(e) for message in messages]):
+    if not messages or any(message in str(e) for message in messages):
       test_obj.skipTest("Skipping error: {}".format(str(e)))
     else:
       raise
@@ -2128,7 +2128,9 @@ class TensorFlowTestCase(googletest.TestCase):
               values=tensor.values.numpy(),
               indices=tensor.indices.numpy(),
               dense_shape=tensor.dense_shape.numpy())
-        return tensor.numpy()
+        # Convert tensors and composite tensors to numpy arrays.
+        return nest.map_structure(lambda t: t.numpy(), tensor,
+                                  expand_composites=True)
       except AttributeError as e:
         six.raise_from(ValueError("Unsupported type %s." % type(tensor)), e)
 
@@ -2686,7 +2688,7 @@ class TensorFlowTestCase(googletest.TestCase):
     if (b.ndim <= 3 or b.size < 500):
       self.assertEqual(
           a.shape, b.shape, "Shape mismatch: expected %s, got %s."
-          " Contents: %s. \n%s." % (a.shape, b.shape, b, msg))
+          " Contents: %r. \n%s." % (a.shape, b.shape, b, msg))
     else:
       self.assertEqual(
           a.shape, b.shape, "Shape mismatch: expected %s, got %s."
@@ -2709,8 +2711,8 @@ class TensorFlowTestCase(googletest.TestCase):
       else:
         # np.where is broken for scalars
         x, y = a, b
-      msgs.append("not equal lhs = {}".format(x))
-      msgs.append("not equal rhs = {}".format(y))
+      msgs.append("not equal lhs = %r" % x)
+      msgs.append("not equal rhs = %r" % y)
       # With Python 3, we need to make sure the dtype matches between a and b.
       b = b.astype(a.dtype)
       np.testing.assert_array_equal(a, b, err_msg="\n".join(msgs))

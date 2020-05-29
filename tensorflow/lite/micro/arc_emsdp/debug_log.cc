@@ -15,17 +15,19 @@ limitations under the License.
 
 #include "tensorflow/lite/micro/debug_log.h"
 
-#include <cstring>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
-// Print to debug console by default. One can define next to extend destinations set:
-// EMSDP_LOG_TO_MEMORY 
-//   : fill .debug_log memory region (data section) with passed chars. 
-// EMSDP_LOG_TO_HOST 
-//   : Use MetaWare HostLink to print output log. Requires Synopsys MetaWare debugger  
-// EMSDP_LOG_TO_UART 
-//   : use default debug UART (out to FTDI channel 0). The same USB Port is used for JTAG.
+// Print to debug console by default. One can define next to extend destinations
+// set: EMSDP_LOG_TO_MEMORY
+//   : fill .debug_log memory region (data section) with passed chars.
+// EMSDP_LOG_TO_HOST
+//   : Use MetaWare HostLink to print output log. Requires Synopsys MetaWare
+//   debugger
+// EMSDP_LOG_TO_UART
+//   : use default debug UART (out to FTDI channel 0). The same USB Port is used
+//   for JTAG.
 #define EMSDP_LOG_TO_UART
 
 // Memory size for symbols dump in EMSDP_LOG_TO_MEMORY destination
@@ -48,12 +50,10 @@ typedef volatile struct dw_uart_reg {
   uint32_t CPR; /* Component parameter register */
 } DW_UART_REG;
 
-
-
-// For simplicity we assume U-boot has already initialized debug console during 
-// application loading (or on reset). Hence, we use only status and data registers 
-// to organize blocking loop for printing symbols. No input and no IRQ handling. 
-// See embarc_osp repository for full EMSDP uart driver.
+// For simplicity we assume U-boot has already initialized debug console during
+// application loading (or on reset). Hence, we use only status and data
+// registers to organize blocking loop for printing symbols. No input and no IRQ
+// handling. See embarc_osp repository for full EMSDP uart driver.
 // (https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_osp)
 void DbgUartSendStr(const char* s) {
   DW_UART_REG* uart_reg_ptr = (DW_UART_REG*)(EMSDP_DBG_UART_BASE);
@@ -66,9 +66,8 @@ void DbgUartSendStr(const char* s) {
     else
       uart_is_ready = ((uart_reg_ptr->LSR & DW_UART_LSR_TXD_EMPTY) != 0);
 
-    // Send char if uart is ready. 
-    if (uart_is_ready)
-      uart_reg_ptr->DATA = *src++;
+    // Send char if uart is ready.
+    if (uart_is_ready) uart_reg_ptr->DATA = *src++;
   }
 }
 
@@ -79,7 +78,7 @@ void DbgUartSendStr(const char* s) {
 void LogToMem(const char* s) {
   static int cursor = 0;
 #pragma Bss(".debug_log")
-  volatile static char debug_log_mem[EMSDP_LOG_TO_MEMORY_SIZE];
+  static volatile char debug_log_mem[EMSDP_LOG_TO_MEMORY_SIZE];
 #pragma Bss()
 
   const char* src = s;
@@ -90,7 +89,6 @@ void LogToMem(const char* s) {
   debug_log_mem[cursor] = '^';
 }
 
-
 extern "C" void DebugLog(const char* s) {
 #ifndef TF_LITE_STRIP_ERROR_STRINGS
 
@@ -99,7 +97,8 @@ extern "C" void DebugLog(const char* s) {
 #endif
 
 #if defined EMSDP_LOG_TO_MEMORY
-#warning "EMSDP_LOG_TO_MEMORY is defined. View .debug_log memory region for stdout"
+#warning \
+    "EMSDP_LOG_TO_MEMORY is defined. View .debug_log memory region for stdout"
   LogToMem(s);
 #endif
 
@@ -108,7 +107,5 @@ extern "C" void DebugLog(const char* s) {
   fprintf(stderr, "%s", s);
 #endif
 
-#endif // TF_LITE_STRIP_ERROR_STRINGS
+#endif  // TF_LITE_STRIP_ERROR_STRINGS
 }
-
-

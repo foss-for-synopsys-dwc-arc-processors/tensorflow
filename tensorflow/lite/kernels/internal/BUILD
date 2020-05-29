@@ -481,6 +481,7 @@ cc_library(
         "reference/strided_slice.h",
         "reference/sub.h",
         "reference/svdf.h",
+        "reference/tanh.h",
     ],
     build_for_embedded = True,
     copts = tflite_copts(),
@@ -551,6 +552,7 @@ cc_library(
         "reference/softmax.h",
         "reference/strided_slice.h",
         "reference/sub.h",
+        "reference/tanh.h",
     ],
     copts = tflite_copts(),
     deps = [
@@ -629,7 +631,6 @@ cc_library(
         ":cppmath",
         "//tensorflow/lite:minimal_logging",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/kernels:cpu_backend_context",
         "@gemmlowp",
     ],
 )
@@ -654,7 +655,6 @@ cc_library(
         "//tensorflow/lite/kernels:cpu_backend_context",
         "//tensorflow/lite/kernels:cpu_backend_gemm",
         "@ruy//ruy",
-        "@ruy//ruy:detect_arm",
     ],
 )
 
@@ -786,7 +786,6 @@ cc_library(
     deps = [
         ":cpu_check",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/kernels:cpu_backend_context",
         "//third_party/eigen3",
     ],
 )
@@ -820,6 +819,7 @@ cc_test(
         ":quantization_util",
         ":tensor_utils",
         "//tensorflow/lite/c:common",
+        "//tensorflow/lite/kernels:cpu_backend_context",
         "//tensorflow/lite/kernels:test_util",
         "@com_google_googletest//:gtest_main",
     ],
@@ -1039,6 +1039,7 @@ cc_test(
 
 cc_library(
     name = "cpu_check",
+    srcs = ["optimized/cpu_check.cc"],
     hdrs = [
         "optimized/cpu_check.h",
         "optimized/neon_check.h",
@@ -1058,9 +1059,6 @@ cc_library(
         ":windows": tflite_deps_intel,
         "//conditions:default": [],
     },
-    deps = [
-        "@ruy//ruy:detect_arm",  # safe to use regardless of arch.
-    ],
 )
 
 cc_test(

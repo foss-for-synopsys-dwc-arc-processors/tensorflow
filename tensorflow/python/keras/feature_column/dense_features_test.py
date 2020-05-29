@@ -36,6 +36,7 @@ from tensorflow.python.keras.feature_column import dense_features as df
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import lookup_ops
 from tensorflow.python.ops import partitioned_variables
+from tensorflow.python.ops import variable_scope
 from tensorflow.python.ops import variables as variables_lib
 from tensorflow.python.platform import test
 
@@ -703,15 +704,25 @@ class EmbeddingColumnTest(test.TestCase, parameterized.TestCase):
   @parameterized.named_parameters(
       {
           'testcase_name': 'use_safe_embedding_lookup',
-          'use_safe_embedding_lookup': True
+          'use_safe_embedding_lookup': True,
+          'partition_variables': False,
       }, {
           'testcase_name': 'dont_use_safe_embedding_lookup',
-          'use_safe_embedding_lookup': False
+          'use_safe_embedding_lookup': False,
+          'partition_variables': False,
+      }, {
+          'testcase_name': 'use_safe_embedding_lookup_partitioned',
+          'use_safe_embedding_lookup': True,
+          'partition_variables': True,
+      }, {
+          'testcase_name': 'dont_use_safe_embedding_lookup_partitioned',
+          'use_safe_embedding_lookup': False,
+          'partition_variables': True,
       })
   @test_util.run_deprecated_v1
-  def test_dense_features(self, use_safe_embedding_lookup):
+  def test_dense_features(self, use_safe_embedding_lookup, partition_variables):
     # Inputs.
-    vocabulary_size = 3
+    vocabulary_size = 4
     sparse_input = sparse_tensor.SparseTensorValue(
         # example 0, ids [2]
         # example 1, ids [0, 1]
@@ -726,13 +737,20 @@ class EmbeddingColumnTest(test.TestCase, parameterized.TestCase):
     embedding_values = (
         (1., 2.),  # id 0
         (3., 5.),  # id 1
-        (7., 11.)  # id 2
+        (7., 11.),  # id 2
+        (9., 13.)  # id 3
     )
 
     def _initializer(shape, dtype, partition_info=None):
-      self.assertAllEqual((vocabulary_size, embedding_dimension), shape)
+      if partition_variables:
+        self.assertEqual([vocabulary_size, embedding_dimension],
+                         partition_info.full_shape)
+        self.assertAllEqual((2, embedding_dimension), shape)
+      else:
+        self.assertAllEqual((vocabulary_size, embedding_dimension), shape)
+        self.assertIsNone(partition_info)
+
       self.assertEqual(dtypes.float32, dtype)
-      self.assertIsNone(partition_info)
       return embedding_values
 
     # Expected lookup result, using combiner='mean'.
@@ -750,25 +768,43 @@ class EmbeddingColumnTest(test.TestCase, parameterized.TestCase):
     # Build columns.
     categorical_column = fc.categorical_column_with_identity(
         key='aaa', num_buckets=vocabulary_size)
-    embedding_column = fc.embedding_column(
-        categorical_column,
-        dimension=embedding_dimension,
-        initializer=_initializer,
-        use_safe_embedding_lookup=use_safe_embedding_lookup)
+    partitioner = None
+    if partition_variables:
+      partitioner = partitioned_variables.fixed_size_partitioner(2, axis=0)
+    with variable_scope.variable_scope('vars', partitioner=partitioner):
+      embedding_column = fc.embedding_column(
+          categorical_column,
+          dimension=embedding_dimension,
+          initializer=_initializer,
+          use_safe_embedding_lookup=use_safe_embedding_lookup)
 
-    # Provide sparse input and get dense result.
-    l = df.DenseFeatures((embedding_column,))
-    dense_features = l({'aaa': sparse_input})
+      # Provide sparse input and get dense result.
+      l = df.DenseFeatures((embedding_column,))
+      dense_features = l({'aaa': sparse_input})
 
     # Assert expected embedding variable and lookups.
     global_vars = ops.get_collection(ops.GraphKeys.GLOBAL_VARIABLES)
-    self.assertCountEqual(('dense_features/aaa_embedding/embedding_weights:0',),
-                          tuple([v.name for v in global_vars]))
+    if partition_variables:
+      self.assertCountEqual(
+          ('vars/dense_features/aaa_embedding/embedding_weights/part_0:0',
+           'vars/dense_features/aaa_embedding/embedding_weights/part_1:0'),
+          tuple([v.name for v in global_vars]))
+    else:
+      self.assertCountEqual(
+          ('vars/dense_features/aaa_embedding/embedding_weights:0',),
+          tuple([v.name for v in global_vars]))
     for v in global_vars:
       self.assertIsInstance(v, variables_lib.Variable)
     trainable_vars = ops.get_collection(ops.GraphKeys.TRAINABLE_VARIABLES)
-    self.assertCountEqual(('dense_features/aaa_embedding/embedding_weights:0',),
-                          tuple([v.name for v in trainable_vars]))
+    if partition_variables:
+      self.assertCountEqual(
+          ('vars/dense_features/aaa_embedding/embedding_weights/part_0:0',
+           'vars/dense_features/aaa_embedding/embedding_weights/part_1:0'),
+          tuple([v.name for v in trainable_vars]))
+    else:
+      self.assertCountEqual(
+          ('vars/dense_features/aaa_embedding/embedding_weights:0',),
+          tuple([v.name for v in trainable_vars]))
 
     self.evaluate(variables_lib.global_variables_initializer())
     self.evaluate(lookup_ops.tables_initializer())

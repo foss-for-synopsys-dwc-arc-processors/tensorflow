@@ -45,6 +45,7 @@ limitations under the License.
 #include "tensorflow/lite/delegates/gpu/common/status.h"
 #include "tensorflow/lite/delegates/gpu/common/tensor.h"
 #include "tensorflow/lite/delegates/gpu/common/transformations/general_transformations.h"
+#include "tensorflow/lite/delegates/utils.h"
 #include "tensorflow/lite/kernels/internal/reference/dequantize.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
@@ -401,6 +402,13 @@ class AddOperationParser : public TFLiteOperationParser {
       return absl::UnimplementedError("ADD requires two input tensors.");
     }
     // TODO(eignasheva): Add shapes check.
+    for (int i = 0; i < 2; i++) {
+      auto input = tflite::GetInput(context, tflite_node, i);
+      if (IsConstantTensor(input) && input->dims->size > 0) {
+        RETURN_IF_ERROR(CheckIfLinearConvertible(input->dims));
+      }
+    }
+
     TfLiteAddParams* tf_options = nullptr;
     return RetrieveBuiltinData(tflite_node, &tf_options);
   }
@@ -1347,6 +1355,17 @@ class PadOperationParser : public TFLiteOperationParser {
     RETURN_IF_ERROR(CheckInputsOutputs(context, tflite_node,
                                        /*runtime_inputs=*/1, /*outputs=*/1));
     RETURN_IF_ERROR(CheckTensorIsAvailable(context, tflite_node, 1));
+    auto pad_tensor = tflite::GetInput(context, tflite_node, 1);
+    if (pad_tensor->dims->size != 2) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Invalid paddings tensor dimension: expected 2 dim, got ",
+          pad_tensor->dims->size, " dim"));
+    }
+    if (pad_tensor->dims->data[0] != 4 || pad_tensor->dims->data[1] != 2) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Invalid paddings tensor shape: expected 4x2, got ",
+          pad_tensor->dims->data[0], "x", pad_tensor->dims->data[1]));
+    }
     return absl::OkStatus();
   }
 
@@ -1370,6 +1389,7 @@ class PadOperationParser : public TFLiteOperationParser {
 
     // 4x2 tensor with paddings.
     if (paddings.shape.h != 4 || paddings.shape.w != 2) {
+      // It shouldn't fail here since it's checked at IsSupported().
       return absl::InvalidArgumentError(
           "Paddings tensor has unexpected shape.");
     }
@@ -2350,7 +2370,7 @@ class TransformTensorOperationParser : public TFLiteOperationParser {
  private:
 };
 
-class TransformTensorV2OperationParser : public TFLiteOperationParser {
+class TransformTensorBilinearV2OperationParser : public TFLiteOperationParser {
  public:
   absl::Status IsSupported(const TfLiteContext* context,
                            const TfLiteNode* tflite_node,
@@ -2368,7 +2388,7 @@ class TransformTensorV2OperationParser : public TFLiteOperationParser {
     RETURN_IF_ERROR(reader->AddInput(node, 1));  // bbox
     RETURN_IF_ERROR(reader->AddOutputs(node));
 
-    std::string op_name = "transform_tensor_v2";
+    std::string op_name = "transform_tensor_bilinear_v2";
     node->operation.type = op_name;
     BHWC output_shape;
     RETURN_IF_ERROR(
@@ -2440,15 +2460,15 @@ class TransformLandmarksV2OperationParser : public TFLiteOperationParser {
     RETURN_IF_ERROR(reader->AddOutputs(node));
     std::string op_name = "transform_landmarks_v2";
     node->operation.type = op_name;
-    BHWC output_shape;
+
+    auto output_value = graph->FindOutputs(node->id)[0];
+    output_value->tensor.shape = graph->FindInputs(node->id)[0]->tensor.shape;
+    BHWC output_shape = output_value->tensor.shape;
     RETURN_IF_ERROR(
         ParseCustomAttributes(op_name, tflite_node->custom_initial_data,
                               tflite_node->custom_initial_data_size,
                               &(node->operation.attributes), &output_shape));
 
-    auto output_value = graph->FindOutputs(node->id)[0];
-
-    output_value->tensor.shape = graph->FindInputs(node->id)[0]->tensor.shape;
     return absl::OkStatus();
   }
 
@@ -2731,8 +2751,8 @@ std::unique_ptr<TFLiteOperationParser> NewOperationParser(
       if (custom_name == "TransformTensor") {
         return std::make_unique<TransformTensorOperationParser>();
       }
-      if (custom_name == "TransformTensorV2") {
-        return std::make_unique<TransformTensorV2OperationParser>();
+      if (custom_name == "TransformTensorBilinearV2") {
+        return std::make_unique<TransformTensorBilinearV2OperationParser>();
       }
       if (custom_name == "TransformLandmarks") {
         return std::make_unique<TransformLandmarksOperationParser>();
@@ -2762,10 +2782,13 @@ absl::Status IsSupported(const TfLiteContext* context, TfLiteNode* node,
       ->IsSupported(context, node, registration);
 }
 
-bool IsAllAllowedTensors(TfLiteContext* context, const TfLiteIntArray* array,
+bool IsAllAllowedTensors(TfLiteContext* context,
+                         const TfLiteIntArray* tensor_indices,
                          bool allow_quant_ops = false) {
-  for (int i = 0; i < array->size; ++i) {
-    const TfLiteTensor* t = context->tensors + array->data[i];
+  for (int i = 0; i < tensor_indices->size; ++i) {
+    int tensor_idx = tensor_indices->data[i];
+    if (tensor_idx == kTfLiteOptionalTensor) continue;
+    const TfLiteTensor* t = &context->tensors[tensor_idx];
     bool type_supported =
         (t->type == kTfLiteFloat32 || t->type == kTfLiteFloat16);
     if (allow_quant_ops) {
@@ -2809,7 +2832,8 @@ TfLiteIntArray* GetOpsToReplace(TfLiteContext* context, bool allow_quant_ops,
     return true;
   };
 
-  GraphWithDequantPartitionHelper partition_helper(context, node_supported_fn);
+  delegates::FP16GraphPartitionHelper partition_helper(context,
+                                                       node_supported_fn);
   std::set<std::string> unsupported_nodes_info;
   if (partition_helper.Partition(&unsupported_nodes_info) != kTfLiteOk) {
     return TfLiteIntArrayCreate(0);

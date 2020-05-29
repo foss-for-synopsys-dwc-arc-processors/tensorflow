@@ -35,14 +35,12 @@ namespace {
 
 template <typename T>
 void TestAveragePoolingQuantized(
-    const int* input_dims_data,
-    const T* input_data, const float input_min,
+    const int* input_dims_data, const T* input_data, const float input_min,
     const float input_max, const int filter_height, const int filter_width,
     const int stride_height, const int stride_width,
-    const T* expected_output_data,
-    const int* output_dims_data, float output_min,
-    float output_max, TfLitePadding padding, TfLiteFusedActivation activation,
-    T* output_data) {
+    const T* expected_output_data, const int* output_dims_data,
+    float output_min, float output_max, TfLitePadding padding,
+    TfLiteFusedActivation activation, T* output_data) {
   static_assert(sizeof(T) == 1, "Only int8/uint8 data types allowed.");
 
   TfLiteIntArray* input_dims = IntArrayFromInts(input_dims_data);
@@ -102,20 +100,17 @@ void TestAveragePoolingQuantized(
   }
 
   for (int i = 0; i < output_dims_count; ++i) {
-    TF_LITE_MICRO_EXPECT_NEAR(expected_output_data[i], output_data[i],
-                              1e-5f);
+    TF_LITE_MICRO_EXPECT_NEAR(expected_output_data[i], output_data[i], 1e-5f);
   }
 }
 
 template <typename T>
-void TestMaxPoolQuantized(const int* input_dims_data,
-                          const T* input_data, float input_min,
-                          float input_max, int filter_width, int filter_height,
-                          int stride_width, int stride_height,
-                          const T* expected_output_data,
+void TestMaxPoolQuantized(const int* input_dims_data, const T* input_data,
+                          float input_min, float input_max, int filter_width,
+                          int filter_height, int stride_width,
+                          int stride_height, const T* expected_output_data,
                           float output_min, float output_max,
-                          const int* output_dims_data,
-                          TfLitePadding padding,
+                          const int* output_dims_data, TfLitePadding padding,
                           TfLiteFusedActivation activation, T* output_data) {
   static_assert(sizeof(T) == 1, "Only int8/uint8 data types allowed.");
 
@@ -204,17 +199,15 @@ TF_LITE_MICRO_TEST(SystemAveragePoolTestInt1) {
   const int8_t kGolden1Data[] = {1, 1, 1};
 
   tflite::testing::TestAveragePoolingQuantized(
-      kInput1Shape,  // Input shape
-      kInput1Data,
-      input_min, input_max,  // input quantization range
-      2, 2,                  // filter height, filter width
-      1, 1,                  // stride height, stride width
+      kInput1Shape,                       // Input shape
+      kInput1Data, input_min, input_max,  // input quantization range
+      2, 2,                               // filter height, filter width
+      1, 1,                               // stride height, stride width
       kGolden1Data,
-      kOutput1Shape,         // Output shape
+      kOutput1Shape,           // Output shape
       output_min, output_max,  // output quantization range
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
-
 
 TF_LITE_MICRO_TEST(LocalAveragePoolTestInt1) {
   using tflite::testing::F2QS;
@@ -225,21 +218,20 @@ TF_LITE_MICRO_TEST(LocalAveragePoolTestInt1) {
   const float output_max = 127;
   int8_t output_data[3];
 
-#pragma Bss(".Zdata")  
+#pragma Bss(".Zdata")
   const int kInput1Shape[] = {4, 1, 2, 4, 1};
   const int8_t kInput1Data[] = {1, 1, 1, 1, 1, 1, 1, 1};
   const int kOutput1Shape[] = {4, 1, 1, 3, 1};
   const int8_t kGolden1Data[] = {1, 1, 1};
-#pragma Bss()  
+#pragma Bss()
 
   tflite::testing::TestAveragePoolingQuantized(
-      kInput1Shape,  // Input shape
-      kInput1Data,
-      input_min, input_max,  // input quantization range
-      2, 2,                  // filter height, filter width
-      1, 1,                  // stride height, stride width
+      kInput1Shape,                       // Input shape
+      kInput1Data, input_min, input_max,  // input quantization range
+      2, 2,                               // filter height, filter width
+      1, 1,                               // stride height, stride width
       kGolden1Data,
-      kOutput1Shape,         // Output shape
+      kOutput1Shape,           // Output shape
       output_min, output_max,  // output quantization range
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
@@ -255,28 +247,22 @@ TF_LITE_MICRO_TEST(SystemAveragePoolTestInt2) {
   int8_t output_data[45];
 
   const int kInput2Shape[] = {4, 1, 6, 10, 1};
-  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  const int kOutput2Shape[] = {4, 1, 5, 9, 1}; 
-  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1};
-
+  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  const int kOutput2Shape[] = {4, 1, 5, 9, 1};
+  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
   tflite::testing::TestAveragePoolingQuantized(
-      kInput2Shape,  // Input shape
-      kInput2Data,
-      input_min, input_max,  // input quantization range
-      2, 2,                  // filter height, filter width
-      1, 1,                  // stride height, stride width
+      kInput2Shape,                       // Input shape
+      kInput2Data, input_min, input_max,  // input quantization range
+      2, 2,                               // filter height, filter width
+      1, 1,                               // stride height, stride width
       kGolden2Data,
-      kOutput2Shape,         // Output shape
+      kOutput2Shape,           // Output shape
       output_min, output_max,  // output quantization range
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
@@ -290,30 +276,25 @@ TF_LITE_MICRO_TEST(LocalAveragePoolTestInt2) {
   const float output_max = 127;
   int8_t output_data[45];
 
-#pragma Bss(".Zdata")  
+#pragma Bss(".Zdata")
   const int kInput2Shape[] = {4, 1, 6, 10, 1};
-  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  const int kOutput2Shape[] = {4, 1, 5, 9, 1}; 
-  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1};
-#pragma Bss()  
+  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  const int kOutput2Shape[] = {4, 1, 5, 9, 1};
+  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+#pragma Bss()
 
   tflite::testing::TestAveragePoolingQuantized(
-      kInput2Shape,  // Input shape
-      kInput2Data,
-      input_min, input_max,  // input quantization range
-      2, 2,                  // filter height, filter width
-      1, 1,                  // stride height, stride width
+      kInput2Shape,                       // Input shape
+      kInput2Data, input_min, input_max,  // input quantization range
+      2, 2,                               // filter height, filter width
+      1, 1,                               // stride height, stride width
       kGolden2Data,
-      kOutput2Shape,         // Output shape
+      kOutput2Shape,           // Output shape
       output_min, output_max,  // output quantization range
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
@@ -339,11 +320,9 @@ TF_LITE_MICRO_TEST(SystemMaxPoolTestInt1) {
 
   tflite::testing::TestMaxPoolQuantized(
       kInput1Shape,  // Input shape
-      kInput1Data,
-      input_min, input_max, filter_width, filter_height, stride_width,
-      stride_height,
-      kGolden1Data,
-      output_min, output_max, kOutput1Shape,  // Output shape
+      kInput1Data, input_min, input_max, filter_width, filter_height,
+      stride_width, stride_height, kGolden1Data, output_min, output_max,
+      kOutput1Shape,  // Output shape
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
 
@@ -369,14 +348,11 @@ TF_LITE_MICRO_TEST(LocalMaxPoolTestInt1) {
 
   tflite::testing::TestMaxPoolQuantized(
       kInput1Shape,  // Input shape
-      kInput1Data,
-      input_min, input_max, filter_width, filter_height, stride_width,
-      stride_height,
-      kGolden1Data,
-      output_min, output_max, kOutput1Shape,  // Output shape
+      kInput1Data, input_min, input_max, filter_width, filter_height,
+      stride_width, stride_height, kGolden1Data, output_min, output_max,
+      kOutput1Shape,  // Output shape
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
-
 
 // Test group MAX 2
 TF_LITE_MICRO_TEST(SystemMaxPoolTestInt2) {
@@ -393,26 +369,20 @@ TF_LITE_MICRO_TEST(SystemMaxPoolTestInt2) {
   int stride_height = 1;
 
   const int kInput2Shape[] = {4, 1, 6, 10, 1};
-  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  const int kOutput2Shape[] = {4, 1, 5, 9, 1}; 
-  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1};
+  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  const int kOutput2Shape[] = {4, 1, 5, 9, 1};
+  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
   tflite::testing::TestMaxPoolQuantized(
       kInput2Shape,  // Input shape
-      kInput2Data,
-      input_min, input_max, filter_width, filter_height, stride_width,
-      stride_height,
-      kGolden2Data,
-      output_min, output_max, kOutput2Shape,  // Output shape
+      kInput2Data, input_min, input_max, filter_width, filter_height,
+      stride_width, stride_height, kGolden2Data, output_min, output_max,
+      kOutput2Shape,  // Output shape
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
 
@@ -429,29 +399,23 @@ TF_LITE_MICRO_TEST(LocalMaxPoolTestInt2) {
   int stride_width = 1;
   int stride_height = 1;
 
- #pragma Bss(".Zdata") 
+#pragma Bss(".Zdata")
   const int kInput2Shape[] = {4, 1, 6, 10, 1};
-  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                               1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-  const int kOutput2Shape[] = {4, 1, 5, 9, 1}; 
-  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                1, 1, 1, 1, 1};
+  const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  const int kOutput2Shape[] = {4, 1, 5, 9, 1};
+  const int8_t kGolden2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 #pragma Bss()
 
   tflite::testing::TestMaxPoolQuantized(
       kInput2Shape,  // Input shape
-      kInput2Data,
-      input_min, input_max, filter_width, filter_height, stride_width,
-      stride_height,
-      kGolden2Data,
-      output_min, output_max, kOutput2Shape,  // Output shape
+      kInput2Data, input_min, input_max, filter_width, filter_height,
+      stride_width, stride_height, kGolden2Data, output_min, output_max,
+      kOutput2Shape,  // Output shape
       kTfLitePaddingValid, kTfLiteActNone, output_data);
 }
 

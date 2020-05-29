@@ -91,6 +91,15 @@ std::unique_ptr<OperationPass<ModuleOp>> CreateResourceDeviceInferencePass();
 // of their aliasing output arguments.
 std::unique_ptr<OperationPass<ModuleOp>> CreatePromoteResourcesToArgsPass();
 
+// Creates a pass that promotes tf.VarHandleOp to resource arguments for all
+// functions.
+std::unique_ptr<OperationPass<ModuleOp>> CreatePromoteVarHandlesToArgsPass();
+
+// Creates a pass that converts readonly reference variables to the
+// corresponding resource variables.
+std::unique_ptr<OperationPass<FuncOp>>
+CreateConvertReadonlyReferenceVariablesToResourceVariablesPass();
+
 // Marks function visibility using tf.entry_function specification. That is,
 // functions with tf.entry_function attributes are marked with public
 // visibility while the other functions are marked with private visibility.

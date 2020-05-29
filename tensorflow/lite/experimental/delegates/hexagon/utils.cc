@@ -42,6 +42,8 @@ bool InputsWithCorrectTypes(
     const std::vector<std::vector<TfLiteType>>& per_input_possible_types) {
   if (node->inputs->size != per_input_possible_types.size()) return false;
   for (int i = 0; i < per_input_possible_types.size(); ++i) {
+    // Skip optional tensor.
+    if (node->inputs->data[i] == -1) continue;
     bool type_found = false;
     for (auto possible_type : per_input_possible_types[i]) {
       if (TensorTypeMatch(node->inputs->data[i], context, possible_type)) {
@@ -79,15 +81,19 @@ bool CheckOpVersion(const TfLiteRegistration* registration) {
     case kTfLiteBuiltinConcatenation:
     case kTfLiteBuiltinL2Normalization:
     case kTfLiteBuiltinLogistic:
+    case kTfLiteBuiltinMaximum:
     case kTfLiteBuiltinMaxPool2d:
     case kTfLiteBuiltinMean:
+    case kTfLiteBuiltinMinimum:
     case kTfLiteBuiltinMirrorPad:
     case kTfLiteBuiltinMul:
+    case kTfLiteBuiltinPack:
     case kTfLiteBuiltinPad:
     case kTfLiteBuiltinQuantize:
     case kTfLiteBuiltinRelu6:
     case kTfLiteBuiltinResizeBilinear:
     case kTfLiteBuiltinResizeNearestNeighbor:
+    case kTfLiteBuiltinSlice:
     case kTfLiteBuiltinSoftmax:
     case kTfLiteBuiltinSpaceToDepth:
     case kTfLiteBuiltinSplit:
@@ -114,6 +120,9 @@ bool IsNodeSupportedByHexagon(const TfLiteRegistration* registration,
   int tensor_id;
   for (int i = 0; i < node->inputs->size; ++i) {
     tensor_id = node->inputs->data[i];
+    // Skip optional tensors. Builders should handle optional tensors
+    // not available.
+    if (tensor_id == -1) continue;
     const auto& tensor = context->tensors[tensor_id];
     if (tensor.dims->size > 4) return false;
   }
@@ -133,7 +142,7 @@ bool IsNodeSupportedByHexagon(const TfLiteRegistration* registration,
         return false;
       const TfLiteAddParams* add_params =
           reinterpret_cast<const TfLiteAddParams*>(node->builtin_data);
-      return IsActivationReluOrNone(add_params->activation);
+      return add_params->activation == kTfLiteActNone;
     }
     case kTfLiteBuiltinMul: {
       if (!InputsWithCorrectTypes(
@@ -152,7 +161,7 @@ bool IsNodeSupportedByHexagon(const TfLiteRegistration* registration,
         return false;
       const TfLiteSubParams* sub_params =
           reinterpret_cast<const TfLiteSubParams*>(node->builtin_data);
-      return IsActivationReluOrNone(sub_params->activation);
+      return sub_params->activation == kTfLiteActNone;
     }
     case kTfLiteBuiltinSum:
       // TODO(b/139277813): Enable these when they pass unit tests. These seem
@@ -189,20 +198,21 @@ bool IsNodeSupportedByHexagon(const TfLiteRegistration* registration,
       if (!InputsWithCorrectTypes(node, context,
                                   {{kTfLiteUInt8, kTfLiteInt8},
                                    {kTfLiteUInt8, kTfLiteInt8},
-                                   {kTfLiteInt32}}))
+                                   {kTfLiteInt32, kTfLiteNoType}})) {
         return false;
+      }
 
-      const auto& weights_tensor = context->tensors[node->inputs->data[1]];
-      const auto& bias_tensor = context->tensors[node->inputs->data[2]];
-      const bool weights_and_bias_const =
-          weights_tensor.allocation_type == kTfLiteMmapRo &&
-          bias_tensor.allocation_type == kTfLiteMmapRo;
+      bool bias_const_or_no_bias = true;
+      if (node->inputs->data[2] != -1) {
+        const auto& bias_tensor = context->tensors[node->inputs->data[2]];
+        bias_const_or_no_bias = bias_tensor.allocation_type == kTfLiteMmapRo;
+      }
 
       const TfLiteFullyConnectedParams* matmul_params =
           reinterpret_cast<const TfLiteFullyConnectedParams*>(
               node->builtin_data);
-      return (weights_and_bias_const &&
-              IsActivationReluOrNone(matmul_params->activation) &&
+      return (bias_const_or_no_bias &&
+              matmul_params->activation == kTfLiteActNone &&
               matmul_params->keep_num_dims == false &&
               matmul_params->weights_format ==
                   kTfLiteFullyConnectedWeightsFormatDefault);
@@ -333,7 +343,8 @@ bool IsNodeSupportedByHexagon(const TfLiteRegistration* registration,
         return false;
       const auto& input_tensor = context->tensors[node->inputs->data[1]];
       const bool is_four_dim_or_less = input_tensor.dims->size < 5;
-      // We need splitting axis to be constant, so Hexagon knows output shapes.
+      // We need splitting axis to be constant, so Hexagon knows output
+      // shapes.
       return is_four_dim_or_less &&
              IsConstantTensor(GetInput(context, node, 0));
     }
@@ -365,6 +376,35 @@ bool IsNodeSupportedByHexagon(const TfLiteRegistration* registration,
     case kTfLiteBuiltinQuantize: {
       return InputsWithCorrectTypes(node, context,
                                     {{kTfLiteUInt8, kTfLiteInt8}});
+    }
+    case kTfLiteBuiltinMinimum: {
+      return InputsWithCorrectTypes(
+          node, context,
+          {{kTfLiteUInt8, kTfLiteInt8}, {kTfLiteUInt8, kTfLiteInt8}});
+    }
+    case kTfLiteBuiltinMaximum: {
+      return InputsWithCorrectTypes(
+          node, context,
+          {{kTfLiteUInt8, kTfLiteInt8}, {kTfLiteUInt8, kTfLiteInt8}});
+    }
+    case kTfLiteBuiltinSlice: {
+      const auto& begins_tensor = context->tensors[node->inputs->data[1]];
+      const auto& sizes_tensor = context->tensors[node->inputs->data[2]];
+      if (!IsConstantTensor(&begins_tensor) || !IsConstantTensor(&sizes_tensor))
+        return false;
+      return InputsWithCorrectTypes(node, context,
+                                    {{kTfLiteUInt8, kTfLiteInt8},
+                                     {kTfLiteInt32, kTfLiteInt64},
+                                     {kTfLiteInt32, kTfLiteInt64}});
+    }
+    case kTfLiteBuiltinPack: {
+      // All tensors must be 8-bit.
+      for (int i = 0; i < node->inputs->size; ++i) {
+        if (!TensorTypeMatch(node->inputs->data[i], context, kTfLiteUInt8) &&
+            !TensorTypeMatch(node->inputs->data[i], context, kTfLiteInt8))
+          return false;
+      }
+      return true;
     }
     default:
       return false;

@@ -318,17 +318,14 @@ TensorHandle::TensorHandle(Device* d, Device* op_device,
 }
 
 Status TensorHandle::CreatePackedHandle(std::vector<TensorHandle*>&& handles,
+                                        const tensorflow::DataType dtype,
+                                        const tensorflow::TensorShape& shape,
                                         EagerContext* ctx,
                                         TensorHandle** packed_handle) {
   if (handles.empty()) {
     return errors::InvalidArgument("Handles should not be empty.");
   }
 
-  // Get the dtype and shape from the fisrt handle since all handles have the
-  // same dtype and shape.
-  tensorflow::DataType dtype = handles.at(0)->dtype;
-  tensorflow::TensorShape shape;
-  TF_RETURN_IF_ERROR(handles.at(0)->Shape(&shape));
   ResourceHandleInfo resource_handle_info;
   if (dtype == DT_RESOURCE) {
     TF_RETURN_IF_ERROR(
@@ -358,6 +355,22 @@ Status TensorHandle::CreatePackedHandle(std::vector<TensorHandle*>&& handles,
       new TensorHandle(std::move(handles), device, dtype, shape, ctx);
   (*packed_handle)->SetResourceHandleInfo(std::move(resource_handle_info));
   return Status::OK();
+}
+
+Status TensorHandle::CreatePackedHandle(std::vector<TensorHandle*>&& handles,
+                                        EagerContext* ctx,
+                                        TensorHandle** packed_handle) {
+  if (handles.empty()) {
+    return errors::InvalidArgument("Handles should not be empty.");
+  }
+
+  // Get the dtype and shape from the fisrt handle since all handles have the
+  // same dtype and shape.
+  tensorflow::DataType dtype = handles.at(0)->dtype;
+  tensorflow::TensorShape shape;
+  TF_RETURN_IF_ERROR(handles.at(0)->Shape(&shape));
+  return CreatePackedHandle(std::move(handles), dtype, shape, ctx,
+                            packed_handle);
 }
 
 TensorHandle::TensorHandle(std::vector<TensorHandle*>&& handles, Device* device,
@@ -692,8 +705,8 @@ Status TensorHandle::AddEmptyLocalMirror(const Device* d) {
 }
 
 #if !defined(IS_MOBILE_PLATFORM)
-Status TensorHandle::RemoteAddressUntilReady(const Device* d, int64* op_id,
-                                             int32* output_num) const {
+Status TensorHandle::RemoteAddress(const Device* d, const bool wait_until_ready,
+                                   int64* op_id, int32* output_num) const {
   DVLOG(3) << "RemoteAddress on TensorHandle: " << this << " device: " << d
            << " " << d->name();
 
@@ -701,7 +714,8 @@ Status TensorHandle::RemoteAddressUntilReady(const Device* d, int64* op_id,
     tf_shared_lock l(mu_);
     auto mirror = remote_mirrors_.find(d->name());
     if (mirror != remote_mirrors_.end()) {
-      return mirror->second.OpIdAndOutputNumUntilReady(op_id, output_num);
+      return mirror->second.OpIdAndOutputNum(wait_until_ready, op_id,
+                                             output_num);
     }
 
     return errors::FailedPrecondition(
@@ -713,7 +727,7 @@ Status TensorHandle::RemoteAddressUntilReady(const Device* d, int64* op_id,
   }
 
   auto& data = absl::get<RemoteTensorHandleData>(data_);
-  return data.OpIdAndOutputNumUntilReady(op_id, output_num);
+  return data.OpIdAndOutputNum(wait_until_ready, op_id, output_num);
 }
 
 bool TensorHandle::HasRemoteMirror(const Device* d,

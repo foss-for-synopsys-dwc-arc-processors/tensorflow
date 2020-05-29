@@ -38,9 +38,41 @@ cc_library(
 )
 
 cc_library(
+    name = "tpu_compilation_device",
+    srcs = ["tpu_compilation_device.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":tpu_defs",
+        ":tpu_node_device_util",
+        "//tensorflow/compiler/tf2xla:xla_compiler",
+    ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "tpu_node_device_util",
+    srcs = ["tpu_node_device_util.cc"],
+    hdrs = ["tpu_node_device_util.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tensorflow/compiler/tf2xla:tf2xla_util",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:protos_all_cc",
+    ],
+)
+
+cc_library(
     name = "tpu_defs",
     srcs = ["tpu_defs.cc"],
     hdrs = ["tpu_defs.h"],
+    deps = ["//tensorflow/core:protos_all_cc"],
+)
+
+cc_library(
+    name = "tpu_configuration",
+    srcs = ["tpu_configuration.cc"],
+    hdrs = ["tpu_configuration.h"],
+    deps = ["//tensorflow/core:framework"],
 )
 
 cc_library(
@@ -58,4 +90,12 @@ cc_library(
     deps = [
         "//tensorflow/c:tf_status",
     ],
+)
+
+cc_library(
+    name = "tpu_library_loader",
+    srcs = ["tpu_library_loader.cc"],
+    hdrs = ["tpu_library_loader.h"],
+    visibility = ["//tensorflow:__subpackages__"],
+    deps = ["//tensorflow/core/platform:status"],
 )

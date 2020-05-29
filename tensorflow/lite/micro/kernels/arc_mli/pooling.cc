@@ -14,17 +14,16 @@ limitations under the License.
 ==============================================================================*/
 #include "tensorflow/lite/kernels/internal/reference/pooling.h"
 
-#include "mli_api.h"
+#include "mli_api.h"  // NOLINT
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/kernels/internal/reference/integer_ops/pooling.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/kernels/padding.h"
-#include "tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h"
-#include "tensorflow/lite/micro/kernels/arc_mli/scratch_buf_mgr.h"
-#include "tensorflow/lite/micro/kernels/arc_mli/mli_tf_utils.h"
 #include "tensorflow/lite/micro/kernels/arc_mli/mli_slicers.h"
-
+#include "tensorflow/lite/micro/kernels/arc_mli/mli_tf_utils.h"
+#include "tensorflow/lite/micro/kernels/arc_mli/scratch_buf_mgr.h"
+#include "tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h"
 
 namespace tflite {
 namespace ops {
@@ -42,13 +41,11 @@ struct OpData {
 
 enum MliPoolingType { AveragePooling = 0, MaxPooling = 1 };
 
-
 bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                      const TfLitePoolParams* params) {
   // MLI optimized version only supports int8 dataype and no fused Relu
   return (input->type == kTfLiteInt8 && params->activation == kTfLiteActNone);
 }
-
 
 TfLiteStatus CalculateOpData(const TfLiteContext* context,
                              const TfLitePoolParams* params,
@@ -69,10 +66,10 @@ TfLiteStatus CalculateOpData(const TfLiteContext* context,
   return kTfLiteOk;
 }
 
-TfLiteStatus AverageEvalFloat(TfLiteContext* context,
-                              const TfLiteNode* node,
-                              const TfLitePoolParams* params, const OpData* data,
-                              const TfLiteTensor* input, TfLiteTensor* output) {
+TfLiteStatus AverageEvalFloat(TfLiteContext* context, const TfLiteNode* node,
+                              const TfLitePoolParams* params,
+                              const OpData* data, const TfLiteTensor* input,
+                              TfLiteTensor* output) {
 #if !defined(TF_LITE_STRIP_REFERENCE_IMPL)
   float activation_min, activation_max;
   CalculateActivationRange(params->activation, &activation_min,
@@ -99,7 +96,7 @@ TfLiteStatus AverageEvalFloat(TfLiteContext* context,
 #endif
 }
 
-//Prepare MLI tensors and run Average or Max Pooling
+// Prepare MLI tensors and run Average or Max Pooling
 TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
                      const OpData* data, const TfLiteTensor* input,
                      TfLiteTensor* output, const MliPoolingType pooling_type) {
@@ -126,7 +123,7 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
     cfg.padding_top = data->padding.height;
     cfg.padding_bottom = data->padding.height + data->padding.height_offset;
   }
-  
+
   const int height_dimension = 1;
   int in_slice_height = 0;
   int out_slice_height = 0;
@@ -269,24 +266,24 @@ TfLiteStatus MaxEvalQuantized(TfLiteContext* context, TfLiteNode* node,
   op_params.quantized_activation_max = activation_max;
 
   if (input->type == kTfLiteUInt8) {
-      reference_ops::MaxPool(
-          op_params, GetTensorShape(input), GetTensorData<uint8_t>(input),
-          GetTensorShape(output), GetTensorData<uint8_t>(output));
+    reference_ops::MaxPool(
+        op_params, GetTensorShape(input), GetTensorData<uint8_t>(input),
+        GetTensorShape(output), GetTensorData<uint8_t>(output));
   } else {
-      reference_integer_ops::MaxPool(
-          op_params, GetTensorShape(input), GetTensorData<int8_t>(input),
-          GetTensorShape(output), GetTensorData<int8_t>(output));
+    reference_integer_ops::MaxPool(
+        op_params, GetTensorShape(input), GetTensorData<int8_t>(input),
+        GetTensorShape(output), GetTensorData<int8_t>(output));
   }
   return kTfLiteOk;
 #else
-  TF_LITE_KERNEL_LOG(context,
+  TF_LITE_KERNEL_LOG(
+      context,
       "Node configuration or type %s (%d) is not supported by ARC MLI Library.",
       TfLiteTypeGetName(input->type), input->type);
   return kTfLiteError;
 #endif
 }
 }  // namespace
-
 
 TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
   auto* params = reinterpret_cast<TfLitePoolParams*>(node->builtin_data);

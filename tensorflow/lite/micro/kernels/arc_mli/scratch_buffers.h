@@ -16,23 +16,24 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_ARC_SCRATCH_BUFFERS_H_
 #define TENSORFLOW_LITE_MICRO_ARC_SCRATCH_BUFFERS_H_
 
+#include "mli_api.h"  // NOLINT
 #include "tensorflow/lite/c/common.h"
-#include "mli_api.h"
 
 namespace tflite {
 namespace ops {
 namespace micro {
 
-
 void init_arc_scratch_buffers(void);
-void *get_arc_scratch_buffer(int size);// Function to assign fast memory from one of 3 scratch buffers.
+void* get_arc_scratch_buffer(
+    int size);  // Function to assign fast memory from one of 3 scratch buffers.
 
-void get_arc_scratch_buffer_max_size(int *size);
-void get_arc_scratch_buffer_two_max_sizes(int *size1, int *size2);
+void get_arc_scratch_buffer_max_size(int* size);
+void get_arc_scratch_buffer_two_max_sizes(int* size1, int* size2);
 
 static inline bool inside_arc_dccm(void* p) {
 #if core_config_dccm_present
-  return ((unsigned)p >= core_config_dccm_base) && ((unsigned)p < core_config_dccm_base + core_config_dccm_size);
+  return ((unsigned)p >= core_config_dccm_base) &&
+         ((unsigned)p < core_config_dccm_base + core_config_dccm_size);
 #else
   return false;
 #endif
@@ -40,7 +41,8 @@ static inline bool inside_arc_dccm(void* p) {
 
 static inline bool inside_arc_xccm(void* p) {
 #if core_config_xy
-  return ((unsigned)p >= core_config_xy_x_base) && ((unsigned)p < core_config_xy_x_base + core_config_xy_size);
+  return ((unsigned)p >= core_config_xy_x_base) &&
+         ((unsigned)p < core_config_xy_x_base + core_config_xy_size);
 #else
   return false;
 #endif
@@ -48,14 +50,14 @@ static inline bool inside_arc_xccm(void* p) {
 
 static inline bool inside_arc_yccm(void* p) {
 #if core_config_xy
-  return ((unsigned)p >= core_config_xy_y_base) && ((unsigned)p < core_config_xy_y_base + core_config_xy_size);
+  return ((unsigned)p >= core_config_xy_y_base) &&
+         ((unsigned)p < core_config_xy_y_base + core_config_xy_size);
 #else
   return false;
 #endif
 }
 
-static inline
-bool inside_arc_ccm(void* p) {
+static inline bool inside_arc_ccm(void* p) {
   return inside_arc_dccm(p) || inside_arc_xccm(p) || inside_arc_yccm(p);
 }
 

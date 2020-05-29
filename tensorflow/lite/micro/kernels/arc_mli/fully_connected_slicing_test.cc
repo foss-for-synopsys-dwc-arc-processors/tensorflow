@@ -132,12 +132,14 @@ TF_LITE_MICRO_TEST(SystemSimpleTestQuantized1) {
   const float output_max = 127.0f;
 
   const int input_dims_data[] = {2, 2, 10};
-  const int8_t input_data[] = {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2};
+  const int8_t input_data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                               2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int weights_dims_data[] = {2, 3, 10};
-  const int8_t weights_data[] = {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2};
+  const int8_t weights_data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int bias_dims_data[] = {1, 3};
-  const int32_t bias_data[] = {1,1,1};
-  const int8_t expected_output_data[] = {41,41,41,41,41,41};
+  const int32_t bias_data[] = {1, 1, 1};
+  const int8_t expected_output_data[] = {41, 41, 41, 41, 41, 41};
   const int output_dims_data[] = {2, 2, 3};
 
   const int output_dims_count = 6;
@@ -165,20 +167,24 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized1) {
 
   const int output_dims_count = 6;
 
-#pragma Bss(".Zdata")  
-  const int8_t input_data_local[] = {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2};
-  const int8_t weights_data_local[] = {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2};
-  const int32_t bias_data_local[] = {1,1,1};
+#pragma Bss(".Zdata")
+  const int8_t input_data_local[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  const int8_t weights_data_local[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  const int32_t bias_data_local[] = {1, 1, 1};
   int8_t output_data_local[output_dims_count];
 #pragma Bss()
 
-  const int8_t expected_output_data[] = {41,41,41,41,41,41};
+  const int8_t expected_output_data[] = {41, 41, 41, 41, 41, 41};
 
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_local, input_data_local, input_min, input_max, weights_dims_data_local,
-      weights_data_local, weights_min, weights_max, bias_dims_data_local, bias_data_local,
-      bias_scale, expected_output_data, output_dims_data_local, output_min,
-      output_max, kTfLiteActNone, output_data_local);
+      input_dims_data_local, input_data_local, input_min, input_max,
+      weights_dims_data_local, weights_data_local, weights_min, weights_max,
+      bias_dims_data_local, bias_data_local, bias_scale, expected_output_data,
+      output_dims_data_local, output_min, output_max, kTfLiteActNone,
+      output_data_local);
 }
 
 // Test group 2
@@ -192,31 +198,29 @@ TF_LITE_MICRO_TEST(SystemSimpleTestQuantized2) {
   const float output_max = 127.0f;
 
   const int input_dims_data_2[] = {2, 10, 4};
-  const int8_t input_data_2[] = {2,2,2,2,2,2,2,2,2,2,
-                               2,2,2,2,2,2,2,2,2,2,
-                               2,2,2,2,2,2,2,2,2,2,
-                               2,2,2,2,2,2,2,2,2,2};
+  const int8_t input_data_2[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int weights_dims_data_2[] = {2, 6, 4};
-  const int8_t weights_data_2[] = {2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2};
+  const int8_t weights_data_2[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int bias_dims_data_2[] = {1, 6};
-  const int32_t bias_data_2[] = {1,1,1,1,1,1};
-  const int8_t expected_output_data_2[] = {17,17,17,17,17,17,17,17,17,17,
-                                         17,17,17,17,17,17,17,17,17,17,
-                                         17,17,17,17,17,17,17,17,17,17,
-                                         17,17,17,17,17,17,17,17,17,17,
-                                         17,17,17,17,17,17,17,17,17,17,
-                                         17,17,17,17,17,17,17,17,17,17};
+  const int32_t bias_data_2[] = {1, 1, 1, 1, 1, 1};
+  const int8_t expected_output_data_2[] = {
+      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
+      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
+      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
+      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17};
   const int output_dims_data_2[] = {2, 10, 6};
 
   const int output_dims_count_2 = 60;
   int8_t output_data_2[output_dims_count_2];
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_2, input_data_2, input_min, input_max, weights_dims_data_2,
-      weights_data_2, weights_min, weights_max, bias_dims_data_2, bias_data_2,
-      bias_scale, expected_output_data_2, output_dims_data_2, output_min,
-      output_max, kTfLiteActNone, output_data_2);
+      input_dims_data_2, input_data_2, input_min, input_max,
+      weights_dims_data_2, weights_data_2, weights_min, weights_max,
+      bias_dims_data_2, bias_data_2, bias_scale, expected_output_data_2,
+      output_dims_data_2, output_min, output_max, kTfLiteActNone,
+      output_data_2);
 }
 
 TF_LITE_MICRO_TEST(LocalSimpleTestQuantized2) {
@@ -235,24 +239,23 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized2) {
 
   const int output_dims_count_local_2 = 60;
 
-#pragma Bss(".Zdata")  
-  const int8_t input_data_local_2[] = {2,2,2,2,2,2,2,2,2,2,
-                               2,2,2,2,2,2,2,2,2,2,
-                               2,2,2,2,2,2,2,2,2,2,
-                               2,2,2,2,2,2,2,2,2,2};
-  const int8_t weights_data_local_2[] = {2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2};
-  const int32_t bias_data_local_2[] = {1,1,1,1,1,1};
+#pragma Bss(".Zdata")
+  const int8_t input_data_local_2[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  const int8_t weights_data_local_2[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  const int32_t bias_data_local_2[] = {1, 1, 1, 1, 1, 1};
   int8_t output_data_local_2[output_dims_count_local_2];
 #pragma Bss()
 
-  const int8_t expected_output_data_local_2[] = {41,41,41,41,41,41};
+  const int8_t expected_output_data_local_2[] = {41, 41, 41, 41, 41, 41};
 
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_local_2, input_data_local_2, input_min, input_max, weights_dims_data_local_2,
-      weights_data_local_2, weights_min, weights_max, bias_dims_data_local_2, bias_data_local_2,
-      bias_scale, expected_output_data_local_2, output_dims_data_local_2, output_min,
+      input_dims_data_local_2, input_data_local_2, input_min, input_max,
+      weights_dims_data_local_2, weights_data_local_2, weights_min, weights_max,
+      bias_dims_data_local_2, bias_data_local_2, bias_scale,
+      expected_output_data_local_2, output_dims_data_local_2, output_min,
       output_max, kTfLiteActNone, output_data_local_2);
 }
 
@@ -267,26 +270,27 @@ TF_LITE_MICRO_TEST(SystemSimpleTestQuantized3) {
   const float output_max = 127.0f;
 
   const int input_dims_data_3[] = {2, 2, 5};
-  const int8_t input_data_3[] = {2,2,2,2,2,2,2,2,2,2};
+  const int8_t input_data_3[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int weights_dims_data_3[] = {2, 10, 5};
-  const int8_t weights_data_3[] = {2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2};
+  const int8_t weights_data_3[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int bias_dims_data_3[] = {1, 10};
-  const int32_t bias_data_3[] = {1,1,1,1,1,1,1,1,1,1};
-  const int8_t expected_output_data_3[] = {21,21,21,21,21,21,21,21,21,21,
-                                           21,21,21,21,21,21,21,21,21,21};
+  const int32_t bias_data_3[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  const int8_t expected_output_data_3[] = {21, 21, 21, 21, 21, 21, 21,
+                                           21, 21, 21, 21, 21, 21, 21,
+                                           21, 21, 21, 21, 21, 21};
   const int output_dims_data_3[] = {2, 2, 10};
 
   const int output_dims_count_3 = 20;
   int8_t output_data_3[output_dims_count_3];
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_3, input_data_3, input_min, input_max, weights_dims_data_3,
-      weights_data_3, weights_min, weights_max, bias_dims_data_3, bias_data_3,
-      bias_scale, expected_output_data_3, output_dims_data_3, output_min,
-      output_max, kTfLiteActNone, output_data_3);
+      input_dims_data_3, input_data_3, input_min, input_max,
+      weights_dims_data_3, weights_data_3, weights_min, weights_max,
+      bias_dims_data_3, bias_data_3, bias_scale, expected_output_data_3,
+      output_dims_data_3, output_min, output_max, kTfLiteActNone,
+      output_data_3);
 }
 
 TF_LITE_MICRO_TEST(LocalSimpleTestQuantized3) {
@@ -305,36 +309,38 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized3) {
 
   const int output_dims_count_local_3 = 20;
 
-#pragma Bss(".Zdata")  
+#pragma Bss(".Zdata")
   static int8_t input_data_local_3[10];
   static int8_t weights_data_local_3[50];
   static int32_t bias_data_local_3[10];
   static int8_t output_data_local_3[output_dims_count_local_3];
 #pragma Bss()
 
-  for(int i = 0; i < 10; ++i) {
-    input_data_local_3[i] = 2;  
+  for (int i = 0; i < 10; ++i) {
+    input_data_local_3[i] = 2;
   }
 
-  for(int i = 0; i < 50; ++i) {
-    weights_data_local_3[i] = 2;  
+  for (int i = 0; i < 50; ++i) {
+    weights_data_local_3[i] = 2;
   }
 
-  for(int i = 0; i < 10; ++i) {
-    bias_data_local_3[i] = 1;  
+  for (int i = 0; i < 10; ++i) {
+    bias_data_local_3[i] = 1;
   }
 
-  for(int i = 0; i < 20; ++i) {
-    output_data_local_3[i] = 0;  
+  for (int i = 0; i < 20; ++i) {
+    output_data_local_3[i] = 0;
   }
 
-  const int8_t expected_output_data_local_3[] = {21,21,21,21,21,21,21,21,21,21,
-                                                 21,21,21,21,21,21,21,21,21,21};
+  const int8_t expected_output_data_local_3[] = {21, 21, 21, 21, 21, 21, 21,
+                                                 21, 21, 21, 21, 21, 21, 21,
+                                                 21, 21, 21, 21, 21, 21};
 
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_local_3, input_data_local_3, input_min, input_max, weights_dims_data_local_3,
-      weights_data_local_3, weights_min, weights_max, bias_dims_data_local_3, bias_data_local_3,
-      bias_scale, expected_output_data_local_3, output_dims_data_local_3, output_min,
+      input_dims_data_local_3, input_data_local_3, input_min, input_max,
+      weights_dims_data_local_3, weights_data_local_3, weights_min, weights_max,
+      bias_dims_data_local_3, bias_data_local_3, bias_scale,
+      expected_output_data_local_3, output_dims_data_local_3, output_min,
       output_max, kTfLiteActNone, output_data_local_3);
 }
 
@@ -349,31 +355,30 @@ TF_LITE_MICRO_TEST(SystemSimpleTestQuantized4) {
   const float output_max = 127.0f;
 
   const int input_dims_data_4[] = {2, 5, 10};
-  const int8_t input_data_4[] = {2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2,2,2,2,2,2,2,
-                                 2,2,2,2,2,2,2,2,2,2};
+  const int8_t input_data_4[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int weights_dims_data_4[] = {2, 5, 10};
-  const int8_t weights_data_4[] = {2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2,
-                                   2,2,2,2,2,2,2,2,2,2};
+  const int8_t weights_data_4[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int bias_dims_data_4[] = {1, 5};
-  const int32_t bias_data_4[] = {1,1,1,1,1};
-  const int8_t expected_output_data_4[] = {41,41,41,41,41,41,41,41,41,41,
-                                           41,41,41,41,41,41,41,41,41,41,
-                                           41,41,41,41,41};
+  const int32_t bias_data_4[] = {1, 1, 1, 1, 1};
+  const int8_t expected_output_data_4[] = {41, 41, 41, 41, 41, 41, 41, 41, 41,
+                                           41, 41, 41, 41, 41, 41, 41, 41, 41,
+                                           41, 41, 41, 41, 41, 41, 41};
   const int output_dims_data_4[] = {2, 5, 5};
 
   const int output_dims_count_4 = 25;
   int8_t output_data_4[output_dims_count_4];
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_4, input_data_4, input_min, input_max, weights_dims_data_4,
-      weights_data_4, weights_min, weights_max, bias_dims_data_4, bias_data_4,
-      bias_scale, expected_output_data_4, output_dims_data_4, output_min,
-      output_max, kTfLiteActNone, output_data_4);
+      input_dims_data_4, input_data_4, input_min, input_max,
+      weights_dims_data_4, weights_data_4, weights_min, weights_max,
+      bias_dims_data_4, bias_data_4, bias_scale, expected_output_data_4,
+      output_dims_data_4, output_min, output_max, kTfLiteActNone,
+      output_data_4);
 }
 
 TF_LITE_MICRO_TEST(LocalSimpleTestQuantized4) {
@@ -392,29 +397,28 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized4) {
 
   const int output_dims_count_local_4 = 25;
 
-#pragma Bss(".Zdata")  
-  const int8_t input_data_local_4[] = {2,2,2,2,2,2,2,2,2,2,
-                                       2,2,2,2,2,2,2,2,2,2,
-                                       2,2,2,2,2,2,2,2,2,2,
-                                       2,2,2,2,2,2,2,2,2,2,
-                                       2,2,2,2,2,2,2,2,2,2};
-  const int8_t weights_data_local_4[] = {2,2,2,2,2,2,2,2,2,2,
-                                         2,2,2,2,2,2,2,2,2,2,
-                                         2,2,2,2,2,2,2,2,2,2,
-                                         2,2,2,2,2,2,2,2,2,2,
-                                         2,2,2,2,2,2,2,2,2,2};
-  const int32_t bias_data_local_4[] = {1,1,1,1,1};
+#pragma Bss(".Zdata")
+  const int8_t input_data_local_4[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  const int8_t weights_data_local_4[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+  const int32_t bias_data_local_4[] = {1, 1, 1, 1, 1};
   int8_t output_data_local_4[output_dims_count_local_4];
 #pragma Bss()
 
-  const int8_t expected_output_data_local_4[] = {41,41,41,41,41,41,41,41,41,41,
-                                                 41,41,41,41,41,41,41,41,41,41,
-                                                 41,41,41,41,41};
+  const int8_t expected_output_data_local_4[] = {
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+      41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41};
 
   tflite::testing::TestFullyConnectedQuantized<int8_t>(
-      input_dims_data_local_4, input_data_local_4, input_min, input_max, weights_dims_data_local_4,
-      weights_data_local_4, weights_min, weights_max, bias_dims_data_local_4, bias_data_local_4,
-      bias_scale, expected_output_data_local_4, output_dims_data_local_4, output_min,
+      input_dims_data_local_4, input_data_local_4, input_min, input_max,
+      weights_dims_data_local_4, weights_data_local_4, weights_min, weights_max,
+      bias_dims_data_local_4, bias_data_local_4, bias_scale,
+      expected_output_data_local_4, output_dims_data_local_4, output_min,
       output_max, kTfLiteActNone, output_data_local_4);
 }
 

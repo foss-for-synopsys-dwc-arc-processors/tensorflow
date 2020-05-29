@@ -147,6 +147,13 @@ const StatTypeMap& GetStatTypeMap() {
       {"region_type", kRegionType},
       {"data_type", kDataType},
       {"shape", kTensorShapes},
+      {"kpi_name", kKpiName},
+      {"kpi_value", kKpiValue},
+      // XPlane semantics related.
+      {"$pt", kProducerType},
+      {"$ct", kConsumerType},
+      {"$p", kProducerId},
+      {"$c", kConsumerId},
       // Device trace arguments.
       {"device_id", kDeviceId},
       {"context_id", kContextId},
@@ -158,6 +165,7 @@ const StatTypeMap& GetStatTypeMap() {
       {"stream", kStream},
       // Stats added when processing traces.
       {"group_id", kGroupId},
+      {"flow", kFlow},
       {"step_name", kStepName},
       {"level 0", kLevel0},
       {"tf_op", kTfOp},

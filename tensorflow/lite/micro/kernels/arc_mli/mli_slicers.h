@@ -16,15 +16,16 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_KERNELS_ARC_MLI_SLICERS_H_
 #define TENSORFLOW_LITE_MICRO_KERNELS_ARC_MLI_SLICERS_H_
 
-#include "mli_api.h"
+#include "mli_api.h"  // NOLINT
 namespace tflite {
 namespace ops {
 namespace micro {
 
 class TensorSlicer {
-public:
-
-  TensorSlicer(const mli_tensor* full_tensor, int slice_dim, int slice_size, int padding_pre = 0, int padding_post = 0, int overlap = 0, bool interleave_mode = false);
+ public:
+  TensorSlicer(const mli_tensor* full_tensor, int slice_dim, int slice_size,
+               int padding_pre = 0, int padding_post = 0, int overlap = 0,
+               bool interleave_mode = false);
   ~TensorSlicer() = default;
 
   void Next();
@@ -32,13 +33,12 @@ public:
   int GetPaddingPre();
   int GetPaddingPost();
 
-  mli_tensor *Sub();
+  mli_tensor* Sub();
 
   // Default constructor is deleted
   TensorSlicer() = delete;
 
-
-private:
+ private:
   const mli_tensor* full_tensor_;
   mli_tensor sub_tensor_;
   mli_sub_tensor_cfg sub_cfg_;
@@ -53,4 +53,4 @@ private:
 }  // namespace micro
 }  // namespace ops
 }  // namespace tflite
-#endif //TENSORFLOW_LITE_MICRO_KERNELS_ARC_MLI_SLICERS_H_
+#endif  // TENSORFLOW_LITE_MICRO_KERNELS_ARC_MLI_SLICERS_H_

@@ -411,16 +411,12 @@ std::vector<uint8> NVPTXCompiler::CompileGpuAsmOrGetCachedResult(
                    " Use at your own risk though, it has known drawbacks like "
                    "increased memory consumption.";
           } else {
-            LOG(ERROR) << "Error during compilation of ptx to sass: "
-                       << maybe_cubin.status();
-            CHECK(hlo_module_config.debug_options()
-                      .xla_gpu_unsafe_fallback_to_driver_on_ptxas_error())
-                << "There was an error when trying to compile ptx into sass "
-                   "code. If you want to try falling back to the GPU driver to "
-                   "jit compile ptx, you can use the flag "
-                   "--xla_gpu_unsafe_fallback_to_driver_on_ptxas_error."
-                   " Use at your own risk though, it has known drawbacks like "
-                   "increased memory consumption.";
+            LOG(FATAL) << "ptxas returned an error during compilation of ptx "
+                          "to sass: '"
+                       << maybe_cubin.status() << "'  "
+                       << "If the error message indicates that a file could "
+                          "not be written, please verify that sufficient "
+                          "filesystem space is provided.";
           }
 
           // We're going to use the driver to JIT our PTX->SASS, so warn if

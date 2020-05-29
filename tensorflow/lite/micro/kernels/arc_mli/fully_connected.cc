@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "tensorflow/lite/kernels/internal/reference/fully_connected.h"
 
-#include "mli_api.h"
+#include "mli_api.h"  // NOLINT
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/common.h"
@@ -60,7 +60,7 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
   bool ret_val = (filter->type == kTfLiteInt8) &&
                  (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
                  (params->activation == kTfLiteActNone) &&
-                 (filter->params.zero_point == 0); 
+                 (filter->params.zero_point == 0);
   return ret_val;
 }
 
@@ -192,14 +192,17 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
-    // Slice the input over the batches (one at a time with the size of a complete input)
-    TensorSlicer in_slice(&mli_in, input_size_dimension, mli_in.shape[input_size_dimension]);
+    // Slice the input over the batches (one at a time with the size of a
+    // complete input)
+    TensorSlicer in_slice(&mli_in, input_size_dimension,
+                          mli_in.shape[input_size_dimension]);
 
     /* output tensor is alreade sliced in the output size dimension.
     out_ch_slice.Sub() is the tensor for the amount of output size of this
     itteration of the weight slice loop. This tensor needs to be further
     sliced over the batch */
-    TensorSlicer out_slice(out_ch_slice.Sub(), out_tensor_dimension, slice_size);
+    TensorSlicer out_slice(out_ch_slice.Sub(), out_tensor_dimension,
+                           slice_size);
 
     /* setup the pointers to the local or remote tensor to make the code
      * inside the loop easier. */
@@ -345,15 +348,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     case kTfLiteInt8:
       if (IsMliApplicable(context, input, filter, bias, params)) {
         return EvalMliQuantizedInt8(context, node, params, data, input, filter,
-                                 bias, output);
+                                    bias, output);
       } else {
         return EvalQuantizedInt8(context, node, params, data, input, filter,
                                  bias, output);
       }
 
-      case kTfLiteUInt8:
-        return EvalQuantized(context, node, params, data, input, filter, bias,
-                             output);
+    case kTfLiteUInt8:
+      return EvalQuantized(context, node, params, data, input, filter, bias,
+                           output);
 
     default:
       TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
