@@ -43,6 +43,12 @@ struct InterThreadConnectInfo {
   std::vector<int64> child_stat_types;
 };
 
+struct ContextInfo {
+  ContextInfo(int type, uint64 id) : type(type), id(id) {}
+  int type;
+  uint64 id;
+};
+
 // A wrapper for XEvent with parent and children pointers. Through these
 // pointers, a tree of EventNode is formed.
 class EventNode {
@@ -72,7 +78,7 @@ class EventNode {
 
   const XEventVisitor& GetEventVisitor() const { return visitor_; }
 
-  const XStat* GetContextStat(int64 stat_type) const;
+  absl::optional<XStatVisitor> GetContextStat(int64 stat_type) const;
 
   void AddStepName(absl::string_view step_name);
 
@@ -84,7 +90,21 @@ class EventNode {
   bool IsNestedIn(EventNode* parent);
 
   // Returns the closest parent of the given event type.
-  EventNode* FindParent(int64 event_type);
+  EventNode* FindParent(int64 event_type) const;
+
+  absl::optional<ContextInfo> GetProducerContext() const {
+    return producer_context_;
+  }
+
+  absl::optional<ContextInfo> GetConsumerContext() const {
+    return consumer_context_;
+  }
+
+  bool IsRoot() const { return is_root_; }
+
+  bool IsAsync() const { return is_async_; }
+
+  bool StartsBefore(const EventNode& other) const;
 
  private:
   const XPlaneVisitor* plane_;
@@ -94,6 +114,10 @@ class EventNode {
   EventNode* parent_ = nullptr;
   std::vector<EventNode*> children_;
   absl::optional<int64> group_id_;
+  absl::optional<ContextInfo> producer_context_;
+  absl::optional<ContextInfo> consumer_context_;
+  bool is_root_ = false;
+  bool is_async_ = false;
 };
 
 using EventNodeMap =
@@ -102,9 +126,22 @@ using EventNodeMap =
 
 using EventGroupNameMap = absl::flat_hash_map<int64 /*group_id*/, std::string>;
 
-// Creates a forest of EventNode by stitching events in space using the nesting
-// relationship within the same thread and connect_info_list across threads, and
-// groups them by the root events.
+using EventList = std::vector<EventNode*>;
+
+struct ContextGroup {
+  EventNode* producer = nullptr;
+  std::vector<EventNode*> consumers;
+};
+
+using ContextGroupMap = absl::flat_hash_map<
+    int /*context_type*/,
+    absl::flat_hash_map<uint64 /*context_id*/, ContextGroup>>;
+
+// EventForest augments the input XSpace with the trace context. The trace
+// context is created by stitching XEvents (1) using the nesting relationship
+// within the same thread and (2) comparing the semantic arguments or using
+// connect_info_list across threads. It also groups the events by the root
+// events specified in root_event_types or marked by the semantic argument.
 class EventForest {
  public:
   EventForest(const std::vector<InterThreadConnectInfo>& connect_info_list,
@@ -121,7 +158,8 @@ class EventForest {
  private:
   // Creates an EventNode for each event in event_node_map and connect events
   // according to the nesting relationship within the thread.
-  void ConnectIntraThread(const XPlaneVisitor& visitor, XPlane* plane);
+  void ConnectIntraThread(const XPlaneVisitor& visitor, XPlane* plane,
+                          ContextGroupMap* context_groups);
 
   // Connects events across threads according to connect_info_list.
   void ConnectInterThread(
@@ -139,13 +177,11 @@ class EventForest {
   // Sets the is_eager stat to true for the eagerly executed CPU TF op events.
   void MarkEagerlyExecutedCpuTfOps();
 
-  // Create virtual events of HostEventType::kHostTrainingLoopIteration. A
-  // virtual event is created for each iteration of the host training loop and
-  // connected to the HostEventType::kExecutorStateProcess events of the
-  // iteration.
-  void CreateVirtualEventsForHostTrainingLoop();
+  // Processes the TF loops and registers the first TF executor event of each
+  // iteraton to `tf_loop_root_events_`.
+  void ProcessTensorFlowLoop();
 
-  // Create virutal events of HostEventType::kAsyncExecutorTraceContext. A
+  // Creates virtual events of HostEventType::kAsyncExecutorTraceContext. A
   // virtual event is created for every FunctionRun and the following eager ops
   // (e.g., for Keras callback).
   void CreateVirtualEventsForAsyncExecutor();
@@ -153,6 +189,9 @@ class EventForest {
   EventNodeMap event_node_map_;
   std::vector<XPlaneVisitor> visitors_;
   EventGroupNameMap event_group_name_map_;
+  EventList root_events_;
+  EventList tf_loop_root_events_;
+  int64 next_group_id_ = 0;
 };
 
 std::vector<InterThreadConnectInfo> CreateInterThreadConnectInfoList();
