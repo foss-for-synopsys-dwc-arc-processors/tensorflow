@@ -1,0 +1,72 @@
+# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+# Difference with common IoTDK LCF file: 
+# - keep model in SPI flash. It can't be loaded with debugger (NO_LOAD) 
+#   and need to be flashed manually using flash_progrmmer app
+# - move literals and data to ICCM
+# - Move stack and heap to DCCM
+#
+# CCMWRAP memory regions indicate unusable portions of the address space
+#   due to CCM memory wrapping into upper addresses beyond its size
+
+MEMORY {
+    SPI_FLASH : ORIGIN = 0x10080000      LENGTH = 512K
+    IVT       : ORIGIN = 0x20000000      LENGTH = 512
+    ICCM0     : ORIGIN = 0x20000200      LENGTH = (256K - 512)
+    SRAM      : ORIGIN = 0x30000000      LENGTH = 128K
+    DCCM      : ORIGIN = 0x80000000      LENGTH = 128K
+    XCCM      : ORIGIN = 0xC0000000      LENGTH = 32K
+    YCCM      : ORIGIN = 0xE0000000      LENGTH = 32K
+}
+
+SECTIONS {
+
+    GROUP BLOCK(4) : {
+        .vectors (TEXT) SIZE(DEFINED _IVTSIZE?_IVTSIZE:512): {} = FILL(0xa5a5a5a5,4)
+    } > IVT
+
+    GROUP BLOCK(4): {
+        .text? : { *('.text$crt*') }
+        * (TEXT): {}
+        * (LIT): {}
+        * (DATA): {}
+    } > ICCM0
+
+    GROUP BLOCK(4): {
+        .debug_log? : {}
+        * (BSS): {}
+    } > SRAM
+
+    GROUP BLOCK(4) NOLOAD: 
+    {
+        # Protobuf with model is too big and must be stored in FLASH
+        .protobuf? : {
+            person_detect_model_data.o {  .rodata*	}
+        }
+    } > SPI_FLASH
+
+    GROUP BLOCK(4): {
+       .Zdata? : {}
+       .stack ALIGN(4) SIZE(DEFINED _STACKSIZE?_STACKSIZE:8K): {}
+       .heap? ALIGN(4) SIZE(DEFINED _HEAPSIZE?_HEAPSIZE:8K): {}
+    } > DCCM
+
+    GROUP BLOCK(4): {
+        .Xdata? : {}
+    } > XCCM
+
+    GROUP BLOCK(4): {
+        .Ydata? : {}
+    } > YCCM
+}
+
+
