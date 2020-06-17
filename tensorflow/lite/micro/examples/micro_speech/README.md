@@ -17,6 +17,7 @@ kilobytes of Flash.
 ## Table of contents
 
 -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp)
+-   [Deploy to ARC IoT Development Kit](#deploy-to-arc-iot-development-kit)
 -   [Deploy to Arduino](#deploy-to-arduino)
 -   [Deploy to ESP32](#deploy-to-esp32)
 -   [Deploy to SparkFun Edge](#deploy-to-sparkfun-edge)

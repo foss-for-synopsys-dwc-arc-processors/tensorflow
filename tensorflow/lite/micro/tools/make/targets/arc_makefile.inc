@@ -19,7 +19,7 @@
 ifeq ($(TARGET_ARCH), arc)
 
 # Known target are specified with their own make configurations. 
-ifeq ($(filter $(TARGET), arc_emsdp),)
+ifeq ($(filter $(TARGET), arc_emsdp arc_iotdk),)
 
 ARC_TOOLCHAIN := mwdt
 

@@ -171,7 +171,7 @@ appropriate sections of general descriptions of the
     ```
     make flash_iotdk
     ```
-    This step should be applied once, or after you rewrite SPI Flash with
+    Reset the board afterward (push the reset button). This step should be applied once, or after you rewrite SPI Flash with
     some other data.
 
 5.  To generate artefacts for self-boot of example from the board use
