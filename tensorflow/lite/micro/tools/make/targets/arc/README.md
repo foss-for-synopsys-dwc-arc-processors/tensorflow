@@ -7,6 +7,7 @@ TensorFlow Lite Micro for targets based on the Synopsys ARC EM/HS Processors.
 
 -   [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
 -   [ARC EM Software Development Platform (ARC EM SDP)](#ARC-EM-Software-Development-Platform-ARC-EM-SDP)
+-   [ARC IoT Development Kit (ARC IoT DK)](#ARC-IoT-Development-Kit-ARC-IoT-DK)
 -   [Custom ARC EM or HS Platform](#Custom-ARC-EMHS-Platform)
 
 ## Install the Synopsys DesignWare ARC MetaWare Development Toolkit
@@ -217,6 +218,179 @@ In both cases you will see the application output in the serial terminal.
 
 4.  Push the RST button. If a red LED is lit beside RST button, push the CFG
     button.
+
+You will see the application output in the serial terminal.
+
+## ARC IoT Development Kit (ARC IoT DK)
+
+This section describes how to deploy on an
+[ARC IoT Development Kit](https://www.synopsys.com/dw/ipdir.php?ds=arc_iot_development_kit).
+
+### Initial Setup
+
+To use the ARC IoT DK, you need the following hardware and software:
+
+#### ARC IoT Development Kit
+
+More information on the platform, including ordering information, can be found
+[here](https://www.synopsys.com/dw/ipdir.php?ds=arc_iot_development_kit).
+
+#### MetaWare Development Toolkit
+
+See
+[Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
+section for instructions on toolchain installation.
+
+#### Digilent Adept 2 System Software Package
+
+If you wish to use the MetaWare Debugger to debug your code, you need to also
+install the Digilent Adept 2 software, which includes the necessary drivers for
+connecting to the targets. This is available from oficial
+[Digilent site](https://reference.digilentinc.com/reference/software/adept/start?redirect=1#software_downloads).
+You should install the "System" component, and Runtime. Utilities and SDK are
+NOT required.
+
+#### Make Tool
+
+A `'make'` tool is required for both phases of deploying Tensorflow Lite Micro
+applications on ARC EM SDP: 
+1. Application project generation 
+2. Working with generated application (build and run)
+
+For the first phase you need an environment and make tool compatible with
+Tensorflow Lite for Micro build system. At the moment of this writing, this
+requires make >=3.82 and a *nix-like environment which supports shell and native
+commands for file manipulations. MWDT toolkit is not required for this phase.
+
+For the second phase, requirements are less strict. The gmake version delivered
+with MetaWare Development Toolkit is sufficient. There are no shell and *nix
+command dependencies, so Windows can be used
+
+#### Serial Terminal Emulation Application
+
+The Debug UART port of the ARC IoTDK is used to print application output. The USB
+connection provides both the debug channel and RS232 transport. You can use any
+terminal emulation program (like [PuTTY](https://www.putty.org/)) to view UART
+output from the EM SDP.
+
+#### microSD Card
+
+If you want to self-boot your application (start it independently from a
+debugger connection), you also need a microSD card with a minimum size of 512 MB
+and a way to write to the card from your development host
+
+### Connect the ARC IoT DK
+
+1.  Make sure Configuration switches of the board are configured in the next way:
+
+Switch # | Switch position
+:------: | :-------------:
+1        | Low (0)
+2        | Low (0)
+3        | Low (0)
+4        | Low (0)
+2.  Connect the USB cable to dataport connector on the ARC IoT DK (near the power connector) and to an available USB port on your development host.
+3.  Determine the COM port assigned to the USB Serial Port (on Windows, using
+    Device Manager is an easy way to do this)
+4.  Execute the serial terminal application you installed in the previous step
+    and open the serial connection with the early defined COM port (speed 115200
+    baud; 8 bits; 1 stop bit; no parity).
+5.  Push the Reset button on the board. After a few seconds you should see the
+    boot log in the terminal which begins as follows:
+
+```
+U-Boot <Versioning info>
+
+CPU:   ARC EM9D at 144 MHz
+Board: Synopsys IoT Development Kit
+...
+```
+
+### Generate Application Project for ARC IoT DK
+
+Before building an example or test application, you need to generate a TFLM
+project for this application from TensorFlow sources and external dependencies.
+To generate it for ARC EM SDP board you need to set `TARGET=arc_iotdk` on the
+make command line. For instance, to build the Person Detect test application,
+use a shell to execute the following command from the root directory of the
+TensorFlow repo:
+
+```
+make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project TARGET=arc_iotdk
+```
+
+The application project will be generated into
+*tensorflow/lite/micro/tools/make/gen/arc_iotdk_arc/prj/person_detection_test_int8/make*
+
+Info on generating and building example applications for ARC IoT DK
+(*tensorflow/lite/micro/examples*) can be found in the appropriate readme file
+placed in the same directory with the supported examples. In general, it's the same
+process which described in this Readme.
+
+The
+[embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli)
+is used by default to speed up execution of some kernels for asymmetrically
+quantized layers. Kernels which use MLI-based implementations are kept in the
+*tensorflow/lite/micro/kernels/arc_mli* folder. For applications which may not
+benefit from MLI library, the project can be generated without these
+implementations by adding `TAGS=no_arc_mli` in the command line. This can reduce
+code size when the optimized kernels are not required.
+
+For more options on embARC MLI usage see
+[kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md).
+
+### Build the Application
+
+You may need to adjust the following commands in order to use the appropriate
+make tool available in your environment (ie: `make` or `gmake`)
+
+1.  Open command shell and change the working directory to the location which
+    contains the generated project, as described in the previous section
+
+2.  Clean previous build artifacts (optional)
+
+    make clean
+
+3.  Build application
+
+    make app
+
+### Run the Application on the Board Using MetaWare Debugger
+
+In case you do not have access to the MetaWare Debugger or have chosen not to
+install the Digilent drivers, you can skip to the next section.
+
+To run the application from the console, use the following command:
+
+```
+   make run
+```
+
+If application runs in an infinite loop, type `Ctrl+C` several times to exit the
+debugger.
+
+To run the application in the GUI debugger, use the following command:
+
+```
+   make debug
+```
+
+In both cases you will see the application output in the serial terminal.
+
+### Run the Application on the Board from the microSD Card
+
+1.  Use the following command in the same command shell you used for building
+    the application, as described in the previous step
+
+    make flash
+
+2.  Copy the content of the created *./bin* folder into the root of microSD
+    card. Note that the card must be formatted as FAT32 with default cluster
+    size (but less than 32 Kbytes)
+
+3.  Plug in the microSD card into the J11 connector.
+
+4.  Push the RST button. 
 
 You will see the application output in the serial terminal.
 

@@ -115,6 +115,88 @@ get it started.
 In both cases (step 5 and 6) you will see the application output in the serial
 terminal.
 
+## Deploy to ARC IoT Development Kit
+
+The following instructions will help you to build and deploy this example to
+[ARC IoT Development Kit](https://www.synopsys.com/dw/ipdir.php?ds=arc_iot_development_kit). General information and instructions on using the board with TensorFlow
+Lite Micro can be found in the common
+[ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
+
+This example uses asymmetric int8 quantization and can therefore leverage
+optimized int8 kernels from the embARC MLI library
+
+The ARC IoT Development Kit contains a rich set of extension interfaces. You can
+choose any compatible microphone and modify
+[audio_provider.cc](/tensorflow/lite/micro/examples/micro_speech/audio_provider.cc)
+file accordingly to use input from your specific microphone. By default, results of
+running this example are printed to the console. If you would like to instead
+implement some target-specific actions, you need to modify
+[command_responder.cc](/tensorflow/lite/micro/examples/micro_speech/command_responder.cc)
+accordingly.
+
+The reference implementations of these files are used by default on the ARC IoT Development Kit.
+
+### Initial setup
+
+Follow the instructions on the
+[ARC IoT Development Kit (ARC IoT DK)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK)
+to get and install all required tools for work with the board.
+
+### Generate Example Project
+
+As default example doesn't provide any output without real audio, it is
+recommended to get started with example for mock data. The project for ARC IoT Development Kit can be generated with the following command:
+
+```
+make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_iotdk generate_micro_speech_mock_make_project
+```
+
+### Build and Run Example
+
+For more detailed information on building and running examples see the
+appropriate sections of general descriptions of the
+[ARC IoT Development Kit (ARC IoT DK)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK).
+Here we only briefly mention main steps which are typically enough to
+get it started.
+
+1.  You need to
+    [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-arc-iot-dk)
+    and open an serial connection.
+
+2.  Go to the generated example project director
+
+    ```
+    cd tensorflow/lite/micro/tools/make/gen/arc_iotdk_arc/prj/micro_speech_mock/make
+    ```
+
+3.  Build the example using
+
+    ```
+    make app
+    ```
+
+4.  To generate artefacts for self-boot of example from the board use
+
+    ```
+    make flash
+    ```
+
+5. To run application from the board using MetaWare Debugger:
+
+    *   To run application from the console using it type `make run`.
+    *   To stop the execution type `Ctrl+C` in the console several times.
+    
+6. To run application from the board using microSD card:
+
+    *   Copy the content of the created /bin folder into the root of microSD
+        card. Note that the card must be formatted as FAT32 with default cluster
+        size (but less than 32 Kbytes)
+    *   Plug in the microSD card into the appropriate port of ARC IoT DK (on the back of the board).
+    *   Push the RST button. 
+
+In both cases (step 5 and 6) you will see the application output in the serial
+terminal.
+
 ## Deploy to Arduino
 
 The following instructions will help you build and deploy this sample

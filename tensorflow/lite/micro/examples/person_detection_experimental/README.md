@@ -9,6 +9,7 @@ This uses the experimental int8 quantized version of the person detection model.
 
 -   [Getting started](#getting-started)
 -   [Running on ARC EM SDP](#running-on-arc-em-sdp)
+-   [Running on ARC IoT Development Kit](#running-on-arc-iot-development-kit)
 -   [Running on Arduino](#running-on-arduino)
 -   [Running on SparkFun Edge](#running-on-sparkfun-edge)
 -   [Run the tests on a development machine](#run-the-tests-on-a-development-machine)
@@ -97,6 +98,100 @@ get it started.
 
     *   To run application from the console using it type `make run`.
     *   To stop the execution type `Ctrl+C` in the console several times.
+
+In both cases (step 5 and 6) you will see the application output in the serial
+terminal.
+
+## Running on ARC IoT Development Kit
+
+The following instructions will help you to build and deploy this example to
+[ARC IoT Development Kit](https://www.synopsys.com/dw/ipdir.php?ds=arc_iot_development_kit). General information and instructions on using the board with TensorFlow
+Lite Micro can be found in the common
+[ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
+
+Important feature of this example is that the model is too big for any available SRAM.
+To have this example running on the board, you need to pass extra step 
+to write your model into SPI flash. You can use similar way for 
+application with big enough model (up to 900Kb)
+
+**Important note: Don't use first ~100Kb of SPI flash for your model. This memory contains important code for firmware update process**
+
+This example uses asymmetric int8 quantization and can therefore leverage
+optimized int8 kernels from the embARC MLI library
+
+The ARC IoT Development Kit contains a rich set of extension interfaces. You can choose
+any compatible camera and modify
+[image_provider.cc](/tensorflow/lite/micro/examples/person_detection_experimental/image_provider.cc)
+file accordingly to use input from your specific camera. By default, results of
+running this example are printed to the console. If you would like to instead
+implement some target-specific actions, you need to modify
+[detection_responder.cc](/tensorflow/lite/micro/examples/person_detection_experimental/detection_responder.cc)
+accordingly.
+
+The reference implementations of these files are used by default on the ARC IoT Development Kit.
+
+### Initial setup
+
+Follow the instructions on the
+[ARC IoT Development Kit (ARC IoT DK)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK)
+to get and install all required tools for work with the board.
+
+### Generate Example Project
+
+The example project for ARC IoT Development Kit can be generated with the following
+command:
+
+```
+make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_iotdk generate_person_detection_int8_make_project
+```
+
+### Build and Run Example
+
+For more detailed information on building and running examples see the
+appropriate sections of general descriptions of the
+[ARC IoT Development Kit (ARC IoT DK)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK). In comparison with general process, it's important to apply step 4 from the list below.
+
+
+1.  You need to
+    [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-arc-iot-dk)
+    and open an serial connection.
+
+2.  Go to the generated example project director
+
+    ```
+    cd tensorflow/lite/micro/tools/make/gen/arc_iotdk_arc/prj/person_detection_int8/make
+    ```
+
+3.  Build the example using
+
+    ```
+    make app
+    ```
+4. You need to write the model into SPI flash before first run. 
+    ```
+    make flash_iotdk
+    ```
+    This step should be applied once, or after you rewrite SPI Flash with
+    some other data.
+
+5.  To generate artefacts for self-boot of example from the board use
+
+    ```
+    make flash
+    ```
+
+6. To run application from the board using MetaWare Debugger:
+
+    *   To run application from the console using it type `make run`.
+    *   To stop the execution type `Ctrl+C` in the console several times.
+    
+7. To run application from the board using microSD card:
+
+    *   Copy the content of the created /bin folder into the root of microSD
+        card. Note that the card must be formatted as FAT32 with default cluster
+        size (but less than 32 Kbytes)
+    *   Plug in the microSD card into the appropriate port of ARC IoT DK (on the back of the board).
+    *   Push the RST button. 
 
 In both cases (step 5 and 6) you will see the application output in the serial
 terminal.
