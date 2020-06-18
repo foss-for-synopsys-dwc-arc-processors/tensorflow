@@ -107,7 +107,10 @@ terminal.
 The following instructions will help you to build and deploy this example to
 [ARC IoT Development Kit](https://www.synopsys.com/dw/ipdir.php?ds=arc_iot_development_kit). General information and instructions on using the board with TensorFlow
 Lite Micro can be found in the common
-[ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
+[ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md). 
+It is highy recomended to read first 
+[ARC IoT Development Kit](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK)
+section of this document. 
 
 Important feature of this example is that the model is too big for any available SRAM.
 To have this example running on the board, you need to pass extra step 
@@ -149,14 +152,15 @@ make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_iotdk generate_pers
 
 For more detailed information on building and running examples see the
 appropriate sections of general descriptions of the
-[ARC IoT Development Kit (ARC IoT DK)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK). In comparison with general process, it's important to apply step 4 from the list below.
+[ARC IoT Development Kit (ARC IoT DK)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-IoT-Development-Kit-ARC-IoT-DK). 
+In comparison with general process, it's important to apply step 4 from the list below.
 
 
 1.  You need to
     [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-arc-iot-dk)
     and open an serial connection.
 
-2.  Go to the generated example project director
+2.  Go to the generated example project directory
 
     ```
     cd tensorflow/lite/micro/tools/make/gen/arc_iotdk_arc/prj/person_detection_int8/make
@@ -189,11 +193,11 @@ appropriate sections of general descriptions of the
 
     *   Copy the content of the created /bin folder into the root of microSD
         card. Note that the card must be formatted as FAT32 with default cluster
-        size (but less than 32 Kbytes)
+        size (but less than 4 Kbytes)
     *   Plug in the microSD card into the appropriate port of ARC IoT DK (on the back of the board).
     *   Push the RST button. 
 
-In both cases (step 5 and 6) you will see the application output in the serial
+In both cases (step 6 and 7) you will see the application output in the serial
 terminal.
 
 ## Running on Arduino

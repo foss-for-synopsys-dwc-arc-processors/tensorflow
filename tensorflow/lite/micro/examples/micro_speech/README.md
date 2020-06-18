@@ -191,7 +191,7 @@ get it started.
 
     *   Copy the content of the created /bin folder into the root of microSD
         card. Note that the card must be formatted as FAT32 with default cluster
-        size (but less than 32 Kbytes)
+        size (but less than 4 Kbytes)
     *   Plug in the microSD card into the appropriate port of ARC IoT DK (on the back of the board).
     *   Push the RST button. 
 

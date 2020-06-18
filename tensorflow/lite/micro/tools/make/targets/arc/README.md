@@ -243,7 +243,7 @@ section for instructions on toolchain installation.
 
 #### Digilent Adept 2 System Software Package
 
-If you wish to use the MetaWare Debugger to debug your code, you need to also
+To use the MetaWare Debugger to debug your code, you need to also
 install the Digilent Adept 2 software, which includes the necessary drivers for
 connecting to the targets. This is available from oficial
 [Digilent site](https://reference.digilentinc.com/reference/software/adept/start?redirect=1#software_downloads).
@@ -253,7 +253,7 @@ NOT required.
 #### Make Tool
 
 A `'make'` tool is required for both phases of deploying Tensorflow Lite Micro
-applications on ARC EM SDP: 
+applications on ARC IoT DK: 
 1. Application project generation 
 2. Working with generated application (build and run)
 
@@ -261,23 +261,28 @@ For the first phase you need an environment and make tool compatible with
 Tensorflow Lite for Micro build system. At the moment of this writing, this
 requires make >=3.82 and a *nix-like environment which supports shell and native
 commands for file manipulations. MWDT toolkit is not required for this phase.
+The application project will be generated into
+*tensorflow/lite/micro/tools/make/gen/arc_iotdk_arc/prj/*
 
 For the second phase, requirements are less strict. The gmake version delivered
 with MetaWare Development Toolkit is sufficient. There are no shell and *nix
-command dependencies, so Windows can be used
+command dependencies, so you can copy the generated directory to Windows 
+to continue with build process there.
 
 #### Serial Terminal Emulation Application
 
 The Debug UART port of the ARC IoTDK is used to print application output. The USB
 connection provides both the debug channel and RS232 transport. You can use any
 terminal emulation program (like [PuTTY](https://www.putty.org/)) to view UART
-output from the EM SDP.
+output from the ARC IoT DK.
 
 #### microSD Card
 
 If you want to self-boot your application (start it independently from a
 debugger connection), you also need a microSD card with a minimum size of 512 MB
-and a way to write to the card from your development host
+and a way to write to the card from your development host.
+Note that the card must be formatted as FAT32 with default cluster
+size (but less than 4 Kbytes) 
 
 ### Connect the ARC IoT DK
 
@@ -310,7 +315,7 @@ Board: Synopsys IoT Development Kit
 
 Before building an example or test application, you need to generate a TFLM
 project for this application from TensorFlow sources and external dependencies.
-To generate it for ARC EM SDP board you need to set `TARGET=arc_iotdk` on the
+To generate it for ARC IoT DK board you need to set `TARGET=arc_iotdk` on the
 make command line. For instance, to build the Person Detect test application,
 use a shell to execute the following command from the root directory of the
 TensorFlow repo:
@@ -319,6 +324,8 @@ TensorFlow repo:
 make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project TARGET=arc_iotdk
 ```
 
+**Note: warnings on overriding recipe for ruy and person_model_grayscale should be ignored. They not directly related to ARC and doesn't affect functionality of supported examples**
+
 The application project will be generated into
 *tensorflow/lite/micro/tools/make/gen/arc_iotdk_arc/prj/person_detection_test_int8/make*
 
@@ -326,6 +333,8 @@ Info on generating and building example applications for ARC IoT DK
 (*tensorflow/lite/micro/examples*) can be found in the appropriate readme file
 placed in the same directory with the supported examples. In general, it's the same
 process which described in this Readme.
+
+**Note: Only *tensorflow/lite/micro/examples/person_detection_experimental* and *tensorflow/lite/micro/examples/micro_speech* examples with mock inputs are directly supported for ARC IoTDK**
 
 The
 [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli)
@@ -386,9 +395,9 @@ In both cases you will see the application output in the serial terminal.
 
 2.  Copy the content of the created *./bin* folder into the root of microSD
     card. Note that the card must be formatted as FAT32 with default cluster
-    size (but less than 32 Kbytes)
+    size (but less than 4 Kbytes)
 
-3.  Plug in the microSD card into the J11 connector.
+3.  Plug in the microSD card into the appropriate port of ARC IoT DK (on the back of the board).
 
 4.  Push the RST button. 
 
