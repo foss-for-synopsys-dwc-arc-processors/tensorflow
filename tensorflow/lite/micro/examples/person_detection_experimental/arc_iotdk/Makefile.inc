@@ -4,7 +4,7 @@ ifeq ($(TARGET), arc_iotdk)
 # for experimental person detection example. In particular:
 # - Use Example specific Linker command file (see ./iotdk.lcf beside this makefile)
 # - Stripout TFLM reference code by default. Set default optimization to speed
-# - Add rules to write data into SPLI flash
+# - Add rules to write data into SPI flash
 # - Tweak tensor arena size to fit CCMs
 
   PD_EXAMPLE_PATH = tensorflow/lite/micro/examples/person_detection_experimental

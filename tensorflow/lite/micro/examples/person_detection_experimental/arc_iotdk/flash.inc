@@ -11,5 +11,5 @@ protobuf.bin: $(OUT_NAME)
 flash_iotdk: $(OUT_NAME) flash_programmer.elf protobuf.bin
 	$(APP_RUN) flash_programmer.elf protobuf.bin 0x80000
 	@echo !
-	@echo ! PLEASE RESET A BOARD 
+	@echo ! PLEASE RESET THE BOARD 
 	@echo !

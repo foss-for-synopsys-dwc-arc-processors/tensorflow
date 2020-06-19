@@ -1,7 +1,7 @@
 ifeq ($(TARGET), arc_iotdk)
 
 # Patch of arc make project to adjust it specifically 
-# for experimental person detection example. In particular:
+# for micro speech example. In particular:
 # - Use Linker command file with better usage of fast memory and tweak scratch buffers
 # - Stripout TFLM reference code by default.
 # - set optimization speed by default.
