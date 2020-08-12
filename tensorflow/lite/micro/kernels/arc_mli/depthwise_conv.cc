@@ -257,14 +257,30 @@ TfLiteStatus EvalMliQuantizedPerChannel(
   /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
+
+  arc_scratch_buffer_calc_slice_size_io(
+      &in_local, &out_local, kernelHeight, cfg.stride_height, cfg.padding_top,
+      cfg.padding_bottom, &inSliceHeight, &outSliceHeight);
+
+  if(outSliceHeight <= 0 || inSliceHeight <= 0) {
+    weights_local = mli_weights;
+    bias_local = mli_bias;
+    in_local = mli_in;
+    out_local = mli_out;
+
+    TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_conv_tensors(
+      context, &in_local, &weights_local, &bias_local, &out_local, true));
+
+    TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_io(
+      &in_local, &out_local, kernelHeight, cfg.stride_height, cfg.padding_top,
+      cfg.padding_bottom, &inSliceHeight, &outSliceHeight));
+  }
+
   const bool in_is_local = in_local.data == mli_in.data;
   const bool out_is_local = out_local.data == mli_out.data;
   const bool w_is_local = weights_local.data == mli_weights.data;
   const bool b_is_local = bias_local.data == mli_bias.data;
 
-  TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_io(
-      &in_local, &out_local, kernelHeight, cfg.stride_height, cfg.padding_top,
-      cfg.padding_bottom, &inSliceHeight, &outSliceHeight));
   TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_weights(
       &weights_local, &bias_local, weight_out_ch_dimension, &slice_channels));
 

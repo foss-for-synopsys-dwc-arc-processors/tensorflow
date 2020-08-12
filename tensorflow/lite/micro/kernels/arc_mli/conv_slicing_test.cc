@@ -40,9 +40,10 @@ static const float kInput1Data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 static const int kFilter1Elements = 36;
 static const int kFilter1Shape[] = {4, 2, 3, 3, 2};
-static const float kFilter1Data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+static const float kFilter1Data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+                                     2, 2, 2, 2, 2, 2};
 static const int kBias1Elements = 2;
 static const int kBias1Shape[] = {1, 2};
 static const float kBias1Data[] = {2, 2};
@@ -54,63 +55,81 @@ static const float kGolden1Data[] = {34, 34, 34, 34, 50, 50, 50, 50, 50, 50,
 // Common inputs and outputs 2.
 static const int kInput2Elements = 80;
 static const int kInput2Shape[] = {4, 1, 20, 2, 2};
-static const float kInput2Data[] = {
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+static const float kInput2Data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 static const int kFilter2Elements = 36;
 static const int kFilter2Shape[] = {4, 2, 3, 3, 2};
-static const float kFilter2Data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+static const float kFilter2Data[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+                                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+                                     2, 2, 2, 2, 2, 2};
 static const int kBias2Elements = 2;
 static const int kBias2Shape[] = {1, 2};
 static const float kBias2Data[] = {2, 2};
 static const int kOutput2Elements = 80;
 static const int kOutput2Shape[] = {4, 1, 20, 2, 2};
-static const float kGolden2Data[] = {
-    34, 34, 34, 34, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 34, 34, 34, 34};
+static const float kGolden2Data[] = {34, 34, 34, 34, 50, 50, 50, 50, 50, 50, 
+                                     50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+                                     50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
+                                     50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
+                                     50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
+                                     50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
+                                     50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 
+                                     50, 50, 50, 50, 50, 50, 34, 34, 34, 34};
 
 // Common inputs and outputs 3.
-static const int kInput3Elements = 40;
-static const int kInput3Shape[] = {4, 1, 2, 2, 10};
-static const float kInput3Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static const int kFilter3Elements = 90;
-static const int kFilter3Shape[] = {4, 1, 3, 3, 10};  // 1 3 3 10
-static const float kFilter3Data[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static const int kBias3Elements = 1;
-static const int kBias3Shape[] = {1, 1};
-static const float kBias3Data[] = {1};
-static const int kOutput3Elements = 4;
-static const int kOutput3Shape[] = {4, 1, 2, 2, 1};  // 2 2 1
-static const float kGolden3Data[] = {41, 41, 41, 41};
+static const int kInput3Elements = 16; //40;
+static const int kInput3Shape[] = {4, 1, 2, 2, 4}; // 1 2 2 10
+static const float kInput3Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const int kFilter3Elements = 72; // 90
+static const int kFilter3Shape[] = {4, 2, 3, 3, 4}; // 1 3 3 10
+static const float kFilter3Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const int kBias3Elements = 2;
+static const int kBias3Shape[] = {1, 2};
+static const float kBias3Data[] = {1, 1};
+static const int kOutput3Elements = 8;
+static const int kOutput3Shape[] = {4, 1, 2, 2, 2}; // 2 2 1
+static const float kGolden3Data[] = {26, 26, 26, 26, 26, 26, 26, 26};
 
 // Common inputs and outputs 4.
 static const int kInput4Elements = 80;
 static const int kInput4Shape[] = {4, 1, 4, 2, 10};
-static const float kInput4Data[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const float kInput4Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 static const int kFilter4Elements = 90;
 static const int kFilter4Shape[] = {4, 1, 3, 3, 10};
-static const float kFilter4Data[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const float kFilter4Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 static const int kBias4Elements = 1;
 static const int kBias4Shape[] = {1, 1};
 static const float kBias4Data[] = {1};
@@ -120,11 +139,11 @@ static const float kGolden4Data[] = {41, 41, 61, 61, 61, 61, 41, 41};
 
 static TfLiteConvParams common_conv_params = {
     kTfLitePaddingSame,  // padding
-    1,                   // stride_width
-    1,                   // stride_height
-    kTfLiteActNone,      // activation
-    1,                   // dilation_width_factor
-    1,                   // dilation_height_factor
+    1,                    // stride_width
+    1,                    // stride_height
+    kTfLiteActNone,       // activation
+    1,                    // dilation_width_factor
+    1,                    // dilation_height_factor
 };
 
 template <typename T>
@@ -215,28 +234,42 @@ void TestConvQuantizedPerChannel(
       filter_data, filter_data_quantized, filter_dims, filter_scales,
       filter_zero_points, &filter_quant, 0 /* quantized dimension */,
       "filter_tensor");
-
+  
   // DN: to replace scales and quantized data to avoid second quantization
   int channel_count = filter_dims->data[0];
-  float true_filter_scales[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
+  float true_filter_scales[10] = {1.0, 1.0, 1.0, 1.0, 1.0,
+                                  1.0, 1.0, 1.0, 1.0, 1.0};
   true_filter_scales[0] = static_cast<float>(channel_count);
-  TfLiteAffineQuantization* to_change =
-      (TfLiteAffineQuantization*)filter_tensor.quantization.params;
-  to_change->scale = FloatArrayFromFloats(true_filter_scales);
+  TfLiteAffineQuantization *params = (TfLiteAffineQuantization *)filter_tensor.quantization.params;
+  params->scale = FloatArrayFromFloats(true_filter_scales);
 
   int filter_size = filter_tensor.bytes;
-  for (int i = 0; i < filter_size; ++i) {
-    filter_tensor.data.int8[i] = filter_data[i];
+  for(int i = 0; i < filter_size; ++i) {
+    filter_tensor.data.int8[i] = static_cast<int8_t>(filter_data[i]);    
   }
 
   TfLiteTensor bias_tensor = CreatePerChannelQuantizedBiasTensor(
-      bias_data, bias_data_quantized, bias_dims, input_scale, &filter_scales[1],
+      bias_data, bias_data_quantized, bias_dims, input_scale, &true_filter_scales[1],
       bias_scales, bias_zero_points, &bias_quant, 0 /* quantized dimension */,
       "bias_tensor");
-  TfLiteTensor output_tensor =
+
+  int bias_size = bias_tensor.dims->data[0];
+  float true_bias_scales[10] = {1.0, 1.0, 1.0, 1.0, 1.0,
+                                1.0, 1.0, 1.0, 1.0, 1.0};
+  true_bias_scales[0] = static_cast<float>(bias_size);
+
+  params = (TfLiteAffineQuantization *)bias_tensor.quantization.params;
+  params->scale = FloatArrayFromFloats(true_bias_scales);
+  for(int i = 0; i < bias_size; ++i) {
+    bias_tensor.data.i32[i] = static_cast<int32_t>(bias_data[i]);
+  }
+
+
+  TfLiteTensor output_tensor = 
       CreateQuantizedTensor(output_data, output_dims, output_scale,
                             output_zero_point, "output_tensor");
 
+  // TODO(njeff): Affine Quantization Params should be set on tensor creation.
   float input_scales[] = {1, input_scale};
   int input_zero_points[] = {1, input_zero_point};
   TfLiteAffineQuantization input_quant = {FloatArrayFromFloats(input_scales),
@@ -297,11 +330,10 @@ TF_LITE_MICRO_TEST(SystemTestQuantizedPerChannel1) {
       tflite::testing::kInput1Shape, tflite::testing::kInput1Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter1Shape, tflite::testing::kFilter1Data,
-      filter_quantized, tflite::testing::kBias1Shape,
-      tflite::testing::kBias1Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput1Shape, tflite::testing::kGolden1Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias1Shape, tflite::testing::kBias1Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput1Shape,
+      tflite::testing::kGolden1Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel1) {
@@ -311,14 +343,14 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel1) {
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-#pragma Bss(".Xdata")
-  static int8_t input_quantized[tflite::testing::kInput1Elements];
-  static int8_t filter_quantized[tflite::testing::kFilter1Elements];
-  static int32_t bias_quantized[tflite::testing::kBias1Elements];
-  static int8_t output_data[output_dims_count];
-#pragma Bss()
+#pragma Bss(".Zdata")  
+  static int8_t input_quantized[tflite::testing::kInput1Elements]; // static 
+  static int8_t filter_quantized[tflite::testing::kFilter1Elements]; // static
+  static int32_t bias_quantized[tflite::testing::kBias1Elements]; // static
+  static int8_t output_data[output_dims_count]; // static
+#pragma Bss()  
 
-  int8_t golden_quantized[tflite::testing::kOutput1Elements];
+  static int8_t golden_quantized[tflite::testing::kOutput1Elements];
   int zero_points[tflite::testing::kBias1Elements + 1];
   float scales[tflite::testing::kBias1Elements + 1];
 
@@ -326,11 +358,10 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel1) {
       tflite::testing::kInput1Shape, tflite::testing::kInput1Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter1Shape, tflite::testing::kFilter1Data,
-      filter_quantized, tflite::testing::kBias1Shape,
-      tflite::testing::kBias1Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput1Shape, tflite::testing::kGolden1Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias1Shape, tflite::testing::kBias1Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput1Shape,
+      tflite::testing::kGolden1Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 // Test group 2
@@ -354,11 +385,10 @@ TF_LITE_MICRO_TEST(SystemTestQuantizedPerChannel2) {
       tflite::testing::kInput2Shape, tflite::testing::kInput2Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter2Shape, tflite::testing::kFilter2Data,
-      filter_quantized, tflite::testing::kBias2Shape,
-      tflite::testing::kBias2Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput2Shape, tflite::testing::kGolden2Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias2Shape, tflite::testing::kBias2Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput2Shape,
+      tflite::testing::kGolden2Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel2) {
@@ -368,12 +398,12 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel2) {
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-#pragma Bss(".Xdata")
+#pragma Bss(".Zdata")  
   static int8_t input_quantized[tflite::testing::kInput2Elements];
   static int8_t filter_quantized[tflite::testing::kFilter2Elements];
   static int32_t bias_quantized[tflite::testing::kBias2Elements];
   static int8_t output_data[output_dims_count];
-#pragma Bss()
+#pragma Bss()  
 
   int8_t golden_quantized[tflite::testing::kOutput2Elements];
   int zero_points[tflite::testing::kBias2Elements + 1];
@@ -383,11 +413,10 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel2) {
       tflite::testing::kInput2Shape, tflite::testing::kInput2Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter2Shape, tflite::testing::kFilter2Data,
-      filter_quantized, tflite::testing::kBias2Shape,
-      tflite::testing::kBias2Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput2Shape, tflite::testing::kGolden2Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias2Shape, tflite::testing::kBias2Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput2Shape,
+      tflite::testing::kGolden2Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 // Test group 3
@@ -411,11 +440,10 @@ TF_LITE_MICRO_TEST(SystemTestQuantizedPerChannel3) {
       tflite::testing::kInput3Shape, tflite::testing::kInput3Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter3Shape, tflite::testing::kFilter3Data,
-      filter_quantized, tflite::testing::kBias3Shape,
-      tflite::testing::kBias3Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput3Shape, tflite::testing::kGolden3Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias3Shape, tflite::testing::kBias3Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput3Shape,
+      tflite::testing::kGolden3Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
@@ -425,12 +453,12 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-#pragma Bss(".Xdata")
+#pragma Bss(".Zdata")  
   static int8_t input_quantized[tflite::testing::kInput3Elements];
   static int8_t filter_quantized[tflite::testing::kFilter3Elements];
   static int32_t bias_quantized[tflite::testing::kBias3Elements];
   static int8_t output_data[output_dims_count];
-#pragma Bss()
+#pragma Bss()  
 
   int8_t golden_quantized[tflite::testing::kOutput3Elements];
   int zero_points[tflite::testing::kBias3Elements + 1];
@@ -440,11 +468,10 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
       tflite::testing::kInput3Shape, tflite::testing::kInput3Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter3Shape, tflite::testing::kFilter3Data,
-      filter_quantized, tflite::testing::kBias3Shape,
-      tflite::testing::kBias3Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput3Shape, tflite::testing::kGolden3Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias3Shape, tflite::testing::kBias3Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput3Shape,
+      tflite::testing::kGolden3Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 // Test group 4
@@ -468,11 +495,10 @@ TF_LITE_MICRO_TEST(SystemTestQuantizedPerChannel4) {
       tflite::testing::kInput4Shape, tflite::testing::kInput4Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter4Shape, tflite::testing::kFilter4Data,
-      filter_quantized, tflite::testing::kBias4Shape,
-      tflite::testing::kBias4Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput4Shape, tflite::testing::kGolden4Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias4Shape, tflite::testing::kBias4Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput4Shape,
+      tflite::testing::kGolden4Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 
 TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
@@ -482,12 +508,12 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
   const int input_zero_point = 0;
   const int output_zero_point = 0;
 
-#pragma Bss(".Xdata")
+#pragma Bss(".Zdata")  
   static int8_t input_quantized[tflite::testing::kInput4Elements];
   static int8_t filter_quantized[tflite::testing::kFilter4Elements];
   static int32_t bias_quantized[tflite::testing::kBias4Elements];
   static int8_t output_data[output_dims_count];
-#pragma Bss()
+#pragma Bss()  
 
   int8_t golden_quantized[tflite::testing::kOutput4Elements];
   int zero_points[tflite::testing::kBias4Elements + 1];
@@ -497,10 +523,9 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
       tflite::testing::kInput4Shape, tflite::testing::kInput4Data,
       input_quantized, input_scale, input_zero_point,
       tflite::testing::kFilter4Shape, tflite::testing::kFilter4Data,
-      filter_quantized, tflite::testing::kBias4Shape,
-      tflite::testing::kBias4Data, bias_quantized, scales, zero_points,
-      tflite::testing::kOutput4Shape, tflite::testing::kGolden4Data,
-      golden_quantized, output_data, output_scale, output_zero_point,
-      &tflite::testing::common_conv_params);
+      filter_quantized, tflite::testing::kBias4Shape, tflite::testing::kBias4Data,
+      bias_quantized, scales, zero_points, tflite::testing::kOutput4Shape,
+      tflite::testing::kGolden4Data, golden_quantized, output_data, output_scale,
+      output_zero_point, &tflite::testing::common_conv_params);
 }
 TF_LITE_MICRO_TESTS_END

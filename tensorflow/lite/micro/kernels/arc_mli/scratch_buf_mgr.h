@@ -41,7 +41,8 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
                                                      mli_tensor* in,
                                                      mli_tensor* weights,
                                                      mli_tensor* bias,
-                                                     mli_tensor* out);
+                                                     mli_tensor* out,
+                                                     bool input_first = false);
 
 /**
  * @brief Function to allocate scratch buffers for pooling kernels with only
