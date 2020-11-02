@@ -1,4 +1,5 @@
 ifeq ($(TARGET), arc_emsdp)
+ifneq ($(ARC_TOOLCHAIN), gnu)
 
 # Patch of arc make project to adjust it specifically for micro speech example. 
 # In particular:
@@ -45,6 +46,7 @@ ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
 	@sed -E -i 's#mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32\(# \
 	mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32_generic\(#g' $(word 3, $^)
 	@echo $(word 3, $^): Use generic function >> $@
+endif
 endif
 
 endif

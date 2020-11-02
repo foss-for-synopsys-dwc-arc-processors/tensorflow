@@ -79,7 +79,7 @@ $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(SRCS)))
 	$(CC) $(CCFLAGS) $(EXT_CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(OUT_NAME): $(OBJS)
-	$(LD) $(CXXFLAGS) -o $@ -Ccrossref $(OBJS) $(LDFLAGS)
+	$(LD) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
 %{EXTRA_APP_RULES}%
 

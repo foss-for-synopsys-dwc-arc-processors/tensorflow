@@ -15,7 +15,7 @@
 # Settings for EMSDP target (ARC processor)
 
 TARGET_ARCH := arc
-ARC_TOOLCHAIN := mwdt
+ARC_TOOLCHAIN ?= mwdt
 
 
 BUILD_ARC_MLI := false
@@ -28,9 +28,14 @@ else ifeq ($(BUILD_ARC_MLI), true)
   MLI_LIB_DIR = arc_mli_$(ARC_MLI_PRE_COMPILED_TARGET)
 endif
 
-TCF_FILE = $(PWD)/$(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/hw/emsdp_em11d_em9d_dfss.tcf
-LCF_FILE = $(PWD)/$(MAKEFILE_DIR)/targets/arc/emsdp/emsdp.lcf
+ifeq ($(ARC_TOOLCHAIN), mwdt)
+  TCF_FILE = $(PWD)/$(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/hw/emsdp_em11d_em9d_dfss.tcf
+  LCF_FILE = $(PWD)/$(MAKEFILE_DIR)/targets/arc/emsdp/emsdp.lcf
 
+else ifeq ($(ARC_TOOLCHAIN), gnu)
+  LCF_FILE = $(PWD)/$(MAKEFILE_DIR)/targets/arc/emsdp/memory.x
+  ARC_HEADERS += $(PWD)/$(MAKEFILE_DIR)/targets/arc/emsdp/gnu_dependences/core_config.h
+endif # ARC_TOOLCHAIN
 
 include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
   
@@ -49,14 +54,28 @@ include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
 
   ARC_BIN_DEPEND = $(DLR)\(BIN_DIR\) $(DLR)\(BIN_FILE\)
   ARC_BIN_RULE = \t@echo Copy content of $(DLR)\(BIN_DIR\) into the root of SD card and follow instructions
-  
+
+ifeq ($(ARC_TOOLCHAIN), mwdt)
   ARC_APP_RUN_CMD = mdb -run -digilent -nooptions $(DLR)\(DBG_ARGS\)
   ARC_APP_DEBUG_CMD = mdb -OK -digilent -nooptions $(DLR)\(DBG_ARGS\)
   ARC_EXTRA_EXECUTE_RULES = 
+else ifeq ($(ARC_TOOLCHAIN), gnu)
+  ARC_APP_RUN_CMD = mdb -run -digilent -nooptions -off=spot_verify_download $(DLR)\(DBG_ARGS\)
+  ARC_APP_DEBUG_CMD = mdb -OK -digilent -nooptions -off=spot_verify_download $(DLR)\(DBG_ARGS\)
+  ARC_EXTRA_EXECUTE_RULES = 
+endif
 
 MAKE_PROJECT_FILES := $(filter-out README_MAKE.md, $(MAKE_PROJECT_FILES)) README_ARC_EMSDP.md
 
 # for default EMSDP configuration we can use em9d_va rt libs
 # for better performance runtime should be built for emsdp configuration
 # No hostlink library for smaller codesize purpose
-PLATFORM_LDFLAGS += -Hlib=em9d_voice_audio -Hhostlib=
+
+ifeq ($(ARC_TOOLCHAIN), mwdt)
+  PLATFORM_LDFLAGS += -Hlib=em9d_voice_audio -Hhostlib=
+  
+else ifeq ($(ARC_TOOLCHAIN), gnu)
+  CCFLAGS += -mcpu=em4_fpuda -mlittle-endian -mcode-density -mdiv-rem -mswap -mnorm -mmpy-option=6 -mbarrel-shifter -mfpu=fpuda_all --param l1-cache-size=16384 --param l1-cache-line-size=32
+  CXXFLAGS += -mcpu=em4_fpuda -mlittle-endian -mcode-density -mdiv-rem -mswap -mnorm -mmpy-option=6 -mbarrel-shifter -mfpu=fpuda_all --param l1-cache-size=16384 --param l1-cache-line-size=32
+
+endif # ARC_TOOLCHAIN

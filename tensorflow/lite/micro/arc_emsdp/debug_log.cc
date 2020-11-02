@@ -71,15 +71,23 @@ void DbgUartSendStr(const char* s) {
   }
 }
 
+#if defined EMSDP_LOG_TO_MEMORY
 // Simple dump of symbols to a pre-allocated memory region.
 // When total log exceeds memory region size, cursor is moved to its begining.
 // The memory region can be viewed afterward with debugger.
 // It can be viewed/read with debugger afterward.
 void LogToMem(const char* s) {
   static int cursor = 0;
+
+#if defined (__GNUC__) && !defined (__CCAC__)
+  #define __Dbgdata_attr __attribute__((section(".debug_log")))
+  #define _Dbg  __Dbgdata_attr
+  static volatile char _Dbg debug_log_mem[EMSDP_LOG_TO_MEMORY_SIZE];
+#else
 #pragma Bss(".debug_log")
   static volatile char debug_log_mem[EMSDP_LOG_TO_MEMORY_SIZE];
 #pragma Bss()
+#endif // if defined (__GNUC__) && !defined (__CCAC__)
 
   const char* src = s;
   while (*src) {
@@ -88,6 +96,7 @@ void LogToMem(const char* s) {
   }
   debug_log_mem[cursor] = '^';
 }
+#endif
 
 extern "C" void DebugLog(const char* s) {
 #ifndef TF_LITE_STRIP_ERROR_STRINGS

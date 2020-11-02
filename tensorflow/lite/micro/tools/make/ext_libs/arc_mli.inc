@@ -24,6 +24,11 @@ ifeq ($(filter no_arc_mli,$(ALL_TAGS)),)
 ALL_TAGS += arc_mli
 
 ifeq ($(BUILD_ARC_MLI),true)
+
+  ifneq ($(ARC_TOOLCHAIN), mwdt)
+  $(error MLI library can only be built using MWDT)
+  endif
+
   MLI_LIB_DIR ?= arc_mli_$(basename $(TCF_FILE_NAME))
 
   $(eval $(call add_third_party_download,$(EMBARC_MLI_URL),$(EMBARC_MLI_MD5),$(MLI_LIB_DIR),build_embarc_mli,$(TCF_FILE)))
@@ -51,7 +56,9 @@ endif
 endif
 
   THIRD_PARTY_CC_HDRS += $(MLI_LIB)
+ifeq ($(ARC_TOOLCHAIN), mwdt)
   GENERATED_PROJECT_LIBS += $(MLI_LIB)
+endif
 
   INCLUDES += \
     -I$(MAKEFILE_DIR)/downloads/$(MLI_INCLUDE_FOLDER) \
@@ -61,6 +68,12 @@ endif
     -I. \
     -I./third_party/$(MLI_INCLUDE_FOLDER) \
     -I./third_party/$(MLI_INCLUDE_FOLDER)/api
+
+  ifeq ($(ARC_TOOLCHAIN), gnu)
+    LDFLAGS += \
+    -L./third_party/$(MLI_LIB_DIR)/bin/$(ARC_MLI_PRE_COMPILED_TARGET)/release/ \
+    -L$(DEPEND_LIB)
+  endif
 
 
   THIRD_PARTY_CC_HDRS += \

@@ -81,6 +81,57 @@ ifeq ($(ARC_TOOLCHAIN), mwdt)
   CXX_TOOL := ccac
   LD_TOOL := ccac
 
+  PLATFORM_FLAGS = -tcf=$(TCF_FILE_NAME) -tcf_core_config
+  
+  PLATFORM_FLAGS += -Hnocopyr -Hpurge -Hdense_prologue -Hon=Long_enums -fslp-vectorize-aggressive -ffunction-sections -fdata-sections 
+  
+  # Use compact CRT. It requires pre-defined heap size
+  PLATFORM_FLAGS += -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset 
+  
+  PLATFORM_LDFLAGS = -tcf=$(TCF_FILE_NAME) 
+  
+  PLATFORM_LDFLAGS += -Hnocopyr -m -Hldopt=-Coutput=memory.map -Hheap=24K -Ccrossref 
+
+ifneq ($(LCF_FILE), )
+  PLATFORM_LDFLAGS += $(notdir $(LCF_FILE))
+  ARC_TARGET_COPY_FILES += $(notdir $(LCF_FILE))!$(LCF_FILE)
+  MAKE_PROJECT_FILES += $(notdir $(LCF_FILE))
+endif
+
+else ifeq ($(ARC_TOOLCHAIN), gnu)
+  CC_TOOL := arc-elf32-gcc
+  AR_TOOL := arc-elf32-ar
+  CXX_TOOL := arc-elf32-g++
+  LD_TOOL := arc-elf32-g++
+
+ifeq ($(filter no_arc_mli,$(ALL_TAGS)),)
+  PLATFORM_FLAGS += -mxy
+  PLATFORM_LDFLAGS += -lmli -lmwaddons
+  ifeq ($(DEPEND_LIB),)
+    $(error Please provide path to libmwaddons.a using DEPEND_LIB=[path])
+  endif
+  
+endif
+
+  COMMA=,
+  PLATFORM_LDFLAGS += -marcv2elfx -Map=memory.map --gc-sections --cref
+  PLATFORM_LDFLAGS := $(addprefix -Wl$(COMMA),$(PLATFORM_LDFLAGS))
+  
+ifneq ($(LCF_FILE), )
+  ARC_TARGET_COPY_FILES += $(notdir $(LCF_FILE))!$(LCF_FILE)
+  MAKE_PROJECT_FILES += $(notdir $(LCF_FILE))
+endif
+  
+  ARC_TARGET_COPY_FILES += $(foreach HEADER,$(ARC_HEADERS),$(notdir $(HEADER))!$(HEADER))
+  MAKE_PROJECT_FILES += $(foreach HEADER,$(ARC_HEADERS),$(notdir $(HEADER)))
+  PLATFORM_FLAGS += $(addprefix -include ,$(notdir $(ARC_HEADERS)))
+
+  # TODO: remove this in future
+  CXXFLAGS := $(filter-out -Werror,$(CXXFLAGS))
+  CCFLAGS := $(filter-out -Werror,$(CCFLAGS))
+
+endif # ARC_TOOLCHAIN
+
   ARC_APP_RUN_CMD = mdb -run -jit -tcf=$(TCF_FILE_NAME) $(DLR)\(DBG_ARGS\)
   ARC_APP_DEBUG_CMD = mdb -OK -jit -tcf=$(TCF_FILE_NAME) $(DLR)\(DBG_ARGS\)
 
@@ -104,23 +155,6 @@ else
   TCF_FILE_NAME = $(TCF_FILE)
 endif
 
-  PLATFORM_FLAGS = -tcf=$(TCF_FILE_NAME) -tcf_core_config
-  
-  PLATFORM_FLAGS += -Hnocopyr -Hpurge -Hdense_prologue -Hon=Long_enums -fslp-vectorize-aggressive -ffunction-sections -fdata-sections 
-  
-  # Use compact CRT. It requires pre-defined heap size
-  PLATFORM_FLAGS += -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset 
-  
-  PLATFORM_LDFLAGS = -tcf=$(TCF_FILE_NAME) 
-  
-  PLATFORM_LDFLAGS += -Hnocopyr -m -Hldopt=-Coutput=memory.map -Hheap=24K 
-
-ifneq ($(LCF_FILE), )
-  PLATFORM_LDFLAGS += $(notdir $(LCF_FILE))
-  ARC_TARGET_COPY_FILES += $(notdir $(LCF_FILE))!$(LCF_FILE)
-  MAKE_PROJECT_FILES += $(notdir $(LCF_FILE))
-endif
-
   CXXFLAGS := $(filter-out -std=c++11,$(CXXFLAGS))
   CCFLAGS := $(filter-out -std=c11,$(CCFLAGS))
 
@@ -132,8 +166,6 @@ endif
   CXXFLAGS += $(PLATFORM_FLAGS)
   CCFLAGS += $(PLATFORM_FLAGS)
   LDFLAGS += $(PLATFORM_LDFLAGS)
-
-endif # ARC_TOOLCHAIN
 
 else
   $(error "Only ARC target architecture supported (TARGET_ARCH=arc)")

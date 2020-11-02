@@ -1,4 +1,5 @@
 ifeq ($(TARGET), arc_emsdp)
+ifneq ($(ARC_TOOLCHAIN), gnu)
 
 # Patch of arc make project to adjust it specifically 
 # for experimental person detection example. In particular:
@@ -38,6 +39,7 @@ ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
 	@echo $(word 3, $^): Use specialization >> $@
 	@echo $(word 4, $^): Use specialization >> $@
 	@echo $(word 5, $^): Use specialization and remove max pooling >> $@
+endif
 endif
 
 endif

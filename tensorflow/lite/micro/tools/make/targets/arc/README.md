@@ -332,6 +332,38 @@ To run the application in the GUI debugger, use the following command:
 
 You will see the application output in the same console where you ran it.
 
+## Building using ARC GNU Compiler
+
+TFLM examples and applications can be built using GNU Toolchain for ARC Processors.\
+*Important note:* only pre compiled ARC MLI library can be used in this case.
+
+**Currently supports only EMSDP target!**
+
+Latest release of GNU Toolchain for ARC Processors can be found on the [releases page](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases).
+
+### Build an application:
+1. Download **Little Endian** version for **Baremetal** target and **Linux x86_64** host and unpack it somewhere on host machine.
+2. Export [path_to_arc_gnu_compiler]/bin folder into the PATH variable (check if `which arc-elf32-gcc` returns correct path).
+3. Build application as usual but in addition add these flags:
+```
+    ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libmwaddons.a]
+```
+*Important note:* DEPEND_LIB provides some neccery functions for MLI and its name always must be `libmwaddons.a`. DEPEND_LIB must point to the *folder* where the library at, *not* the library itself.
+
+### Modifying target Makefile for ARC GNU support:
+`arc_emsdp_makefile.inc` is modified to support GNU Toolchain for ARC Processors and can be used as an example. You can check all changes related to GNU, they have to start with
+```
+ifeq ($(ARC_TOOLCHAIN), gnu)
+```
+`.lcf` files replaced by memory.x linker scripts (more about: https://embarc.org/toolchain/baremetal/linker.html)\
+`.tcf` files are currently can't be used, so you have to provide `core_config.h` and options for compiler manually like it made in `arc_emsdp_makefile.inc`:
+```
+else ifeq ($(ARC_TOOLCHAIN), gnu)
+  CCFLAGS += -mcpu=em4_fpuda -mlittle-endian -mcode-density -mdiv-rem -mswap -mnorm -mmpy-option=6 -mbarrel-shifter -mfpu=fpuda_all --param l1-cache-size=16384 --param l1-cache-line-size=32
+  CXXFLAGS += -mcpu=em4_fpuda -mlittle-endian -mcode-density -mdiv-rem -mswap -mnorm -mmpy-option=6 -mbarrel-shifter -mfpu=fpuda_all --param l1-cache-size=16384 --param l1-cache-line-size=32
+```
+
+
 ## License
 
 TensorFlow's code is covered by the Apache2 License included in the repository,
