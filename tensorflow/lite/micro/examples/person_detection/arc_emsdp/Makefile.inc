@@ -1,4 +1,5 @@
 ifeq ($(TARGET), arc_emsdp)
+ifneq ($(ARC_TOOLCHAIN), gnu)
 
 # Patch of arc make project to adjust it specifically 
 # for person detection example. In particular:
@@ -21,4 +22,5 @@ ifeq ($(TARGET), arc_emsdp)
 	  $(word 2, $^)
 	@echo Makefile >> $@
 
-endif
+endif # ARC_TOOLCHAIN
+endif # TARGET

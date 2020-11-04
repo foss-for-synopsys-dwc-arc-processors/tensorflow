@@ -1,5 +1,4 @@
 ifeq ($(TARGET), arc_emsdp)
-ifneq ($(ARC_TOOLCHAIN), gnu)
 
 # Patch of arc make project to adjust it specifically for micro speech example. 
 # In particular:
@@ -19,6 +18,7 @@ ifneq ($(ARC_TOOLCHAIN), gnu)
 
   ARC_MLI_BACKEND_PATH = /tensorflow/lite/micro/kernels/arc_mli
 
+ifneq ($(ARC_TOOLCHAIN), gnu)
 # Apply changes in generated project files. 
 # See related comment echoed (@echo <comment>) after each change 
 # to get understanding on it's purpose.
@@ -47,6 +47,14 @@ ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
 	mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32_generic\(#g' $(word 3, $^)
 	@echo $(word 3, $^): Use generic function >> $@
 endif
+
+else
+ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
+%/micro_speech_patch.txt: %/Makefile %$(ARC_MLI_BACKEND_PATH)/depthwise_conv.cc
+	@sed -E -i 's#mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32\(# \
+	mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32_generic\(#g' $(word 2, $^)
+	@echo $(word 2, $^): Use generic function >> $@
 endif
 
-endif
+endif # ARC_TOOLCHAIN
+endif # TARGET
