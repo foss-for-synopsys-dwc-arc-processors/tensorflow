@@ -126,6 +126,8 @@ endif
   ARC_TARGET_COPY_FILES += $(foreach HEADER,$(ARC_HEADERS),$(notdir $(HEADER))!$(HEADER))
   MAKE_PROJECT_FILES += $(foreach HEADER,$(ARC_HEADERS),$(notdir $(HEADER)))
   PLATFORM_FLAGS += $(addprefix -include ,$(notdir $(ARC_HEADERS)))
+  
+  BUILD_ARC_MLI = false
 
   # TODO: remove this when all warnings are fixed
   CXXFLAGS := $(filter-out -Werror,$(CXXFLAGS))
