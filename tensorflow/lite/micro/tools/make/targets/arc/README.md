@@ -46,6 +46,16 @@ external use
 Please consider the above when choosing whether to install Windows or Linux or
 both versions of MWDT
 
+## Install the GNU Toolchain for ARC Processors (optional)
+TFLM examples and applications can be built using GNU Toolchain for ARC Processors.\
+*Important note:* only pre compiled ARC MLI library can be used in this case.
+
+**Currently supports only ARC EM SDP target.** If you want to use ARC GNU toolchain for your own target, follow some of advices [below](#building-using-arc-gnu-compiler).
+
+Latest release of GNU Toolchain for ARC Processors can be found on the [releases page](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases).
+1. Download **Little Endian** version for **Baremetal** target and **Linux x86_64** host and unpack it on host machine.
+2. Export [path_to_arc_gnu_compiler]/bin folder into the PATH variable (check if `which arc-elf32-gcc` returns correct path).
+
 ## ARC EM Software Development Platform (ARC EM SDP)
 
 This section describes how to deploy on an
@@ -148,9 +158,19 @@ make command line. For instance, to build the Person Detect test application,
 use a shell to execute the following command from the root directory of the
 TensorFlow repo:
 
+#### Build with MetaWare Development tools:
+
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project TARGET=arc_emsdp
 ```
+
+#### Build with ARC GNU toolchain:
+
+```
+make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TARGET=arc_emsdp
+```
+***Important note:*** `DEPEND_LIB` provides some neccery functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmw.a.)\
+`DEPEND_LIB` must point directly to the library file with `.a` extension to be correctly parsed.
 
 The application project will be generated into
 *tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/person_detection_test_int8/make*
@@ -167,7 +187,9 @@ quantized layers. Kernels which use MLI-based implementations are kept in the
 *tensorflow/lite/micro/kernels/arc_mli* folder. For applications which may not
 benefit from MLI library, the project can be generated without these
 implementations by adding `TAGS=no_arc_mli` in the command line. This can reduce
-code size when the optimized kernels are not required.
+code size when the optimized kernels are not required.\
+***Important note:*** only pre compiled ARC MLI library can be used with ARC GNU toolchain.
+
 
 For more options on embARC MLI usage see
 [kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md).
@@ -278,8 +300,13 @@ instead
 For instance, to build **Person Detection** test application, use the following
 command from the root directory of the TensorFlow repo:
 
+#### Build with MetaWare Development tools:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project TARGET=arc_custom TCF_FILE=<path_to_tcf_file> LCF_FILE=<path_to_lcf_file>
+```
+#### Build with ARC GNU toolchain:
+```
+Currently not supported
 ```
 
 The application project will be generated into
@@ -292,7 +319,8 @@ quantized layers. Kernels which use MLI-based implementations are kept in the
 *tensorflow/lite/micro/kernels/arc_mli* folder. For applications which may not
 benefit from MLI library, the project can be generated without these
 implementations by adding `TAGS=no_arc_mli` in the command line. This can reduce
-code size when the optimized kernels are not required.
+code size when the optimized kernels are not required.\
+***Important note:*** only pre compiled ARC MLI library can be used with ARC GNU toolchain.
 
 For more options on embARC MLI usage see
 [kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md).
@@ -332,23 +360,11 @@ To run the application in the GUI debugger, use the following command:
 
 You will see the application output in the same console where you ran it.
 
-## Building using ARC GNU Compiler
+## Building for custom ARC EM/HS platform using ARC GNU Compiler
 
-TFLM examples and applications can be built using GNU Toolchain for ARC Processors.\
 *Important note:* only pre compiled ARC MLI library can be used in this case.
 
-**Currently supports only EMSDP target!**
-
-Latest release of GNU Toolchain for ARC Processors can be found on the [releases page](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases).
-
-### Build an application:
-1. Download **Little Endian** version for **Baremetal** target and **Linux x86_64** host and unpack it somewhere on host machine.
-2. Export [path_to_arc_gnu_compiler]/bin folder into the PATH variable (check if `which arc-elf32-gcc` returns correct path).
-3. Build application as usual but in addition add these flags:
-```
-    ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libmwaddons.a]
-```
-*Important note:* DEPEND_LIB provides some neccery functions for MLI and its name always must be `libmwaddons.a`. DEPEND_LIB must point to the *folder* where the library at, *not* the library itself.
+**Currently supports only EMSDP target.** But user can modify Makefiles to use them with own target.
 
 ### Modifying target Makefile for ARC GNU support:
 `arc_emsdp_makefile.inc` is modified to support GNU Toolchain for ARC Processors and can be used as an example. You can check all changes related to GNU, they have to start with
@@ -362,8 +378,7 @@ else ifeq ($(ARC_TOOLCHAIN), gnu)
   CCFLAGS += -mcpu=em4_fpuda -mlittle-endian -mcode-density -mdiv-rem -mswap -mnorm -mmpy-option=6 -mbarrel-shifter -mfpu=fpuda_all --param l1-cache-size=16384 --param l1-cache-line-size=32
   CXXFLAGS += -mcpu=em4_fpuda -mlittle-endian -mcode-density -mdiv-rem -mswap -mnorm -mmpy-option=6 -mbarrel-shifter -mfpu=fpuda_all --param l1-cache-size=16384 --param l1-cache-line-size=32
 ```
-
-
+Use `ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a]` as options for your own target as well.
 ## License
 
 TensorFlow's code is covered by the Apache2 License included in the repository,

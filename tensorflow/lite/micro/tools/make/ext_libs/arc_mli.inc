@@ -70,9 +70,10 @@ endif
     -I./third_party/$(MLI_INCLUDE_FOLDER)/api
 
   ifeq ($(ARC_TOOLCHAIN), gnu)
+    DEPEND_LIB_PATH = $(dir $(DEPEND_LIB))
     LDFLAGS += \
     -L./third_party/$(MLI_LIB_DIR)/bin/$(ARC_MLI_PRE_COMPILED_TARGET)/release/ \
-    -L$(DEPEND_LIB)
+    -L$(DEPEND_LIB_PATH)
   endif
 
 

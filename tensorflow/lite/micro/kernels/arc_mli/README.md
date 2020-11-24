@@ -20,26 +20,46 @@ ARC specific target implies usage of embARC MLI.
 
 For example:
 
+#### Build with MetaWare Development tools:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp generate_person_detection_int8_make_project
 ```
+#### Build with ARC GNU toolchain:
+```
+make -f tensorflow/lite/micro/tools/make/Makefile ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TARGET=arc_emsdp TARGET=arc_emsdp generate_person_detection_int8_make_project
+```
+
+***Important note:*** `DEPEND_LIB` provides some neccery functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmw.a.)\
+`DEPEND_LIB` must point directly to the library file with `.a` extension to be correctly parsed.
 
 In case MLI implementation can’t be used, kernels in this folder fallback to
 TFLM reference implementations. For applications which may not benefit from MLI
 library, projects can be generated without these implementations by adding
 `TAGS=no_arc_mli` in the command line, which can reduce overall code size:
 
+#### Build with MetaWare Development tools:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp TAGS=no_arc_mli generate_person_detection_int8_make_project
 ```
+#### Build with ARC GNU toolchain:
+```
+make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TAGS=no_arc_mli generate_person_detection_int8_make_project
+```
 
-For ARC EM SDP board, a pre-compiled MLI library is downloaded and used in the
-application. For a custom target ARC-based platform, MLI sources are downloaded
+***Important note:*** `DEPEND_LIB` provides some neccery functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmw.a.)\
+`DEPEND_LIB` must point directly to the library file with `.a` extension to be correctly parsed.
+
+For ARC EM SDP board, a pre-compiled MLI library is downloaded and used in the application. For a custom target ARC-based platform, MLI sources are downloaded
 and compiled during project generation phase. To build library from sources for
 ARC EM SDP platform, add `BUILD_ARC_MLI=true` option to make command:
 
+#### Build with MetaWare Development tools:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp BUILD_ARC_MLI=true generate_person_detection_int8_make_project
+```
+#### Build with ARC GNU toolchain:
+```
+Only pre-compiled MLI library is supported.
 ```
 
 If an application exclusively uses accelerated MLI kernel implementations, one

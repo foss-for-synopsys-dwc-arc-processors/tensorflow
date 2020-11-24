@@ -105,10 +105,11 @@ else ifeq ($(ARC_TOOLCHAIN), gnu)
   LD_TOOL := arc-elf32-g++
 
 ifeq ($(filter no_arc_mli,$(ALL_TAGS)),)
+  DEPEND_LIB_FILE := $(subst lib,,$(notdir $(basename ($(DEPEND_LIB)))))
   PLATFORM_FLAGS += -mxy
-  PLATFORM_LDFLAGS += -lmli -lmwaddons
+  PLATFORM_LDFLAGS += -lmli -l$(DEPEND_LIB_FILE)
   ifeq ($(DEPEND_LIB),)
-    $(error Please provide path to libmwaddons.a using DEPEND_LIB=[path])
+    $(error Please provide path to lib[name].a using DEPEND_LIB=[path])
   endif
   
 endif
@@ -126,7 +127,7 @@ endif
   MAKE_PROJECT_FILES += $(foreach HEADER,$(ARC_HEADERS),$(notdir $(HEADER)))
   PLATFORM_FLAGS += $(addprefix -include ,$(notdir $(ARC_HEADERS)))
 
-  # TODO: remove this in future
+  # TODO: remove this when all warnings are fixed
   CXXFLAGS := $(filter-out -Werror,$(CXXFLAGS))
   CCFLAGS := $(filter-out -Werror,$(CCFLAGS))
 
