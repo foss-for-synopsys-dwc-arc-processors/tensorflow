@@ -50,7 +50,7 @@ both versions of MWDT
 TFLM examples and applications can be built using GNU Toolchain for ARC Processors.\
 *Important note:* only pre compiled ARC MLI library can be used in this case.
 
-**Currently supports only ARC EM SDP target.** If you want to use ARC GNU toolchain for your own target, follow some of advices [below](#building-using-arc-gnu-compiler).
+**Currently supports only ARC EM SDP target.** If you want to use ARC GNU toolchain for your own target, follow the advice [below](#building-using-arc-gnu-compiler).
 
 Latest release of GNU Toolchain for ARC Processors can be found on the [releases page](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases).
 1. Download **Little Endian** version for **Baremetal** target and **Linux x86_64** host and unpack it on host machine.
@@ -169,8 +169,8 @@ make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TARGET=arc_emsdp
 ```
-***Important note:*** `DEPEND_LIB` provides some neccery functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmw.a.)\
-`DEPEND_LIB` must point directly to the library file with `.a` extension to be correctly parsed.
+***Important note:*** `DEPEND_LIB` provides some necessary functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmwdepend.a). Please contact Synopsys for more details about this library if you have problems creating it.\
+`DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
 
 The application project will be generated into
 *tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/person_detection_test_int8/make*
@@ -364,7 +364,7 @@ You will see the application output in the same console where you ran it.
 
 *Important note:* only pre compiled ARC MLI library can be used in this case.
 
-**Currently supports only EMSDP target.** But user can modify Makefiles to use them with own target.
+**Currently supports only EMSDP target.** But user can modify Makefiles to use them with their own target.
 
 ### Modifying target Makefile for ARC GNU support:
 `arc_emsdp_makefile.inc` is modified to support GNU Toolchain for ARC Processors and can be used as an example. You can check all changes related to GNU, they have to start with
