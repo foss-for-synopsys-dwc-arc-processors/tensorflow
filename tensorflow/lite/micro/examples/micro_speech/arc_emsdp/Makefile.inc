@@ -7,6 +7,8 @@ ifeq ($(TARGET), arc_emsdp)
 # - Optional (TAGS=reduce_codesize): In case project was 
 #   generated with MLI usage, reduce scratch buffers.
 
+ifneq ($(ARC_TOOLCHAIN), gnu)
+
   MICRO_SPEECH_HDRS += \
   micro_speech_patch.txt
   
@@ -18,7 +20,6 @@ ifeq ($(TARGET), arc_emsdp)
 
   ARC_MLI_BACKEND_PATH = /tensorflow/lite/micro/kernels/arc_mli
 
-ifneq ($(ARC_TOOLCHAIN), gnu)
 # Apply changes in generated project files. 
 # See related comment echoed (@echo <comment>) after each change 
 # to get understanding on it's purpose.
@@ -50,6 +51,18 @@ endif
 
 else
 ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
+
+  MICRO_SPEECH_HDRS += \
+  micro_speech_patch.txt
+  
+  MICRO_SPEECH_TEST_HDRS += \
+  micro_speech_patch.txt
+  
+  MICRO_SPEECH_MOCK_HDRS += \
+  micro_speech_patch.txt
+
+  ARC_MLI_BACKEND_PATH = /tensorflow/lite/micro/kernels/arc_mli
+
 %/micro_speech_patch.txt: %/Makefile %$(ARC_MLI_BACKEND_PATH)/depthwise_conv.cc
 	@sed -E -i 's#mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32\(# \
 	mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32_generic\(#g' $(word 2, $^)

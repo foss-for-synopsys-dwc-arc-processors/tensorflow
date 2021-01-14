@@ -62,9 +62,17 @@ As default example doesn’t provide any output without real audio, it is
 recommended to get started with example for mock data. The project for ARC EM
 SDP platform can be generated with the following command:
 
+#### Build with MetaWare Development tools:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile \
 TARGET=arc_emsdp TAGS=reduce_codesize  \
+generate_micro_speech_mock_make_project
+```
+#### Build with ARC GNU toolchain:
+```
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_emsdp TAGS=reduce_codesize  \
+ARC_TOOLCHAIN=gnu \
 generate_micro_speech_mock_make_project
 ```
 

@@ -52,8 +52,8 @@ TFLM examples and applications can be built using GNU Toolchain for ARC Processo
 
 **Currently supports only ARC EM SDP target.** If you want to use ARC GNU toolchain for your own target, follow the advice [below](#building-using-arc-gnu-compiler).
 
-Latest release of GNU Toolchain for ARC Processors can be found on the [releases page](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases).
-1. Download **Little Endian** version for **Baremetal** target and **Linux x86_64** host and unpack it on host machine.
+**2020.03** release of GNU Toolchain for ARC Processors is required. It can be found on the [releases page]((https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases/tag/arc-2020.03-release).
+1. Download **Little Endian** version for **Baremetal** target and **Linux x86_64** host and unpack it on host machine from [here](https://github.com/foss-for-synopsys-dwc-arc-processors/toolchain/releases/tag/arc-2020.03-release).
 2. Export [path_to_arc_gnu_compiler]/bin folder into the PATH variable (check if `which arc-elf32-gcc` returns correct path).
 
 ## ARC EM Software Development Platform (ARC EM SDP)
@@ -167,10 +167,10 @@ make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test
 #### Build with ARC GNU toolchain:
 
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TARGET=arc_emsdp
+make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project ARC_TOOLCHAIN=gnu TARGET=arc_emsdp
 ```
 ***Important note:*** `DEPEND_LIB` provides some necessary functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmwdepend.a). Please contact Synopsys for more details about this library if you have problems creating it.\
-`DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
+If you want to use custom library `DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
 
 The application project will be generated into
 *tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/person_detection_test_int8/make*
@@ -297,6 +297,8 @@ LCF_FILE=<path to LCF file>
 If you don’t supply an external LCF, the one embedded in the TCF will be used
 instead
 
+***Important note:*** For ARC GNU toolchain memory.x file is used instead of LCF (more about: https://embarc.org/toolchain/baremetal/linker.html)
+
 For instance, to build **Person Detection** test application, use the following
 command from the root directory of the TensorFlow repo:
 
@@ -306,7 +308,7 @@ make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test
 ```
 #### Build with ARC GNU toolchain:
 ```
-Currently not supported
+make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project TARGET=arc_emsdp ARC_TOOLCHAIN=gnu LCF_FILE=<path_to_memory.x_file>
 ```
 
 The application project will be generated into

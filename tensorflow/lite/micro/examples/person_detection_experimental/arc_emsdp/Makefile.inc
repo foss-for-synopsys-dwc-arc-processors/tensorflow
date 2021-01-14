@@ -6,6 +6,8 @@ ifeq ($(TARGET), arc_emsdp)
 # - Stripout TFLM reference code by default.
 # - Optional: replace mli switchers with specialized kernels 
 #   for smaller code size
+  
+ifneq ($(ARC_TOOLCHAIN), gnu)
 
   person_detection_HDRS += \
   person_detection_int8_patch.txt
@@ -14,8 +16,7 @@ ifeq ($(TARGET), arc_emsdp)
   person_detection_int8_patch.txt
   
   ARC_MLI_BACKEND_PATH = /tensorflow/lite/micro/kernels/arc_mli
-  
-ifneq ($(ARC_TOOLCHAIN), gnu)
+
 # Apply changes in generated project files. 
 # See related comment echoed (@echo <comment>) after each change 
 # to get understanding on it's purpose.
@@ -42,13 +43,17 @@ ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
 endif
 
 else
-%/person_detection_int8_patch.txt: %/Makefile %$(ARC_MLI_BACKEND_PATH)/conv.cc %$(ARC_MLI_BACKEND_PATH)/depthwise_conv.cc %$(ARC_MLI_BACKEND_PATH)/pooling.cc
 ifneq ($(filter $(ALL_TAGS), reduce_codesize),)
-# In case 'reduce_codesize' tag is present, we replace common MLI functions with 
-# specializations appropriate for this particular graph. But such changes of code 
-# with high probability may not be acceptable for other graphs and will need 
-# to be adjusted by the user
 
+  person_detection_HDRS += \
+  person_detection_int8_patch.txt
+  
+  person_detection_TEST_HDRS += \
+  person_detection_int8_patch.txt
+  
+  ARC_MLI_BACKEND_PATH = /tensorflow/lite/micro/kernels/arc_mli
+
+%/person_detection_int8_patch.txt: %/Makefile %$(ARC_MLI_BACKEND_PATH)/conv.cc %$(ARC_MLI_BACKEND_PATH)/depthwise_conv.cc %$(ARC_MLI_BACKEND_PATH)/pooling.cc
 	@sed -E -i 's#mli_krn_conv2d_nhwc_sa8_sa8_sa32#mli_krn_conv2d_nhwc_sa8_sa8_sa32_k1x1_nopad#' $(word 2, $^)
 	@sed -E -i 's#mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32#mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32_k3x3_krnpad#' $(word 3, $^)
 	@sed -E -i 's#mli_krn_avepool_hwc_sa8#mli_krn_avepool_hwc_sa8_k3x3_nopad#' $(word 4, $^)

@@ -13,8 +13,8 @@ MEMORY {
 REGION_ALIAS("startup", VECTABLE)
 REGION_ALIAS("text", PSRAM)
 REGION_ALIAS("readonly", DCCM)
-REGION_ALIAS("data", DCCM)
-REGION_ALIAS("sdata", DCCM)
+REGION_ALIAS("data", PSRAM)
+REGION_ALIAS("sdata", PSRAM)
 
 SECTIONS {
   .ivt DEFINED (ivtbase_addr) ? ivtbase_addr : 0x60000000 :

@@ -49,9 +49,17 @@ to get and install all required tools for work with ARC EM SDP.
 The example project for ARC EM SDP platform can be generated with the following
 command:
 
+#### Build with MetaWare Development tools:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile \
 TARGET=arc_emsdp TAGS=reduce_codesize \
+generate_person_detection_int8_make_project
+```
+#### Build with ARC GNU toolchain:
+```
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_emsdp TAGS=reduce_codesize \
+ARC_TOOLCHAIN=gnu \
 generate_person_detection_int8_make_project
 ```
 

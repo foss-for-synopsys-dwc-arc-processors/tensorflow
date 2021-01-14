@@ -23,7 +23,9 @@ ARC_MLI_PRE_COMPILED_TARGET := emsdp_em11d_em9d_dfss
 
 ifneq ($(filter no_arc_mli,$(ALL_TAGS)),)
   MLI_LIB_DIR = arc_mli_package
+  MLI_GNU_DEPEND_LIB_DIR = arc_gnu_dependencies
   $(eval $(call add_third_party_download,$(EMBARC_MLI_PRE_COMPILED_URL),$(EMBARC_MLI_PRE_COMPILED_MD5),$(MLI_LIB_DIR),))
+  $(eval $(call add_third_party_download,$(EMBARC_GNU_DEPENDS_PRE_COMPILED_URL),$(EMBARC_GNU_DEPENDS_PRE_COMPILED_MD5),$(MLI_GNU_DEPEND_LIB_DIR),))
 else ifeq ($(BUILD_ARC_MLI), true)
   MLI_LIB_DIR = arc_mli_$(ARC_MLI_PRE_COMPILED_TARGET)
 endif

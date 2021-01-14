@@ -26,11 +26,11 @@ make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp generate_pers
 ```
 #### Build with ARC GNU toolchain:
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TARGET=arc_emsdp generate_person_detection_int8_make_project
+make -f tensorflow/lite/micro/tools/make/Makefile ARC_TOOLCHAIN=gnu TARGET=arc_emsdp generate_person_detection_int8_make_project
 ```
 
 ***Important note:*** `DEPEND_LIB` provides some necessary functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmwdepend.a). Please contact Synopsys for more details about this library if you have problems creating it.\
-`DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
+If you want to use custom library `DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
 
 In case MLI implementation can’t be used, kernels in this folder fallback to
 TFLM reference implementations. For applications which may not benefit from MLI
@@ -43,11 +43,11 @@ make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp TAGS=no_arc_m
 ```
 #### Build with ARC GNU toolchain:
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp ARC_TOOLCHAIN=gnu DEPEND_LIB=[path_to_libname.a] TAGS=no_arc_mli generate_person_detection_int8_make_project
+make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp ARC_TOOLCHAIN=gnu TAGS=no_arc_mli generate_person_detection_int8_make_project
 ```
 
 ***Important note:*** `DEPEND_LIB` provides some necessary functions for MLI and its name always must start with `lib`. (*Example:* DEPEND_LIB=../../libmwdepend.a). Please contact Synopsys for more details about this library if you have problems creating it.\
-`DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
+If you want to use custom library `DEPEND_LIB` must be set to a full path to the `.a` file to be correctly parsed.
 
 For ARC EM SDP board, a pre-compiled MLI library is downloaded and used in the application. For a custom target ARC-based platform, MLI sources are downloaded
 and compiled during project generation phase. To build library from sources for

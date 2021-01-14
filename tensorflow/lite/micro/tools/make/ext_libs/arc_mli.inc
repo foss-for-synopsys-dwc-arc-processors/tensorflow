@@ -44,6 +44,12 @@ ifneq ($(ARC_MLI_PRE_COMPILED_TARGET),)
   MLI_LIB_DIR ?= arc_mli_package
   $(eval $(call add_third_party_download,$(EMBARC_MLI_PRE_COMPILED_URL),$(EMBARC_MLI_PRE_COMPILED_MD5),$(MLI_LIB_DIR),))
 
+ifeq ($(ARC_TOOLCHAIN), gnu)
+  MLI_GNU_DEPEND_LIB_DIR = arc_gnu_dependencies
+  $(eval $(call add_third_party_download,$(EMBARC_GNU_DEPENDS_PRE_COMPILED_URL),$(EMBARC_GNU_DEPENDS_PRE_COMPILED_MD5),$(MLI_GNU_DEPEND_LIB_DIR),))
+  THIRD_PARTY_CC_HDRS += third_party/$(MLI_GNU_DEPEND_LIB_DIR)/gnu_depend_lib/libmwdepend.a
+endif
+
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include
   MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/$(ARC_MLI_PRE_COMPILED_TARGET)/release/libmli.a
   MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/$(ARC_MLI_PRE_COMPILED_TARGET)/release/libmli.a

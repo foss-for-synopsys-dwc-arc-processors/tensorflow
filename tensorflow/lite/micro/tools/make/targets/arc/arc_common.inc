@@ -105,6 +105,7 @@ else ifeq ($(ARC_TOOLCHAIN), gnu)
   LD_TOOL := arc-elf32-g++
 
 ifeq ($(filter no_arc_mli,$(ALL_TAGS)),)
+  DEPEND_LIB ?= ./third_party/$(MLI_GNU_DEPEND_LIB_DIR)/gnu_depend_lib/libmwdepend.a
   DEPEND_LIB_FILE := $(subst lib,,$(notdir $(basename ($(DEPEND_LIB)))))
   PLATFORM_FLAGS += -mxy
   PLATFORM_LDFLAGS += -lmli -l$(DEPEND_LIB_FILE)
