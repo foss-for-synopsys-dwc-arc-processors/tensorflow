@@ -245,7 +245,7 @@ make -f tensorflow/lite/micro/tools/make/Makefile TARGET=himax_we1_evb third_par
 Generate hello world project
 
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile generate_hello_world_make_project TARGET=himax_we1_evb ARC_TAGS=no_arc_mli
+make -f tensorflow/lite/micro/tools/make/Makefile generate_hello_world_make_project TARGET=himax_we1_evb OPTIMIZED_KERNEL_DIR=arc_mli ARC_TAGS=no_arc_mli
 ```
 
 ### Build and Burn Example

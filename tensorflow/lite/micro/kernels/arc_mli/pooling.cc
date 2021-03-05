@@ -192,8 +192,8 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   mli_mov_cfg_for_copy(&copy_config);
   TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_pooling_tensors(
       context, &in_local, &out_local));
-  bool in_is_local = in_local.data == data.mli_in->data;
-  bool out_is_local = out_local.data == data.mli_out->data;
+  bool in_is_local = in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+  bool out_is_local = out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
   TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_io(
       &in_local, &out_local, cfg_local.kernel_height, cfg_local.stride_height,
       cfg_local.padding_top, cfg_local.padding_bottom, &in_slice_height,

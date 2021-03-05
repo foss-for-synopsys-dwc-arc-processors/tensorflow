@@ -167,7 +167,7 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized1) {
 
   const int output_dims_count = 6;
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int8_t input_data_local[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                      2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const int8_t weights_data_local[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -239,7 +239,7 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized2) {
 
   const int output_dims_count_local_2 = 60;
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int8_t input_data_local_2[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
@@ -309,7 +309,7 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized3) {
 
   const int output_dims_count_local_3 = 20;
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   static int8_t input_data_local_3[10];
   static int8_t weights_data_local_3[50];
   static int32_t bias_data_local_3[10];
@@ -397,7 +397,7 @@ TF_LITE_MICRO_TEST(LocalSimpleTestQuantized4) {
 
   const int output_dims_count_local_4 = 25;
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int8_t input_data_local_4[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,

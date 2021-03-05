@@ -29,8 +29,9 @@ ifeq ($(BUILD_ARC_MLI),true)
   $(eval $(call add_third_party_download,$(EMBARC_MLI_URL),$(EMBARC_MLI_MD5),$(MLI_LIB_DIR),build_embarc_mli,$(TCF_FILE)))
 
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include
-  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/libmli.a
-  MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/libmli.a
+  #TODO: Here now arc_... depends on reference or not
+  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/arc_ref/libmli.a
+  MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/arc/libmli.a
 
   THIRD_PARTY_CC_HDRS += \
     third_party/$(MLI_LIB_DIR)/LICENSE

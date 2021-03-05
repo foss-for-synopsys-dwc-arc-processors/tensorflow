@@ -191,16 +191,16 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_weights(
       &weights_local, &bias_local, weight_out_dimension, &slice_size));
   int max_out_slice_size =
-      out_local.capacity / mli_hlp_tensor_element_size(&out_local);
+      out_local.data.capacity / mli_hlp_tensor_element_size(&out_local);
   if (slice_size > max_out_slice_size) slice_size = max_out_slice_size;
 
   /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
-  const bool in_is_local = in_local.data == data.mli_in->data;
-  const bool out_is_local = out_local.data == data.mli_out->data;
-  const bool w_is_local = weights_local.data == data.mli_weights->data;
-  const bool b_is_local = bias_local.data == data.mli_bias->data;
+  const bool in_is_local = in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+  const bool out_is_local = out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+  const bool w_is_local = weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
+  const bool b_is_local = bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
 
   ops::micro::TensorSlicer w_slice(data.mli_weights, weight_out_dimension,
                                    slice_size);
@@ -237,11 +237,15 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 
     while (!out_slice.Done()) {
       // if same input copy as previous iteration, skip the copy of input
-      if (in_slice.Sub()->data != input_buffer_ptr) {
+      if (in_slice.Sub()->data.mem.void_p != input_buffer_ptr) {
         mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
-        input_buffer_ptr = in_slice.Sub()->data;
+        input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
       }
-      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, out_ptr);
+
+      mli_fully_connected_cfg cfg;
+      cfg.relu.type = MLI_RELU_NONE;
+
+      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg, out_ptr);
       mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 
       in_slice.Next();

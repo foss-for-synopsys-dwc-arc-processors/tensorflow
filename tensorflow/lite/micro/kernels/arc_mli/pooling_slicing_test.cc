@@ -218,7 +218,7 @@ TF_LITE_MICRO_TEST(LocalAveragePoolTestInt1) {
   const float output_max = 127;
   int8_t output_data[3];
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int kInput1Shape[] = {4, 1, 2, 4, 1};
   const int8_t kInput1Data[] = {1, 1, 1, 1, 1, 1, 1, 1};
   const int kOutput1Shape[] = {4, 1, 1, 3, 1};
@@ -276,7 +276,7 @@ TF_LITE_MICRO_TEST(LocalAveragePoolTestInt2) {
   const float output_max = 127;
   int8_t output_data[45];
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int kInput2Shape[] = {4, 1, 6, 10, 1};
   const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -339,7 +339,7 @@ TF_LITE_MICRO_TEST(LocalMaxPoolTestInt1) {
   int stride_width = 1;
   int stride_height = 1;
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int kInput1Shape[] = {4, 1, 2, 4, 1};
   const int8_t kInput1Data[] = {1, 1, 1, 1, 1, 1, 1, 1};
   const int kOutput1Shape[] = {4, 1, 1, 3, 1};
@@ -399,7 +399,7 @@ TF_LITE_MICRO_TEST(LocalMaxPoolTestInt2) {
   int stride_width = 1;
   int stride_height = 1;
 
-#pragma Bss(".Zdata")
+#pragma Bss(".vecmem_data")
   const int kInput2Shape[] = {4, 1, 6, 10, 1};
   const int8_t kInput2Data[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

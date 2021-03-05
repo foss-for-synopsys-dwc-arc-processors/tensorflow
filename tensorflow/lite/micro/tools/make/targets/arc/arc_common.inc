@@ -81,8 +81,8 @@ ifeq ($(ARC_TOOLCHAIN), mwdt)
   CXX_TOOL := ccac
   LD_TOOL := ccac
 
-  ARC_APP_RUN_CMD = mdb -run -jit -tcf=$(TCF_FILE_NAME) $(DLR)\(DBG_ARGS\)
-  ARC_APP_DEBUG_CMD = mdb -OK -jit -tcf=$(TCF_FILE_NAME) $(DLR)\(DBG_ARGS\)
+  ARC_APP_RUN_CMD = mdb -run -tcf=$(TCF_FILE_NAME) $(DLR)\(DBG_ARGS\)
+  ARC_APP_DEBUG_CMD = mdb -OK -tcf=$(TCF_FILE_NAME) $(DLR)\(DBG_ARGS\)
 
   # The variable TCF_FILE stores path to Tool Configuration File (*.tcf). 
   # This file is used by MWDT toolchain to properly compile/run code
