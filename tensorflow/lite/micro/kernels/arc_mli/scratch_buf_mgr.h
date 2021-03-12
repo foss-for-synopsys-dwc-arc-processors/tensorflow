@@ -37,11 +37,9 @@ namespace micro {
  *
  * @return Tf Lite status code
  */
-TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
-                                                     mli_tensor* in,
-                                                     mli_tensor* weights,
-                                                     mli_tensor* bias,
-                                                     mli_tensor* out);
+TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
+    TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
+    mli_tensor* bias, mli_tensor* out, void** weights_buffer);
 
 /**
  * @brief Function to allocate scratch buffers for pooling kernels with only

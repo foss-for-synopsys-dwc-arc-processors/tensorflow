@@ -26,17 +26,7 @@ namespace micro {
  * adding a -D option to the makefile of the application
  */
 
-#ifdef __Xvdsp
-
-#ifndef SCRATCH_MEM_VEC_SIZE
-#ifdef core_config_vec_mem_size
-#define SCRATCH_MEM_VEC_SIZE (core_config_vec_mem_size)
-#else
-#define SCRATCH_MEM_VEC_SIZE (0)
-#endif
-#endif
-
-#else
+#ifdef __Xxy
 
 #ifndef SCRATCH_MEM_X_SIZE
 #ifdef core_config_xy_size
@@ -62,16 +52,31 @@ namespace micro {
 #endif
 #endif
 
+#elif defined(__Xvdsp)
+
+#ifndef SCRATCH_MEM_VEC_SIZE
+#ifdef core_config_vec_mem_size
+#define SCRATCH_MEM_VEC_SIZE (core_config_vec_mem_size)
+#else
+#define SCRATCH_MEM_VEC_SIZE (0)
+#endif
+#endif
+
+#else
+
+#define SCRATCH_MEM_VEC_SIZE (65536 + 16384)
+
 #endif
 
 namespace {
 #ifdef __Xvdsp
 
 #pragma Bss(".vecmem_data")
-static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE - 16384]; //TODO: replace magic
+static int8_t
+    scratch_mem_vec[SCRATCH_MEM_VEC_SIZE - 16384];  // TODO: replace magic
 #pragma Bss()
 
-#else
+#elif defined(__Xxy)
 
 #pragma Bss(".Xdata")
 static int8_t scratch_mem_x[SCRATCH_MEM_X_SIZE];
@@ -85,17 +90,23 @@ static int8_t scratch_mem_y[SCRATCH_MEM_Y_SIZE];
 static int8_t scratch_mem_z[SCRATCH_MEM_Z_SIZE];
 #pragma Bss()
 
+#else
+
+static int8_t scratch_mem_vec[65536];
+
 #endif
 }  // namespace
 
-#ifdef __Xvdsp
-static int8_t* scratch_mem[] = {scratch_mem_vec};
-static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE - 16384};
+#ifdef __Xxy
 
-#else
 static int8_t* scratch_mem[] = {scratch_mem_x, scratch_mem_y, scratch_mem_z};
 static uint32_t scratch_sizes[] = {SCRATCH_MEM_X_SIZE, SCRATCH_MEM_Y_SIZE,
                                    SCRATCH_MEM_Z_SIZE};
+
+#else
+static int8_t* scratch_mem[] = {scratch_mem_vec};
+static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE - 16384};
+
 #endif
 
 void* get_arc_scratch_buffer(int size) {
@@ -153,16 +164,18 @@ void get_arc_scratch_buffer_two_max_sizes(int* size1, int* size2) {
 }
 
 void init_arc_scratch_buffers(void) {
-#ifdef __Xvdsp
-  scratch_mem[0] = scratch_mem_vec;
-  scratch_sizes[0] = SCRATCH_MEM_VEC_SIZE - 16384; //TODO: replace magic with define
-#else
+#ifdef __Xxy
   scratch_mem[0] = scratch_mem_x;
   scratch_mem[1] = scratch_mem_y;
   scratch_mem[2] = scratch_mem_z;
   scratch_sizes[0] = SCRATCH_MEM_X_SIZE;
   scratch_sizes[1] = SCRATCH_MEM_Y_SIZE;
   scratch_sizes[2] = SCRATCH_MEM_Z_SIZE;
+#else
+  scratch_mem[0] = scratch_mem_vec;
+  scratch_sizes[0] =
+      SCRATCH_MEM_VEC_SIZE - 16384;  // TODO: replace magic with define
+
 #endif
 }
 

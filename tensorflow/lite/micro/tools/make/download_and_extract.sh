@@ -92,7 +92,7 @@ patch_cifar10_dataset() {
 
 build_embarc_mli() {
   # make -j 4 -f ${1}/lib/make/makefile TCF_FILE=${2}
-  gmake lib -C ${1}/lib/make lib TCF_FILE=${2}
+  make -C ${1}/lib/make lib TCF_FILE=${2} JOBS=4
 }
 
 setup_zephyr() {

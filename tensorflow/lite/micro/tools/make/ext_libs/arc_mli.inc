@@ -30,7 +30,7 @@ ifeq ($(BUILD_ARC_MLI),true)
 
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include
   #TODO: Here now arc_... depends on reference or not
-  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/arc_ref/libmli.a
+  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/arc/libmli.a
   MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/arc/libmli.a
 
   THIRD_PARTY_CC_HDRS += \

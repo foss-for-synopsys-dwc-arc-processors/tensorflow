@@ -108,19 +108,17 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
 }
 #endif
 
-TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
-                                                     mli_tensor* in,
-                                                     mli_tensor* weights,
-                                                     mli_tensor* bias,
-                                                     mli_tensor* out) {
+TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
+    TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
+    mli_tensor* bias, mli_tensor* out, void** weights_buffer) {
   TfLiteStatus ret_val = kTfLiteOk;
-#if (defined(__Xxy)) || (defined(__Xvdsp))
   init_arc_scratch_buffers();
-  if (!inside_arc_ccm(weights->data.mem.void_p)) {
+#if (defined(__Xxy)) || (defined(__Xvdsp))
+  if (!inside_arc_ccm(bias->data.mem.void_p)) {
     int weights_size = mli_hlp_count_elem_num(weights, 0) *
                        mli_hlp_tensor_element_size(weights);
     int max_weights_size = 0;
-    weights->data.mem.void_p = get_arc_scratch_buffer(weights_size * 2); // TODO: x2 memory bank for layout changing. Maybe remove later.
+    weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
     weights->data.capacity = weights_size;
     if (weights->data.mem.void_p == NULL) {
       get_arc_scratch_buffer_max_size(&max_weights_size);
@@ -128,8 +126,11 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
       weights->data.capacity = max_weights_size;
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
-    if (weights->data.mem.void_p == NULL) ret_val = kTfLiteError;
+    // Allocate buffer for weights transpose.
+    *weights_buffer = get_arc_scratch_buffer(weights_size);
   }
+  if (weights->data.mem.void_p == NULL || weights_buffer == NULL)
+    ret_val = kTfLiteError;
 
   if (!inside_arc_ccm(bias->data.mem.void_p)) {
     uint32_t bias_mem_requirements =
@@ -151,6 +152,12 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
   }
   if (bias->data.mem.void_p == NULL) ret_val = kTfLiteError;
 
+#else
+  int weights_size =
+      mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
+  // Allocate buffer for weights transpose.
+  *weights_buffer = get_arc_scratch_buffer(weights_size);
+  if (weights_buffer == NULL) ret_val = kTfLiteError;
 #endif
   return ret_val;
 }
@@ -247,8 +254,9 @@ TfLiteStatus arc_scratch_buffer_calc_slice_size_io(
   int max_lines_in = 0;
   int max_lines_out = 0;
   int max_out_lines_for_input = 0;
-  bool fit = (static_cast<int>(in->data.capacity) >= in_height * line_size_in) &&
-             (static_cast<int>(out->data.capacity) >= out_height * line_size_out);
+  bool fit =
+      (static_cast<int>(in->data.capacity) >= in_height * line_size_in) &&
+      (static_cast<int>(out->data.capacity) >= out_height * line_size_out);
   if (fit) {
     // in case both tensors completely fit in the capacity, there is no need for
     // slicing. As padding can affect effective input region, we also derive it
@@ -276,8 +284,8 @@ TfLiteStatus arc_scratch_buffer_calc_slice_size_io(
           (max_lines_in - kernel_height + 1) / stride_height;
     }
     // Then compute how many output lines fit into the output tensor.
-    max_lines_out =
-        std::min(out_height, static_cast<int>(out->data.capacity) / line_size_out);
+    max_lines_out = std::min(
+        out_height, static_cast<int>(out->data.capacity) / line_size_out);
     // the smallest of the two determines the slice height for the output, and
     // the derived sliceheight for the input.
     *out_slice_height = std::min(max_out_lines_for_input, max_lines_out);
@@ -302,16 +310,17 @@ TfLiteStatus arc_scratch_buffer_calc_slice_size_weights(
   int max_ch_weigths = 0;
   int max_ch_bias = 0;
 
-  bool fit = (static_cast<int>(weights->data.capacity) >= channels * ch_size_w) &&
-             (static_cast<int>(bias->data.capacity) >= channels * ch_size_b);
+  bool fit =
+      (static_cast<int>(weights->data.capacity) >= channels * ch_size_w) &&
+      (static_cast<int>(bias->data.capacity) >= channels * ch_size_b);
   if (fit) {
     // in case both tensors completely fit in the capacity, there is no need for
     // slicing
     *slice_channels = channels;
   } else {
     // First compute how many channels fit into the weights tensor
-    max_ch_weigths =
-        std::min(channels, static_cast<int>(weights->data.capacity) / ch_size_w);
+    max_ch_weigths = std::min(
+        channels, static_cast<int>(weights->data.capacity) / ch_size_w);
     // Ten compute how many channels fit into the bias tensor.
     max_ch_bias =
         std::min(channels, static_cast<int>(bias->data.capacity) / ch_size_b);
