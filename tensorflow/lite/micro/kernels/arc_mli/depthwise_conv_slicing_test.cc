@@ -241,7 +241,11 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel1) {
   const int output_shape[] = {4, 1, 5, 2, 2};
   const int output_dims_count = 20;
 
+#ifdef __Xvdsp
 #pragma Bss(".vecmem_data")
+#else
+#pragma Bss(".Zdata")
+#endif
   const float input_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                                 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
   const float filter_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -331,7 +335,11 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel2) {
   const int output_shape[] = {4, 1, 20, 2, 2};
   const int output_dims_count = 80;
 
+#ifdef __Xvdsp
 #pragma Bss(".vecmem_data")
+#else
+#pragma Bss(".Zdata")
+#endif
   float input_values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                           2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                           2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -423,7 +431,11 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel3) {
   const int output_shape[] = {4, 1, 2, 2, 1};
   const int output_dims_count = 4;
 
+#ifdef __Xvdsp
 #pragma Bss(".vecmem_data")
+#else
+#pragma Bss(".Zdata")
+#endif
   float input_values[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
@@ -512,7 +524,11 @@ TF_LITE_MICRO_TEST(LocalTestQuantizedPerChannel4) {
   const int output_shape[] = {4, 1, 4, 2, 1};
   const int output_dims_count = 8;
 
+#ifdef __Xvdsp
 #pragma Bss(".vecmem_data")
+#else
+#pragma Bss(".Zdata")
+#endif
   float input_values[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                           1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

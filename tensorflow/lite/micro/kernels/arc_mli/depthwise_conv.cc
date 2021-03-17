@@ -372,29 +372,18 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
     mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
 
-    // TODO: Change comments (as slicing actually temproray removed)
-
-    /* input tensor is already sliced in the  channel dimension.
-    out_ch_slice.Sub() is the tensor for the amount of channels of this
-    iteration of the weight slice loop. This tensor needs to be further
-    sliced over the batch and height dimension. in_ch_slice.Sub() tensor
-    contains batches of HWC tensors. so it is a 4 dimensional tensor. because
-    the mli kernel will process one HWC tensor at a time, the 4 dimensional
-    tensor needs to be sliced into nBatch 3 dimensional tensors. on top of
-    that there could be a need to also slice in the Height dimension. for that
-    the sliceHeight has been calculated. The tensor slicer is configured that
-    it will completely slice the nBatch dimension (0) and slice the height
-    dimension (1) in chunks of 'sliceHeight' */
+    /* mli_in tensor contains batches of HWC tensors. So it is a 4
+       dimensional tensor. Because the mli kernel will process one HWC
+       tensor at a time, the 4 dimensional tensor needs to be sliced into
+       nBatch 3 dimensional tensors.  */
     ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
 
-    /* output tensor is already sliced in the output channel dimension.
-    out_ch_slice.Sub() is the tensor for the amount of output channels of this
-    iteration of the weight slice loop. This tensor needs to be further
-    sliced over the batch and height dimension. */
+    /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
+       tensors. */
     ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
 
     /* setup the pointers to the local or remote tensor to make the code
-     * inside the loop easier. */
+       inside the loop easier. */
     mli_tensor* in_ptr = &in_local;
     mli_tensor* out_ptr = &out_local;
 
@@ -409,7 +398,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
       }
 
-      ops::micro::ConvertCHWNToHWCN<int8_t>(w_ptr);
+      // ops::micro::ConvertCHWNToHWCN<int8_t>(w_ptr);
+      int8_t dim_order[] = {2, 0, 1, 3};
+      ops::micro::change_mem_stride(w_ptr, dim_order);
 
       data.p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
                                                         &cfg_local, out_ptr);

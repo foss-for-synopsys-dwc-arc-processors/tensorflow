@@ -14,8 +14,9 @@ quantization).
 
 ## Usage
 
-embARC MLI Library is used by default to speed up execution of some kernels for
-asymmetrically quantized layers. This means that usual project generation for
+embARC MLI Library is used to speed up execution of some kernels for 
+asymmetrically quantized layers and can be applied with the option `OPTIMIZED_KERNEL_DIR=arc_mli`.
+This means that usual project generation for
 ARC specific target implies usage of embARC MLI.
 
 For example:
@@ -26,11 +27,10 @@ make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp OPTIMIZED_KER
 
 In case MLI implementation can’t be used, kernels in this folder fallback to
 TFLM reference implementations. For applications which may not benefit from MLI
-library, projects can be generated without these implementations by adding
-`ARC_TAGS=no_arc_mli` in the command line, which can reduce overall code size:
+library, projects can be generated without these implementations **removing** `OPTIMIZED_KERNEL_DIR=arc_mli` in the command line, which can reduce overall code size:
 
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp OPTIMIZED_KERNEL_DIR=arc_mli ARC_TAGS=no_arc_mli generate_person_detection_int8_make_project
+make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp generate_person_detection_int8_make_project
 ```
 
 For ARC EM SDP board, a pre-compiled MLI library is downloaded and used in the

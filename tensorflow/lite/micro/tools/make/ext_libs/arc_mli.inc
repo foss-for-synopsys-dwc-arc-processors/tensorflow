@@ -16,11 +16,6 @@
 
 ifeq ($(TARGET_ARCH), arc)
 
-# MLI Library is used by default for ARC platform whenever it is possible.
-# To use TFLM reference implementation MLI should be intentionally turned off 
-# by passing 'no_arc_mli' tag (make -f <tflm_main_makefile> ARC_TAGS=no_arc_mli ...)
-ifeq ($(filter no_arc_mli,$(ARC_TAGS)),)
-
 ALL_TAGS += arc_mli
 
 ifeq ($(BUILD_ARC_MLI),true)
@@ -29,7 +24,6 @@ ifeq ($(BUILD_ARC_MLI),true)
   $(eval $(call add_third_party_download,$(EMBARC_MLI_URL),$(EMBARC_MLI_MD5),$(MLI_LIB_DIR),build_embarc_mli,$(TCF_FILE)))
 
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include
-  #TODO: Here now arc_... depends on reference or not
   MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/arc/libmli.a
   MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/arc/libmli.a
 
@@ -99,7 +93,4 @@ generate_arc_mli_test_projects: $(foreach TEST,$(ARC_MLI_TESTS), generate_kernel
     \nCXXFLAGS += -DTF_LITE_STRIP_REFERENCE_IMPL\
     \nendif\n
 
-
-
-endif # no_embarc_mli
 endif # TARGET_ARCH

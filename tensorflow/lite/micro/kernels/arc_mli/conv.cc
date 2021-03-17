@@ -363,26 +363,18 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
     mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
 
-    // TODO: Change comments (as slicing actually temproray removed)
-
-    /* mli_in tensor contains batches of HWC tensors. so it is a 4
-    dimensional tensor. because the mli kernel will process one HWC
+    /* mli_in tensor contains batches of HWC tensors. So it is a 4
+    dimensional tensor. Because the mli kernel will process one HWC
     tensor at a time, the 4 dimensional tensor needs to be sliced into
-    nBatch 3 dimensional tensors. on top of that there could be a need
-    to also slice in the Height dimension. for that the sliceHeight has
-    been calculated. The tensor slicer is configured that it will
-    completely slice the nBatch dimension (0) and slice the height
-    dimension (1) in chunks of 'sliceHeight' */
+    nBatch 3 dimensional tensors. */
     ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
 
-    /* output tensor is already sliced in the output channel dimension.
-    out_ch_slice.Sub() is the tensor for the amount of output channels
-    of this iteration of the weight slice loop. This tensor needs to be
-    further sliced over the batch and height dimension. */
+    /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
+    tensors. */
     ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
 
     /* setup the pointers to the local or remote tensor to make the code
-     * inside the loop easier. */
+    inside the loop easier. */
     mli_tensor* in_ptr = &in_local;
     mli_tensor* out_ptr = &out_local;
 
@@ -397,11 +389,16 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
       }
 
-      // Converting weights to the MLI 2.0 layout (HWCN)
-      ops::micro::ConvertNHWCToHWCN<int8_t>(w_ptr, w_buffer_ptr);
+      mli_tensor permuted_w_ptr = *w_ptr;
+      permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
+      int8_t dim_order[] = {3, 0, 1, 2};
+      ops::micro::change_mem_stride(&permuted_w_ptr, dim_order);
+      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
+      mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
 
-      mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg_local,
-                                       out_ptr);
+      mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, &permuted_w_ptr, b_ptr,
+                                       &cfg_local, out_ptr);
+
       mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 
       in_slice.Next();

@@ -31,24 +31,18 @@ namespace micro {
 #ifndef SCRATCH_MEM_X_SIZE
 #ifdef core_config_xy_size
 #define SCRATCH_MEM_X_SIZE (core_config_xy_size)
-#else
-#define SCRATCH_MEM_X_SIZE (0)
 #endif
 #endif
 
 #ifndef SCRATCH_MEM_Y_SIZE
 #ifdef core_config_xy_size
-#define SCRATCH_MEM_Y_SIZE (core_config_xy_size)
-#else
-#define SCRATCH_MEM_Y_SIZE (0)
+#define SCRATCH_MEM_Y_SIZE (core_config _xy_size)
 #endif
 #endif
 
 #ifndef SCRATCH_MEM_Z_SIZE
 #ifdef core_config_dccm_size
 #define SCRATCH_MEM_Z_SIZE ((core_config_dccm_size) / 2)
-#else
-#define SCRATCH_MEM_Z_SIZE (0)
 #endif
 #endif
 
@@ -56,15 +50,13 @@ namespace micro {
 
 #ifndef SCRATCH_MEM_VEC_SIZE
 #ifdef core_config_vec_mem_size
-#define SCRATCH_MEM_VEC_SIZE (core_config_vec_mem_size)
-#else
-#define SCRATCH_MEM_VEC_SIZE (0)
+#define SCRATCH_MEM_VEC_SIZE (core_config_vec_mem_size - /*_VEC_STACKSIZE = */ 16384)
 #endif
 #endif
 
 #else
 
-#define SCRATCH_MEM_VEC_SIZE (65536 + 16384)
+#define SCRATCH_MEM_VEC_SIZE (65536)
 
 #endif
 
@@ -73,7 +65,7 @@ namespace {
 
 #pragma Bss(".vecmem_data")
 static int8_t
-    scratch_mem_vec[SCRATCH_MEM_VEC_SIZE - 16384];  // TODO: replace magic
+    scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
 #pragma Bss()
 
 #elif defined(__Xxy)
@@ -92,7 +84,7 @@ static int8_t scratch_mem_z[SCRATCH_MEM_Z_SIZE];
 
 #else
 
-static int8_t scratch_mem_vec[65536];
+static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
 
 #endif
 }  // namespace
@@ -105,7 +97,7 @@ static uint32_t scratch_sizes[] = {SCRATCH_MEM_X_SIZE, SCRATCH_MEM_Y_SIZE,
 
 #else
 static int8_t* scratch_mem[] = {scratch_mem_vec};
-static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE - 16384};
+static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE};
 
 #endif
 
@@ -173,8 +165,7 @@ void init_arc_scratch_buffers(void) {
   scratch_sizes[2] = SCRATCH_MEM_Z_SIZE;
 #else
   scratch_mem[0] = scratch_mem_vec;
-  scratch_sizes[0] =
-      SCRATCH_MEM_VEC_SIZE - 16384;  // TODO: replace magic with define
+  scratch_sizes[0] = SCRATCH_MEM_VEC_SIZE;
 
 #endif
 }

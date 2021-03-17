@@ -190,16 +190,14 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_pooling_tensors(
       context, &in_local, &out_local));
 
-  // TODO: Change comments (as slicing actually temproray removed)
-
-  /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
-     tensor. because the mli kernel will process one HWC tensor at a time, the 4
-     dimensional tensor needs to be sliced into nBatch 3 dimensional tensors. on
-     top of that there could be a need to also slice in the Height dimension.
-     for that the sliceHeight has been calculated. The tensor slicer is
-     configured that it will completely slice the nBatch dimension (0) and slice
-     the height dimension (1) in chunks of 'sliceHeight' */
+  /* mli_in tensor contains batches of HWC tensors. So it is a 4
+     dimensional tensor. Because the mli kernel will process one HWC
+     tensor at a time, the 4 dimensional tensor needs to be sliced into
+     nBatch 3 dimensional tensors. */
   ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
+
+  /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
+     tensors. */
   ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
 
   /* is_local indicates that the tensor is already in local memory,

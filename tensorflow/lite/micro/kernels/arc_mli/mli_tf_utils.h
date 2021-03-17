@@ -115,113 +115,28 @@ inline void ConvertToMliTensorPerChannel(const TfLiteTensor* tfT,
   ConvertToMliQuantParamsPerChannel(tfT, mliT, is_bias_tensor);
 }
 
-template <typename datatype>
-inline void ConvertCHWNToHWCN(mli_tensor* mliT) {
-  // Extend shape to the MLI_MAX_RANK complimenting it with 1s in a front.
-  // Calculate strides on input float array and output tensor
-  // for easier definition of element position in total arrays
-  uint32_t mli_tensor_strides_prev[MLI_MAX_RANK] = {0};
-  int shape_idx = mliT->rank - 1;
-  int mli_tensor_memstride = 1;
-  for (; shape_idx >= 0; --shape_idx) {
-    mli_tensor_strides_prev[shape_idx] = (mliT->mem_stride[shape_idx] == 0)
-                                             ? mli_tensor_memstride
-                                             : mliT->mem_stride[shape_idx];
-    mli_tensor_memstride *= mliT->shape[shape_idx];
-  }
-
-  auto reorder = [](uint32_t* arr, int index[]) {
+inline void change_mem_stride(mli_tensor* mliT, int8_t dim_order[]) {
+  auto reorder = [](uint32_t* arr, int8_t index[]) {
     uint32_t temp[MLI_MAX_RANK];
-    for (int i = 0; i < MLI_MAX_RANK; i++) temp[index[i]] = arr[i];
-    for (int i = 0; i < MLI_MAX_RANK; i++) {
+    for (int8_t i = 0; i < MLI_MAX_RANK; i++) temp[index[i]] = arr[i];
+    for (int8_t i = 0; i < MLI_MAX_RANK; i++) {
       arr[i] = temp[i];
       index[i] = i;
     }
   };
 
-  // Change shape to HWCN
-  reorder(mliT->shape, (int[]){2, 0, 1, 3});
+  reorder(mliT->shape, dim_order);
+
+  if (mliT->el_params.sa.dim > -1 && mliT->rank == MLI_MAX_RANK) {
+    mliT->el_params.sa.dim = MLI_MAX_RANK - 1;
+  }
 
   // Calculate strides for new layout
-  shape_idx = mliT->rank - 1;
-  mli_tensor_memstride = 1;
-  for (; shape_idx >= 0; --shape_idx) {
-    mliT->mem_stride[shape_idx] = mli_tensor_memstride;
-    mli_tensor_memstride *= mliT->shape[shape_idx];
-  }
-}
-
-template <typename datatype>
-inline void ConvertNHWCToHWCN(mli_tensor* mliT, void* mliT_storage) {
-  datatype* data_ptr = (datatype*)mliT->data.mem.void_p;
-  datatype* storage_data_ptr = (datatype*)mliT_storage;
-
-  // Extend shape to the MLI_MAX_RANK complimenting it with 1s in a front.
-  // Calculate strides on input float array and output tensor
-  // for easier definition of element position in total arrays
-  uint32_t mli_tensor_strides_prev[MLI_MAX_RANK] = {0};
-  int shape_idx = mliT->rank - 1;
   int mli_tensor_memstride = 1;
-  for (; shape_idx >= 0; --shape_idx) {
-    mli_tensor_strides_prev[shape_idx] = (mliT->mem_stride[shape_idx] == 0)
-                                             ? mli_tensor_memstride
-                                             : mliT->mem_stride[shape_idx];
-    mli_tensor_memstride *= mliT->shape[shape_idx];
-  }
-
-  auto val_pos = [](uint32_t strides[MLI_MAX_RANK], int dim0_idx, int dim1_idx,
-                    int dim2_idx, int dim3_idx) -> int {
-    return (strides[0] * dim0_idx) + (strides[1] * dim1_idx) +
-           (strides[2] * dim2_idx) + (strides[3] * dim3_idx);
-  };
-
-  auto reorder = [](uint32_t* arr, int index[]) {
-    uint32_t temp[MLI_MAX_RANK];
-    for (int i = 0; i < MLI_MAX_RANK; i++) temp[index[i]] = arr[i];
-    for (int i = 0; i < MLI_MAX_RANK; i++) {
-      arr[i] = temp[i];
-      index[i] = i;
-    }
-  };
-
-  int dim_start[MLI_MAX_RANK] = {0};
-  int dim_end[MLI_MAX_RANK] = {0};
-  for (int i = 0; i < MLI_MAX_RANK; ++i) {
-    dim_end[i] = mliT->shape[i];
-  }
-
-  // Change shape to HWCN
-  reorder(mliT->shape, (int[]){3, 0, 1, 2});
-
-  if (mliT->el_params.sa.dim > -1) {
-    // TODO: change this hardcode
-    mliT->el_params.sa.dim = 3;
-  }
-
-  // Calculate strides for new layout
-  shape_idx = mliT->rank - 1;
-  mli_tensor_memstride = 1;
-  for (; shape_idx >= 0; --shape_idx) {
+  for (int shape_idx = mliT->rank - 1; shape_idx >= 0; --shape_idx) {
     mliT->mem_stride[shape_idx] = mli_tensor_memstride;
     mli_tensor_memstride *= mliT->shape[shape_idx];
   }
-
-  // Apply transformation of defined slice
-  for (int dim0_idx = dim_start[0]; dim0_idx < dim_end[0]; ++dim0_idx) {
-    for (int dim1_idx = dim_start[1]; dim1_idx < dim_end[1]; ++dim1_idx) {
-      for (int dim2_idx = dim_start[2]; dim2_idx < dim_end[2]; ++dim2_idx) {
-        for (int dim3_idx = dim_start[3]; dim3_idx < dim_end[3]; ++dim3_idx) {
-          uint16_t prev_position = val_pos(mli_tensor_strides_prev, dim0_idx,
-                                           dim1_idx, dim2_idx, dim3_idx);
-          uint16_t new_position =
-              val_pos(mliT->mem_stride, dim1_idx, dim2_idx, dim3_idx, dim0_idx);
-          storage_data_ptr[new_position] = data_ptr[prev_position];
-        }
-      }
-    }
-  }
-
-  mliT->data.mem.void_p = storage_data_ptr;
 }
 
 }  // namespace micro

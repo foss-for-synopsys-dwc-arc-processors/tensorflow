@@ -101,7 +101,7 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
   if (!inside_arc_ccm(out->data.mem.void_p)) {
     out->data.mem.void_p = get_arc_scratch_buffer(grant_size_out);
     out->data.capacity = grant_size_out;
-    if (out->data.mem.void_p == nullptr) return kTfLiteError;
+    if (out->data.mem.void_p == NULL) return kTfLiteError;
   }
 
   return kTfLiteOk;
