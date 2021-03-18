@@ -164,10 +164,10 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
 
 TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
-    mli_tensor* bias, mli_tensor* out) {
+    mli_tensor* bias, mli_tensor* out, void** weights_buffer) {
   TfLiteStatus ret_val = kTfLiteOk;
-#if (defined(__Xxy)) || (defined(__Xvdsp))
   init_arc_scratch_buffers();
+#if (defined(__Xxy)) || (defined(__Xvdsp))
   /* strategy for FC kernels:
      first allocate input, because this cannot be sliced. (in case of batch
      processing, only a single input needs to be allocated) then weights & bias
@@ -200,8 +200,11 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
       weights->data.capacity = max_weights_size;
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
-    if (weights->data.mem.void_p == NULL) ret_val = kTfLiteError;
+    // Allocate buffer for weights transpose.
+    *weights_buffer = get_arc_scratch_buffer(weights_size);
   }
+  if (weights->data.mem.void_p == NULL || weights_buffer == NULL)
+    ret_val = kTfLiteError;
 
   if (!inside_arc_ccm(bias->data.mem.void_p)) {
     int bias_mem_requirements =
@@ -235,7 +238,12 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     if (max_bias_size == 0) ret_val = kTfLiteError;
   }
   if (bias->data.mem.void_p == NULL) ret_val = kTfLiteError;
-
+#else
+  int weights_size =
+      mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
+  // Allocate buffer for weights transpose.
+  *weights_buffer = get_arc_scratch_buffer(weights_size);
+  if (weights_buffer == NULL) ret_val = kTfLiteError;
 #endif
   return ret_val;
 }

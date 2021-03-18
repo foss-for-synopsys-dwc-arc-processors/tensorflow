@@ -222,7 +222,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
         context->AllocatePersistentBuffer(context, sizeof(mli_conv2d_cfg)));
 
     data->per_channel_zero_points =
-        reinterpret_cast<int16_t*>(context->AllocatePersistentBuffer(
+        static_cast<int16_t*>(context->AllocatePersistentBuffer(
             context, num_channels * sizeof(int16_t)));
 
     // Reuse space allocated for OpData parameters.

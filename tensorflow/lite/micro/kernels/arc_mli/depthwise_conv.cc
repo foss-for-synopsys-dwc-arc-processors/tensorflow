@@ -92,13 +92,10 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                      const TfLiteDepthwiseConvParams* params) {
   const auto* affine_quantization =
       reinterpret_cast<TfLiteAffineQuantization*>(filter->quantization.params);
-  // const int in_ch = SizeOfDimension(input, 3);
-  // const int filters_num = SizeOfDimension(filter, 3);
 
   // MLI optimized version only supports int8_t datatype, dilation factor of 1
-  // and per-axis quantization of weights (no broadcasting/per-tensor) (in_ch ==
-  // filters_num) || (in_ch == 1)) is a forbidding of channel multiplier logic
-  // for multichannel input.
+  // and per-axis quantization of weights (no broadcasting/per-tensor).
+
   bool ret_val = (filter->type == kTfLiteInt8) &&
                  (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
                  (params->dilation_width_factor == 1) &&
@@ -234,7 +231,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
         context->AllocatePersistentBuffer(context, sizeof(mli_conv2d_cfg)));
 
     data->per_channel_zero_points =
-        reinterpret_cast<int16_t*>(context->AllocatePersistentBuffer(
+        static_cast<int16_t*>(context->AllocatePersistentBuffer(
             context, num_channels * sizeof(int16_t)));
 
     // Reuse space allocated for OpData parameters.

@@ -74,7 +74,7 @@ TfLiteStatus get_arc_scratch_buffer_for_pooling_tensors(TfLiteContext* context,
  */
 TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
-    mli_tensor* bias, mli_tensor* out);
+    mli_tensor* bias, mli_tensor* out, void** weights_buffer);
 
 /**
  * @brief Function to calculate slice size for io tensors
