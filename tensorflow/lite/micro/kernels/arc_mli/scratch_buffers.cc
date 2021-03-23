@@ -64,8 +64,7 @@ namespace {
 #ifdef __Xvdsp
 
 #pragma Bss(".vecmem_data")
-static int8_t
-    scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
+static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
 #pragma Bss()
 
 #elif defined(__Xxy)

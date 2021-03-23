@@ -68,13 +68,13 @@ inline void ConvertToMliQuantParamsPerChannel(const TfLiteTensor* tfT,
   // get per channel quantization parameters
   const auto* affine_quantization =
       reinterpret_cast<TfLiteAffineQuantization*>(tfT->quantization.params);
-  mliT->el_params.sa.dim =
+  int32_t quantized_dimension =
       is_bias_tensor ? 0 : affine_quantization->quantized_dimension;
 
+  mliT->el_params.sa.dim = quantized_dimension;
+
   // find frac_bits
-  const int num_channels =
-      is_bias_tensor ? mliT->shape[0]
-                     : mliT->shape[affine_quantization->quantized_dimension];
+  const int num_channels = mliT->shape[quantized_dimension];
   // int min_frac_bits;
   float* fscale = affine_quantization->scale->data;
   for (int i = 0; i < num_channels; i++) {

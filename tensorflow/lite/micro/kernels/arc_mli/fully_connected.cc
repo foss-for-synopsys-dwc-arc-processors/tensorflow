@@ -195,47 +195,47 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 
   void* input_buffer_ptr = NULL;
 
-    mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
-    mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
+  mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
+  mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
 
-    // Slice the input over the batches (one at a time with the size of a
-    // complete input)
-    ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
+  /* Permute weights tensor to the HWCN layout */
+  mli_tensor permuted_w_ptr = {};
+  permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
+  mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
+  mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
 
-    /* output tensor is already sliced in the output size dimension.
-    out_ch_slice.Sub() is the tensor for the amount of output size of this
-    iteration of the weight slice loop. This tensor needs to be further
-    sliced over the batch */
-    ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
+  // Slice the input over the batches (one at a time with the size of a
+  // complete input)
+  ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
 
-    /* setup the pointers to the local or remote tensor to make the code
-     * inside the loop easier. */
-    mli_tensor* in_ptr = &in_local;
-    mli_tensor* out_ptr = &out_local;
+  /* output tensor is already sliced in the output size dimension.
+  out_ch_slice.Sub() is the tensor for the amount of output size of this
+  iteration of the weight slice loop. This tensor needs to be further
+  sliced over the batch */
+  ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
 
-    while (!out_slice.Done()) {
-      // if same input copy as previous iteration, skip the copy of input
-      if (in_slice.Sub()->data.mem.void_p != input_buffer_ptr) {
-        mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
-        input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
-      }
+  /* setup the pointers to the local or remote tensor to make the code
+   * inside the loop easier. */
+  mli_tensor* in_ptr = &in_local;
+  mli_tensor* out_ptr = &out_local;
 
-      mli_tensor permuted_w_ptr = *w_ptr;
-      permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
-      int8_t dim_order[] = {1, 0, 2, 3};
-      ops::micro::change_mem_stride(&permuted_w_ptr, dim_order);
-      mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
-      mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
-
-      mli_fully_connected_cfg cfg;
-      cfg.relu.type = MLI_RELU_NONE;
-
-      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, &permuted_w_ptr, b_ptr, &cfg, out_ptr);
-      mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
-
-      in_slice.Next();
-      out_slice.Next();
+  while (!out_slice.Done()) {
+    // if same input copy as previous iteration, skip the copy of input
+    if (in_slice.Sub()->data.mem.void_p != input_buffer_ptr) {
+      mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
+      input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
     }
+
+    mli_fully_connected_cfg cfg;
+    cfg.relu.type = MLI_RELU_NONE;
+
+    mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, &permuted_w_ptr, b_ptr, &cfg,
+                                         out_ptr);
+    mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
+
+    in_slice.Next();
+    out_slice.Next();
+  }
   return kTfLiteOk;
 }
 

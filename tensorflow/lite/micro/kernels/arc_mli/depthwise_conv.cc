@@ -395,7 +395,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
       }
 
-      // ops::micro::ConvertCHWNToHWCN<int8_t>(w_ptr);
       int8_t dim_order[] = {2, 0, 1, 3};
       ops::micro::change_mem_stride(w_ptr, dim_order);
 

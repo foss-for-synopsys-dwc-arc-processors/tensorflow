@@ -363,6 +363,12 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
     mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
 
+    /* Permute weights tensor to the HWCN layout */
+    mli_tensor permuted_w_ptr = {};
+    permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
+    mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
+    mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
+
     /* mli_in tensor contains batches of HWC tensors. So it is a 4
     dimensional tensor. Because the mli kernel will process one HWC
     tensor at a time, the 4 dimensional tensor needs to be sliced into
@@ -388,13 +394,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
         input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
       }
-
-      mli_tensor permuted_w_ptr = *w_ptr;
-      permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
-      int8_t dim_order[] = {3, 0, 1, 2};
-      ops::micro::change_mem_stride(&permuted_w_ptr, dim_order);
-      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
-      mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
 
       mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, &permuted_w_ptr, b_ptr,
                                        &cfg_local, out_ptr);
