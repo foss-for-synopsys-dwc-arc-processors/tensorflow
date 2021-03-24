@@ -337,8 +337,26 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     ops::micro::MliTensorAttachBuffer<int32_t>(bias, data.mli_bias);
     ops::micro::MliTensorAttachBuffer<int8_t>(output, data.mli_out);
 
-    // For batch slicing
-    const int batch_dimension = 0;
+    // // For batch slicing
+    // const int batch_dimension = 0;
+
+    // for height slicing
+    const int height_dimension = 1;
+    int in_slice_height = 0;
+    int out_slice_height = 0;
+    const int kernel_height =
+        static_cast<int>(data.mli_weights->shape[KRNL_H_DIM_HWC]);
+    const int overlap = kernel_height - cfg_local.stride_height;
+    //TODO: Permute must be here?
+    
+    // for weight slicing (on output channels)
+    // NHWC layout for weights, output channel dimension is the first dimension.
+    const int weight_out_ch_dimension = 0;
+    int slice_channels =
+        static_cast<int>(data.mli_weights->shape[weight_out_ch_dimension]);
+    // Batch-Height-Width-Channel layout means last dimension is output
+    // channels.
+    const int out_tensor_ch_dimension = 3;
 
     // Tensors for data in fast (local) memory and config to copy data from
     // external to local memory
@@ -350,60 +368,129 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     void* w_buffer_ptr = nullptr;
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
+
+    // TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
+    //     context, &in_local, &weights_local, &bias_local, &out_local,
+    //     &w_buffer_ptr));
+
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
         context, &in_local, &weights_local, &bias_local, &out_local,
         &w_buffer_ptr));
+    TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_io(
+        &in_local, &out_local, kernel_height, cfg_local.stride_height,
+        cfg_local.padding_top, cfg_local.padding_bottom, &in_slice_height,
+        &out_slice_height));
+    TF_LITE_ENSURE_STATUS(
+        ops::micro::arc_scratch_buffer_calc_slice_size_weights(
+            &weights_local, &bias_local, weight_out_ch_dimension,
+            &slice_channels));
 
-    mli_tensor* w_ptr = &weights_local;
-    mli_tensor* b_ptr = &bias_local;
+    // mli_tensor* w_ptr = &weights_local;
+    // mli_tensor* b_ptr = &bias_local;
+
+    /* is_local indicates that the tensor is already in local memory,
+       so in that case the original tensor can be used,
+       and there is no need to copy it to the local tensor*/
+    const bool in_is_local =
+        in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+    const bool out_is_local =
+        out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+    const bool w_is_local =
+        weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
+    const bool b_is_local =
+        bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
+
+    ops::micro::TensorSlicer w_slice(data.mli_weights, weight_out_ch_dimension,
+                                     slice_channels);
+    ops::micro::TensorSlicer b_slice(data.mli_bias, weight_out_ch_dimension,
+                                     slice_channels);
+    ops::micro::TensorSlicer out_ch_slice(data.mli_out, out_tensor_ch_dimension,
+                                          slice_channels, 0, 0, 0, true);
+
+    mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
+    mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
     void* input_buffer_ptr = NULL;
     uint32_t input_buffer_size = 0;
 
-    mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
-    mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
+    while (!w_slice.Done()) {
+      // mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
+      // mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
+      mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+      mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
-    /* Permute weights tensor to the HWCN layout */
-    mli_tensor permuted_w_ptr = {};
-    permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
-    mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
-    mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
+      // TODO: Change to slicing logic
+      /* Permute weights tensor to the HWCN layout */
+      mli_tensor permuted_w_ptr = {};
+      permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
+      // permuted_w_ptr.data.capacity = w_ptr->data.capacity;
+      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
+      mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
 
-    /* mli_in tensor contains batches of HWC tensors. So it is a 4
-    dimensional tensor. Because the mli kernel will process one HWC
-    tensor at a time, the 4 dimensional tensor needs to be sliced into
-    nBatch 3 dimensional tensors. */
-    ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
+      // /* mli_in tensor contains batches of HWC tensors. So it is a 4
+      // dimensional tensor. Because the mli kernel will process one HWC
+      // tensor at a time, the 4 dimensional tensor needs to be sliced into
+      // nBatch 3 dimensional tensors. */
+      // ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
 
-    /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
-    tensors. */
-    ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
+      // /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
+      // tensors. */
+      // ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
 
-    /* setup the pointers to the local or remote tensor to make the code
-    inside the loop easier. */
-    mli_tensor* in_ptr = &in_local;
-    mli_tensor* out_ptr = &out_local;
+      /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
+      tensor. because the mli kernel will process one HWC tensor at a time, the
+      4 dimensional tensor needs to be sliced into nBatch 3 dimensional tensors.
+      on top of that there could be a need to also slice in the Height
+      dimension. for that the sliceHeight has been calculated. The tensor slicer
+      is configured that it will completely slice the nBatch dimension (0) and
+      slice the height dimension (1) in chunks of 'sliceHeight' */
+      ops::micro::TensorSlicer in_slice(data.mli_in, height_dimension,
+                                        in_slice_height, cfg_local.padding_top,
+                                        cfg_local.padding_bottom, overlap);
 
-    while (!out_slice.Done()) {
-      TF_LITE_ENSURE(context, !in_slice.Done());
+      /* output tensor is already sliced in the output channel dimension.
+      out_ch_slice.Sub() is the tensor for the amount of output channels of this
+      iteration of the weight slice loop. This tensor needs to be further
+      sliced over the batch and height dimension. */
+      ops::micro::TensorSlicer out_slice(out_ch_slice.Sub(), height_dimension,
+                                         out_slice_height);
 
-      // if same input copy as previous iteration, skip the copy of input
-      if ((in_slice.Sub()->data.mem.void_p != input_buffer_ptr) ||
-          (mli_hlp_count_elem_num(in_slice.Sub(), 0) != input_buffer_size)) {
-        mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
-        input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
-        input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
+      // /* setup the pointers to the local or remote tensor to make the code
+      // inside the loop easier. */
+      // mli_tensor* in_ptr = &in_local;
+      // mli_tensor* out_ptr = &out_local;
+
+      /* setup the pointers to the local or remote tensor to make the code
+       * inside the loop easier. */
+      mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
+      mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
+
+      while (!out_slice.Done()) {
+        TF_LITE_ENSURE(context, !in_slice.Done());
+        cfg_local.padding_top = in_slice.GetPaddingPre();
+        cfg_local.padding_bottom = in_slice.GetPaddingPost();
+
+        // if same input copy as previous iteration, skip the copy of input
+        if ((in_slice.Sub()->data.mem.void_p != input_buffer_ptr) ||
+            (mli_hlp_count_elem_num(in_slice.Sub(), 0) != input_buffer_size)) {
+          mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
+          input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
+          input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
+        }
+
+        mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, &permuted_w_ptr, b_ptr,
+                                         &cfg_local, out_ptr);
+
+        mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
+
+        in_slice.Next();
+        out_slice.Next();
       }
-
-      mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, &permuted_w_ptr, b_ptr,
-                                       &cfg_local, out_ptr);
-
-      mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
-
-      in_slice.Next();
-      out_slice.Next();
+      w_slice.Next();
+      b_slice.Next();
+      out_ch_slice.Next();
+      TF_LITE_ENSURE(context, in_slice.Done());
     }
-    TF_LITE_ENSURE(context, in_slice.Done());
   }
   return kTfLiteOk;
 }

@@ -62,7 +62,7 @@ TensorSlicer::TensorSlicer(const mli_tensor* full_tensor, int slice_dim,
         sub_cfg_.size[i] = full_tensor->shape[i];
       }
     }
-    sub_cfg_.sub_tensor_rank = full_tensor->rank - 1;
+    sub_cfg_.sub_tensor_rank = full_tensor->rank - slice_dim;
   }
 
   ComputeSubTensor();

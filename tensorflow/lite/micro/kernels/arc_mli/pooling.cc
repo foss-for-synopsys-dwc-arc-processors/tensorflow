@@ -179,7 +179,11 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   ops::micro::MliTensorAttachBuffer<int8_t>(input, data.mli_in);
   ops::micro::MliTensorAttachBuffer<int8_t>(output, data.mli_out);
 
-  const int batch_dimension = 0;
+  // const int batch_dimension = 0;
+  const int height_dimension = 1;
+  int in_slice_height = 0;
+  int out_slice_height = 0;
+  const int overlap = cfg_local.kernel_height - cfg_local.stride_height;
 
   // Tensors for data in fast (local) memory and config to copy data from
   // external to local memory
@@ -187,24 +191,46 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   mli_tensor out_local = *data.mli_out;
   mli_mov_cfg_t copy_config;
   mli_mov_cfg_for_copy(&copy_config);
+  // TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_pooling_tensors(
+  //     context, &in_local, &out_local));
   TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_pooling_tensors(
       context, &in_local, &out_local));
+  bool in_is_local = in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+  bool out_is_local = out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+  TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_io(
+      &in_local, &out_local, cfg_local.kernel_height, cfg_local.stride_height,
+      cfg_local.padding_top, cfg_local.padding_bottom, &in_slice_height,
+      &out_slice_height));
 
-  /* mli_in tensor contains batches of HWC tensors. So it is a 4
-     dimensional tensor. Because the mli kernel will process one HWC
-     tensor at a time, the 4 dimensional tensor needs to be sliced into
-     nBatch 3 dimensional tensors. */
-  ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
+  // /* mli_in tensor contains batches of HWC tensors. So it is a 4
+  //    dimensional tensor. Because the mli kernel will process one HWC
+  //    tensor at a time, the 4 dimensional tensor needs to be sliced into
+  //    nBatch 3 dimensional tensors. */
+  // ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
 
-  /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
-     tensors. */
-  ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
+  // /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
+  //    tensors. */
+  // ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
+
+  /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
+   tensor. because the mli kernel will process one HWC tensor at a time, the 4
+   dimensional tensor needs to be sliced into nBatch 3 dimensional tensors. on
+   top of that there could be a need to also slice in the Height dimension.
+   for that the sliceHeight has been calculated. The tensor slicer is
+   configured that it will completely slice the nBatch dimension (0) and slice
+   the height dimension (1) in chunks of 'sliceHeight' */
+  TensorSlicer in_slice(data.mli_in, height_dimension, in_slice_height,
+                        cfg_local.padding_top, cfg_local.padding_bottom,
+                        overlap);
+  TensorSlicer out_slice(data.mli_out, height_dimension, out_slice_height);
 
   /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
-  mli_tensor* in_ptr = &in_local;
-  mli_tensor* out_ptr = &out_local;
+  // mli_tensor* in_ptr = &in_local;
+  // mli_tensor* out_ptr = &out_local;
+  mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
+  mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
 
   while (!out_slice.Done()) {
     cfg_local.padding_top = in_slice.GetPaddingPre();
