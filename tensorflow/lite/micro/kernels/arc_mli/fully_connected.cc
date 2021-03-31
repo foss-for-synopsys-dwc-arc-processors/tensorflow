@@ -207,7 +207,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
      and there is no need to copy it to the local tensor*/
   const bool in_is_local = in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
   const bool out_is_local = out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
-  const bool w_is_local = weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
+  // const bool w_is_local = weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
   const bool b_is_local = bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
 
   ops::micro::TensorSlicer w_slice(data.mli_weights, weight_out_dimension,

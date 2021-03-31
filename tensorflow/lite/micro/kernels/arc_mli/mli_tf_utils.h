@@ -115,17 +115,30 @@ inline void ConvertToMliTensorPerChannel(const TfLiteTensor* tfT,
   ConvertToMliQuantParamsPerChannel(tfT, mliT, is_bias_tensor);
 }
 
-inline void change_mem_stride(mli_tensor* mliT, int8_t dim_order[]) {
-  auto reorder = [](uint32_t* arr, int8_t index[]) {
-    uint32_t temp[MLI_MAX_RANK];
-    for (int8_t i = 0; i < MLI_MAX_RANK; i++) temp[index[i]] = arr[i];
-    for (int8_t i = 0; i < MLI_MAX_RANK; i++) {
-      arr[i] = temp[i];
-      index[i] = i;
-    }
-  };
+inline static void reorder(uint32_t* arr, const uint8_t index[],
+                           bool backward) {
+  uint32_t temp[MLI_MAX_RANK];
+  for (int8_t i = 0; i < MLI_MAX_RANK; i++) {
+    if (backward)
+      temp[index[i]] = arr[i];
+    else
+      temp[i] = arr[index[i]];
+  }
+  for (int8_t i = 0; i < MLI_MAX_RANK; i++) {
+    arr[i] = temp[i];
+  }
+}
 
-  reorder(mliT->shape, dim_order);
+inline void change_mem_stride(mli_tensor* mliT, const uint8_t dim_order[]) {
+  // auto reorder = [](uint32_t* arr, const int8_t index[]) {
+  //   uint32_t temp[MLI_MAX_RANK];
+  //   for (int8_t i = 0; i < MLI_MAX_RANK; i++) temp[index[i]] = arr[i];
+  //   for (int8_t i = 0; i < MLI_MAX_RANK; i++) {
+  //     arr[i] = temp[i];
+  //   }
+  // };
+
+  reorder(mliT->shape, dim_order, false);
 
   if (mliT->el_params.sa.dim > -1 && mliT->rank == MLI_MAX_RANK) {
     mliT->el_params.sa.dim = MLI_MAX_RANK - 1;
@@ -143,18 +156,41 @@ inline void permute_conv_weights_1x1(const mli_tensor* weights_src,
                             const mli_permute_cfg* permute_cfg,
                             mli_tensor* weights_dst, mli_tensor buffer) {
   buffer.el_params = weights_dst->el_params;
-  if (buffer.shape[0] * buffer.shape[1] * buffer.shape[2] >=
-      weights_src->shape[1] * weights_src->shape[2] * weights_src->shape[3]) {
+  int buffer_size = 1;
+  int weights_size = 1;
+
+  for (uint32_t i = 0; i < buffer.rank - 1; i++) {
+    buffer_size *= buffer.shape[i];
+  }
+
+  for (uint32_t i = 1; i < weights_src->rank; i++) {
+    weights_size *= weights_src->shape[i];
+  }
+
+  if (buffer_size >= weights_size) {
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
     mli_mov_tensor_sync(weights_src, &copy_config, &buffer);
-    for (int i = 0; i < MLI_MAX_RANK; i++) weights_dst->mem_stride[i] = 0;
+
+    for (int i = 0; i < MLI_MAX_RANK; i++) {
+      weights_dst->mem_stride[i] = 0;
+    }
+
     mli_krn_permute_sa8(&buffer, permute_cfg, weights_dst);
   } else {
-    uint32_t slice_size = buffer.shape[0] * buffer.shape[1] * buffer.shape[2];
+
+    // auto reorder = [](uint32_t* arr, const uint8_t index[]) {
+    //   uint32_t temp[MLI_MAX_RANK];
+    //   for (uint8_t i = 0; i < MLI_MAX_RANK; i++) temp[index[i]] = arr[i];
+    //   for (uint8_t i = 0; i < MLI_MAX_RANK; i++) {
+    //     arr[i] = temp[i];
+    //   }
+    // };
+
+    uint32_t slice_size = buffer_size;
     mli_mov_cfg_t copy_config;
-    uint32_t offsets[] = {0, 0, 0, 0};  // TODO
-    uint32_t sizes[] = {0, 0, 0, 0};    // TODO
+    uint32_t src_offsets[] = {0, 0, 0, 0};  // TODO
+    uint32_t src_sizes[] = {0, 0, 0, 0};    // TODO
     int dst_mem_stride[] = {0, 0, 0, 0};
 
     // auto calculate_sizes = [](const mli_tensor* mliT, mli_sub_tensor_cfg* cfg, uint32_t* sizes, const uint32_t slice_size) {
@@ -191,46 +227,99 @@ inline void permute_conv_weights_1x1(const mli_tensor* weights_src,
     mli_sub_tensor_cfg sub_tensor_cfg = {};
     sub_tensor_cfg.sub_tensor_rank = 4;
 
-    int8_t dim_order[] = {3, 0, 1, 2};
-    change_mem_stride(weights_dst, dim_order);
+    change_mem_stride(weights_dst, permute_cfg->perm_dim);
 
-    // TODO: Replace with function which will count this values
-    sub_tensor_cfg.size[3] = sizes[0] = buffer.shape[buffer.rank - 1];
+    // TODO: Description
+    sub_tensor_cfg.size[weights_dst->rank - 1] = src_sizes[weights_dst->rank - 1] = buffer.shape[buffer.rank - 1];
     uint32_t slice_size_left = slice_size;
-    for (int i = weights_dst->rank - 2; i >= 0; --i) {
-      sub_tensor_cfg.size[i] = sizes[i + 1] = slice_size_left / weights_dst->shape[i] > 0 ? weights_dst->shape[i] : slice_size_left;
+    for (uint32_t i = 0; i < weights_dst->rank - 1; i++) {
+      sub_tensor_cfg.size[i] = src_sizes[i] = slice_size_left / weights_dst->shape[i] > 0 ? weights_dst->shape[i] : slice_size_left;
       slice_size_left /= weights_dst->shape[i];
       slice_size_left = slice_size_left > 0 ? slice_size_left : 1;
     }
+
+    //     sub_tensor_cfg.size[3] = sizes[0] = buffer.shape[buffer.rank - 1];
+    // uint32_t slice_size_left = slice_size;
+    // for (int i = weights_dst->rank - 2; i >= 0; --i) {
+    //   sub_tensor_cfg.size[i] = sizes[i + 1] = slice_size_left / weights_dst->shape[i] > 0 ? weights_dst->shape[i] : slice_size_left;
+    //   slice_size_left /= weights_dst->shape[i];
+    //   slice_size_left = slice_size_left > 0 ? slice_size_left : 1;
+    // }
+
+    //TODO: Set sizes
+
+    // sizes[1] = sub_tensor_cfg.size[0];
+    // sizes[2] = sub_tensor_cfg.size[1];
+    // sizes[3] = sub_tensor_cfg.size[2];
+
+    //TODO: This is the same as input dim
+    // uint8_t dim_order[] = {3,0,1,2};
+    reorder(src_sizes, permute_cfg->perm_dim, true);
+    
     // calculate_sizes(weights_dst, &sub_tensor_cfg, sizes, slice_size);
     // sub_tensor_cfg.size[0] = sizes[1] = 1;
     // sub_tensor_cfg.size[1] = sizes[2] = 1;
     // sub_tensor_cfg.size[2] = sizes[3] = slice_size;
 
-    for (sub_tensor_cfg.offset[3] = offsets[0] = 0; offsets[0] < weights_src->shape[0]; sub_tensor_cfg.offset[3] = offsets[0] += sizes[0], sizes[0] = std::min(sizes[0], weights_src->shape[0] - offsets[0])) {
-      for (sub_tensor_cfg.offset[0] = offsets[1] = 0; offsets[1] < weights_src->shape[1]; sub_tensor_cfg.offset[0] = offsets[1] += sizes[1], sizes[1] = std::min(sizes[1], weights_src->shape[1] - offsets[1])) {
-        for (sub_tensor_cfg.offset[1] = offsets[2] = 0; offsets[2] < weights_src->shape[2]; sub_tensor_cfg.offset[1] = offsets[2] += sizes[2], sizes[2] = std::min(sizes[2], weights_src->shape[2] - offsets[2])) {
-          for (sub_tensor_cfg.offset[2] = offsets[3] = 0; offsets[3] < weights_src->shape[3]; sub_tensor_cfg.offset[2] = offsets[3] += sizes[3], sizes[3] = std::min(sizes[3], weights_src->shape[3] - offsets[3])) {
-            mli_mov_cfg_for_slice(&copy_config, (int*)offsets, (int*)sizes, dst_mem_stride);
+    sub_tensor_cfg.offset[3] = src_offsets[0] = 0;
+    sub_tensor_cfg.offset[0] = src_offsets[1] = 0; 
+    sub_tensor_cfg.offset[1] = src_offsets[2] = 0;
+    sub_tensor_cfg.offset[2] = src_offsets[3] = 0;
+    do
+    {
+      do
+      {
+        do
+        {
+          do
+          {
+            mli_mov_cfg_for_slice(&copy_config, (int*)src_offsets, (int*)src_sizes, dst_mem_stride);
             mli_mov_tensor_sync(weights_src, &copy_config, &buffer);
 
-            // mli_mov_cfg_for_slice(&copy_config_2, (int*)offsets_2, sizes_2, dst_mem_stride_2);
-            // mli_status mli_hlp_create_subtensor(const mli_tensor *in, const mli_sub_tensor_cfg *cfg, mli_tensor *out);
-            // typedef struct {
-            //     uint32_t offset[MLI_MAX_RANK];   /**< subtensor start coordinates in the input tensor 
-            //                                           The size of this array is determined by the rank of the input tensor */
-            //     uint32_t size[MLI_MAX_RANK];     /**< Size of the sub tensor in elements per dimension
-            //                                           the number of entries in this array is determind by the input tensor */
-            //     uint32_t sub_tensor_rank;        /**< Rank of the sub tensor that will be produced */
-            // } mli_sub_tensor_cfg;
-
             mli_hlp_create_subtensor(weights_dst, &sub_tensor_cfg, &weights_dst_sub_tensor);
-            //TODO: Do here subtensor and mov there
             mli_krn_permute_sa8(&buffer, permute_cfg, &weights_dst_sub_tensor);
-          }
-        }
-      }
-    }
+
+            sub_tensor_cfg.offset[2] = src_offsets[3] += src_sizes[3];
+            src_sizes[3] = std::min(src_sizes[3], weights_src->shape[3] - src_offsets[3]);
+          } while (src_offsets[3] < weights_src->shape[3]);
+
+          sub_tensor_cfg.offset[1] = src_offsets[2] += src_sizes[2];
+          src_sizes[2] = std::min(src_sizes[2], weights_src->shape[2] - src_offsets[2]);
+        } while (src_offsets[2] < weights_src->shape[2]);
+        
+        sub_tensor_cfg.offset[0] = src_offsets[1] += src_sizes[1];
+        src_sizes[1] = std::min(src_sizes[1], weights_src->shape[1] - src_offsets[1]);
+      } while (src_offsets[1] < weights_src->shape[1]);
+      
+      sub_tensor_cfg.offset[3] = src_offsets[0] += src_sizes[0];
+      src_sizes[0] = std::min(src_sizes[0], weights_src->shape[0] - src_offsets[0]);
+    } while (src_offsets[0] < weights_src->shape[0]);
+    
+
+    // for (sub_tensor_cfg.offset[3] = offsets[0] = 0; offsets[0] < weights_src->shape[0]; sub_tensor_cfg.offset[3] = offsets[0] += sizes[0] == 0 ? 1 : sizes[0], sizes[0] = std::min(sizes[0], weights_src->shape[0] - offsets[0])) {
+    //   for (sub_tensor_cfg.offset[0] = offsets[1] = 0; offsets[1] < weights_src->shape[1]; sub_tensor_cfg.offset[0] = offsets[1] += sizes[1] == 0 ? 1 : sizes[1], sizes[1] = std::min(sizes[1], weights_src->shape[1] - offsets[1])) {
+    //     for (sub_tensor_cfg.offset[1] = offsets[2] = 0; offsets[2] < weights_src->shape[2]; sub_tensor_cfg.offset[1] = offsets[2] += sizes[2] == 0 ? 1 : sizes[2], sizes[2] = std::min(sizes[2], weights_src->shape[2] - offsets[2])) {
+    //       for (sub_tensor_cfg.offset[2] = offsets[3] = 0; offsets[3] < weights_src->shape[3]; sub_tensor_cfg.offset[2] = offsets[3] += sizes[3] == 0 ? 1 : sizes[3], sizes[3] = std::min(sizes[3], weights_src->shape[3] - offsets[3])) {
+    //         mli_mov_cfg_for_slice(&copy_config, (int*)offsets, (int*)sizes, dst_mem_stride);
+    //         mli_mov_tensor_sync(weights_src, &copy_config, &buffer);
+
+    //         // mli_mov_cfg_for_slice(&copy_config_2, (int*)offsets_2, sizes_2, dst_mem_stride_2);
+    //         // mli_status mli_hlp_create_subtensor(const mli_tensor *in, const mli_sub_tensor_cfg *cfg, mli_tensor *out);
+    //         // typedef struct {
+    //         //     uint32_t offset[MLI_MAX_RANK];   /**< subtensor start coordinates in the input tensor 
+    //         //                                           The size of this array is determined by the rank of the input tensor */
+    //         //     uint32_t size[MLI_MAX_RANK];     /**< Size of the sub tensor in elements per dimension
+    //         //                                           the number of entries in this array is determind by the input tensor */
+    //         //     uint32_t sub_tensor_rank;        /**< Rank of the sub tensor that will be produced */
+    //         // } mli_sub_tensor_cfg;
+
+    //         mli_hlp_create_subtensor(weights_dst, &sub_tensor_cfg, &weights_dst_sub_tensor);
+    //         //TODO: Do here subtensor and mov there
+    //         mli_krn_permute_sa8(&buffer, permute_cfg, &weights_dst_sub_tensor);
+    //       }
+    //     }
+    //   }
+    // }
 
     // for (int i = 1; i <= buffer->shape[3] / slice_size; i++) {
       // sizes[0] = buffer->shape[3];
