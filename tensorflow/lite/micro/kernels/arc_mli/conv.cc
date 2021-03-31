@@ -337,9 +337,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     ops::micro::MliTensorAttachBuffer<int32_t>(bias, data.mli_bias);
     ops::micro::MliTensorAttachBuffer<int8_t>(output, data.mli_out);
 
-    // // For batch slicing
-    // const int batch_dimension = 0;
-
     // for height slicing
     const int height_dimension = 1;
     int in_slice_height = 0;
@@ -347,8 +344,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const int kernel_height =
         static_cast<int>(data.mli_weights->shape[KRNL_H_DIM_HWC]);
     const int overlap = kernel_height - cfg_local.stride_height;
-    //TODO: Permute must be here?
-    
+
     // for weight slicing (on output channels)
     // NHWC layout for weights, output channel dimension is the first dimension.
     const int weight_out_ch_dimension = 0;
@@ -369,10 +365,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
-    // TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
-    //     context, &in_local, &weights_local, &bias_local, &out_local,
-    //     &w_buffer_ptr));
-
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
         context, &in_local, &weights_local, &bias_local, &out_local,
         &w_buffer_ptr));
@@ -385,9 +377,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
             &weights_local, &bias_local, weight_out_ch_dimension,
             &slice_channels));
 
-    // mli_tensor* w_ptr = &weights_local;
-    // mli_tensor* b_ptr = &bias_local;
-
     /* is_local indicates that the tensor is already in local memory,
        so in that case the original tensor can be used,
        and there is no need to copy it to the local tensor*/
@@ -395,8 +384,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
     const bool out_is_local =
         out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
-    // const bool w_is_local =
-    //     weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
     const bool b_is_local =
         bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
 
@@ -407,36 +394,19 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     ops::micro::TensorSlicer out_ch_slice(data.mli_out, out_tensor_ch_dimension,
                                           slice_channels, 0, 0, 0, true);
 
-    mli_tensor* w_ptr = /* w_is_local ? w_slice.Sub() : */ &weights_local;
+    mli_tensor* w_ptr = &weights_local;
     mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
     void* input_buffer_ptr = NULL;
     uint32_t input_buffer_size = 0;
 
     while (!w_slice.Done()) {
-      // mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
-      // mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
-      // mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
-      // TODO: Change to slicing logic
       /* Permute weights tensor to the HWCN layout */
-      mli_tensor permuted_w_ptr = {};
-      permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
-      // permuted_w_ptr.data.capacity = w_ptr->data.capacity;
       mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
-      ops::micro::permute_conv_weights_1x1(data.mli_weights, &permute_cfg, w_ptr, out_local);
-      // mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
-
-      // /* mli_in tensor contains batches of HWC tensors. So it is a 4
-      // dimensional tensor. Because the mli kernel will process one HWC
-      // tensor at a time, the 4 dimensional tensor needs to be sliced into
-      // nBatch 3 dimensional tensors. */
-      // ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
-
-      // /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
-      // tensors. */
-      // ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
+      ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
+                                  out_local);
 
       /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
       tensor. because the mli kernel will process one HWC tensor at a time, the
@@ -456,11 +426,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
       ops::micro::TensorSlicer out_slice(out_ch_slice.Sub(), height_dimension,
                                          out_slice_height);
 
-      // /* setup the pointers to the local or remote tensor to make the code
-      // inside the loop easier. */
-      // mli_tensor* in_ptr = &in_local;
-      // mli_tensor* out_ptr = &out_local;
-
       /* setup the pointers to the local or remote tensor to make the code
        * inside the loop easier. */
       mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
@@ -479,8 +444,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
 
-        mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
-                                         &cfg_local, out_ptr);
+        mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg_local,
+                                         out_ptr);
 
         mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 

@@ -341,15 +341,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     ops::micro::MliTensorAttachBuffer<int32_t>(bias, data.mli_bias);
     ops::micro::MliTensorAttachBuffer<int8_t>(output, data.mli_out);
 
-    // // For batch slicing
-    // const int batch_dimension = 0;
-
     // for height slicing
     const int heightDimension = 1;
     int inSliceHeight = 0;
     int outSliceHeight = 0;
-    const int kernelHeight =
-        static_cast<int>(data.mli_weights->shape[1]); //TODO: Here was define - maybe change
+    const int kernelHeight = static_cast<int>(data.mli_weights->shape[1]);
     const int overlap = kernelHeight - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
@@ -377,15 +373,10 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
-    // TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
-    //     context, &in_local, &weights_local, &bias_local, &out_local,
-    //     &w_buffer_ptr));
-
-    // mli_tensor* w_ptr = &weights_local;
-    // mli_tensor* b_ptr = &bias_local;
-
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
-        context, &in_local, &weights_local, &bias_local, &out_local, &w_buffer_ptr));
+        context, &in_local, &weights_local, &bias_local, &out_local,
+        &w_buffer_ptr));
+
     /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
@@ -432,20 +423,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     int padding_bottom = cfg_local.padding_bottom;
 
     while (!w_slice.Done()) {
-      // mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
-      // mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
       mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
-
-      // /* mli_in tensor contains batches of HWC tensors. So it is a 4
-      //    dimensional tensor. Because the mli kernel will process one HWC
-      //    tensor at a time, the 4 dimensional tensor needs to be sliced into
-      //    nBatch 3 dimensional tensors.  */
-      // ops::micro::TensorSlicer in_slice(data.mli_in, batch_dimension, 1);
-
-      // /* mli_out tensor is also have to be sliced into nBatch 3 dimensional
-      //    tensors. */
-      // ops::micro::TensorSlicer out_slice(data.mli_out, batch_dimension, 1);
 
       /* input tensor is already sliced in the  channel dimension.
       out_ch_slice.Sub() is the tensor for the amount of channels of this
@@ -468,11 +447,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
       sliced over the batch and height dimension. */
       ops::micro::TensorSlicer out_slice(out_ch_slice.Sub(), heightDimension,
                                          outSliceHeight);
-
-      // /* setup the pointers to the local or remote tensor to make the code
-      //    inside the loop easier. */
-      // mli_tensor* in_ptr = &in_local;
-      // mli_tensor* out_ptr = &out_local;
 
       /* setup the pointers to the local or remote tensor to make the code
        * inside the loop easier. */
