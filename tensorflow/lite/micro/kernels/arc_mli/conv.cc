@@ -395,8 +395,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
     const bool out_is_local =
         out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
-    const bool w_is_local =
-        weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
+    // const bool w_is_local =
+    //     weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
     const bool b_is_local =
         bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
 
@@ -407,7 +407,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     ops::micro::TensorSlicer out_ch_slice(data.mli_out, out_tensor_ch_dimension,
                                           slice_channels, 0, 0, 0, true);
 
-    mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
+    mli_tensor* w_ptr = /* w_is_local ? w_slice.Sub() : */ &weights_local;
     mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
     void* input_buffer_ptr = NULL;

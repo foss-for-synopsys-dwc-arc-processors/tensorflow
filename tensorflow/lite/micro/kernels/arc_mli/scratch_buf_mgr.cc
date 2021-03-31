@@ -114,21 +114,21 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
   TfLiteStatus ret_val = kTfLiteOk;
   init_arc_scratch_buffers();
 #if (defined(__Xxy)) || (defined(__Xvdsp))
-  if (!inside_arc_ccm(bias->data.mem.void_p)) {
-    int weights_size = mli_hlp_count_elem_num(weights, 0) *
-                       mli_hlp_tensor_element_size(weights);
-    int max_weights_size = 0;
-    weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
-    weights->data.capacity = weights_size;
-    if (weights->data.mem.void_p == NULL) {
-      get_arc_scratch_buffer_max_size(&max_weights_size);
-      weights->data.mem.void_p = get_arc_scratch_buffer(max_weights_size);
-      weights->data.capacity = max_weights_size;
-      if (max_weights_size == 0) ret_val = kTfLiteError;
-    }
-    // Allocate buffer for weights transpose.
-    *weights_buffer = get_arc_scratch_buffer(weights_size);
+  // if (!inside_arc_ccm(weights->data.mem.void_p)) {
+  int weights_size =
+      mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
+  int max_weights_size = 0;
+  weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
+  weights->data.capacity = weights_size;
+  if (weights->data.mem.void_p == NULL) {
+    get_arc_scratch_buffer_max_size(&max_weights_size);
+    weights->data.mem.void_p = get_arc_scratch_buffer(max_weights_size);
+    weights->data.capacity = max_weights_size;
+    if (max_weights_size == 0) ret_val = kTfLiteError;
   }
+  // Allocate buffer for weights transpose.
+  *weights_buffer = get_arc_scratch_buffer(weights_size);
+  // }
   if (weights->data.mem.void_p == NULL || weights_buffer == NULL)
     ret_val = kTfLiteError;
 

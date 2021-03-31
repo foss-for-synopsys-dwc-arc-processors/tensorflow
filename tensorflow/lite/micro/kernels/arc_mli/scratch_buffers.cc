@@ -36,7 +36,7 @@ namespace micro {
 
 #ifndef SCRATCH_MEM_Y_SIZE
 #ifdef core_config_xy_size
-#define SCRATCH_MEM_Y_SIZE (core_config _xy_size)
+#define SCRATCH_MEM_Y_SIZE (core_config_xy_size)
 #endif
 #endif
 

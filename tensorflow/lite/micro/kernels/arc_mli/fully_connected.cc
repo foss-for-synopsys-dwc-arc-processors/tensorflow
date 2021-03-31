@@ -217,7 +217,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   ops::micro::TensorSlicer out_ch_slice(data.mli_out, out_tensor_dimension,
                                         slice_size, 0, 0, 0, true);
 
-  mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
+  mli_tensor* w_ptr = /* w_is_local ? w_slice.Sub() : */ &weights_local;
   mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
   void* input_buffer_ptr = NULL;
@@ -229,14 +229,15 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     // mli_mov_tensor_sync(data.mli_weights, &copy_config, w_ptr);
     // mli_mov_tensor_sync(data.mli_bias, &copy_config, b_ptr);
 
-    mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+    // mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
     /* Permute weights tensor to the HWCN layout */
     mli_tensor permuted_w_ptr = {};
     permuted_w_ptr.data.mem.void_p = w_buffer_ptr;
     mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
-    mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
+    ops::micro::permute_conv_weights_1x1(data.mli_weights, &permute_cfg, w_ptr, out_local);
+    // mli_krn_permute_sa8(w_ptr, &permute_cfg, &permuted_w_ptr);
 
     // Slice the input over the batches (one at a time with the size of a
     // complete input)
