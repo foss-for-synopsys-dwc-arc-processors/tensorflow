@@ -64,10 +64,6 @@ endif
     third_party/$(MLI_INCLUDE_FOLDER)/mli_types.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_helpers_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_kernels_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_avepool_spec_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_conv2d_spec_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_depthwise_conv2d_spec_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_maxpool_spec_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_mov_api.h
 
     MICROLITE_CC_HDRS += tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h

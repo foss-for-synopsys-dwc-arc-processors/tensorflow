@@ -54,8 +54,8 @@ PERSON_MODEL_MD5 := "55b85f76e2995153e660391d4a209ef1"
 PERSON_MODEL_INT8_URL := "https://storage.googleapis.com/download.tensorflow.org/data/tf_lite_micro_person_data_int8_grayscale_2020_12_1.zip"
 PERSON_MODEL_INT8_MD5 := "e765cc76889db8640cfe876a37e4ec00"
 
-EMBARC_MLI_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/archive/f0dd8f6c4ad30378ac3454467aebe9b94fd7dd6a.zip"
-EMBARC_MLI_MD5 := "ca7dece239a77b9571fc70c96018c8bb"
+EMBARC_MLI_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/archive/68e502e9f1948c8739e1912bb1bdad5e2e9ef8f9.zip"
+EMBARC_MLI_MD5 := "cd4e842f41aee817ef40fb7ac73b833c"
 
 EMBARC_MLI_PRE_COMPILED_URL := "https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/releases/download/Release_1.1/embARC_MLI_package.zip"
 EMBARC_MLI_PRE_COMPILED_MD5 := "173990c2dde4efef6a2c95b92d1f0244"

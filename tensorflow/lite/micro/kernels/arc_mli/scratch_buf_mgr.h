@@ -34,13 +34,14 @@ namespace micro {
  * @param weights [IO] pointer to the weights tensor
  * @param bias [IO] pointer to the bias tensor
  * @param output [IO] pointer to the output tensor
- * @param weights_buffer [IO] pointer to the weights buffer
  *
  * @return Tf Lite status code
  */
-TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
-    TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
-    mli_tensor* bias, mli_tensor* out, void** weights_buffer);
+TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
+                                                     mli_tensor* in,
+                                                     mli_tensor* weights,
+                                                     mli_tensor* bias,
+                                                     mli_tensor* out);
 
 /**
  * @brief Function to allocate scratch buffers for pooling kernels with only
@@ -70,13 +71,12 @@ TfLiteStatus get_arc_scratch_buffer_for_pooling_tensors(TfLiteContext* context,
  * @param weights [IO] pointer to the weights tensor
  * @param bias [IO] pointer to the bias tensor
  * @param output [IO] pointer to the output tensor
- * @param weights_buffer [IO] pointer to the weights buffer
  *
  * @return Tf Lite status code
  */
 TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
-    mli_tensor* bias, mli_tensor* out, void** weights_buffer);
+    mli_tensor* bias, mli_tensor* out);
 
 /**
  * @brief Function to calculate slice size for io tensors

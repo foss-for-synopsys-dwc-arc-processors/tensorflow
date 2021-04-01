@@ -369,13 +369,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_tensor out_local =
         *data.mli_out;  // this assumes that output shape
                         // is already filled in the tensor struct.
-    void* w_buffer_ptr = nullptr;
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
-        context, &in_local, &weights_local, &bias_local, &out_local,
-        &w_buffer_ptr));
+        context, &in_local, &weights_local, &bias_local, &out_local));
 
     /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,

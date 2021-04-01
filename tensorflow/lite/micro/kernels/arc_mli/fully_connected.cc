@@ -177,7 +177,6 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   mli_tensor bias_local = *data.mli_bias;
   mli_tensor in_local = *data.mli_in;
   mli_tensor out_local = *data.mli_out;
-  void* w_buffer_ptr = nullptr;
   mli_mov_cfg_t copy_config;
   mli_mov_cfg_for_copy(&copy_config);
   const int weight_out_dimension = 0;
@@ -188,8 +187,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   /* allocate the local buffers, and compute the slice size */
   TF_LITE_ENSURE_STATUS(
       ops::micro::get_arc_scratch_buffer_for_fully_connect_tensors(
-          context, &in_local, &weights_local, &bias_local, &out_local,
-          &w_buffer_ptr));
+          context, &in_local, &weights_local, &bias_local, &out_local));
   TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_weights(
       &weights_local, &bias_local, weight_out_dimension, &slice_size));
   int max_out_slice_size =

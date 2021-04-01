@@ -361,13 +361,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_tensor in_local = *data.mli_in;
     mli_tensor out_local = *data.mli_out;
     // Buffer for weights transpose
-    void* w_buffer_ptr = nullptr;
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
-        context, &in_local, &weights_local, &bias_local, &out_local,
-        &w_buffer_ptr));
+        context, &in_local, &weights_local, &bias_local, &out_local));
     TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_io(
         &in_local, &out_local, kernel_height, cfg_local.stride_height,
         cfg_local.padding_top, cfg_local.padding_bottom, &in_slice_height,

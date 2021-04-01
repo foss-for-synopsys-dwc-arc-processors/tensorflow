@@ -108,13 +108,13 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
 }
 #endif
 
-TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
-    TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
-    mli_tensor* bias, mli_tensor* out, void** weights_buffer) {
+TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
+                                                     mli_tensor* in,
+                                                     mli_tensor* weights,
+                                                     mli_tensor* bias,
+                                                     mli_tensor* out) {
   TfLiteStatus ret_val = kTfLiteOk;
   init_arc_scratch_buffers();
-#if (defined(__Xxy)) || (defined(__Xvdsp))
-  // if (!inside_arc_ccm(weights->data.mem.void_p)) {
   int weights_size =
       mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
   int max_weights_size = 0;
@@ -126,12 +126,8 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
     weights->data.capacity = max_weights_size;
     if (max_weights_size == 0) ret_val = kTfLiteError;
   }
-  // Allocate buffer for weights transpose.
-  *weights_buffer = get_arc_scratch_buffer(weights_size);
-  // }
-  if (weights->data.mem.void_p == NULL || weights_buffer == NULL)
-    ret_val = kTfLiteError;
-
+  if (weights->data.mem.void_p == NULL) ret_val = kTfLiteError;
+#if (defined(__Xxy)) || (defined(__Xvdsp))
   if (!inside_arc_ccm(bias->data.mem.void_p)) {
     uint32_t bias_mem_requirements =
         mli_hlp_count_elem_num(bias, 0) * mli_hlp_tensor_element_size(bias);
@@ -152,21 +148,27 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
   }
   if (bias->data.mem.void_p == NULL) ret_val = kTfLiteError;
 
-#else
-  int weights_size =
-      mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
-  // Allocate buffer for weights transpose.
-  *weights_buffer = get_arc_scratch_buffer(weights_size);
-  if (weights_buffer == NULL) ret_val = kTfLiteError;
 #endif
   return ret_val;
 }
 
 TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     TfLiteContext* context, mli_tensor* in, mli_tensor* weights,
-    mli_tensor* bias, mli_tensor* out, void** weights_buffer) {
+    mli_tensor* bias, mli_tensor* out) {
   TfLiteStatus ret_val = kTfLiteOk;
   init_arc_scratch_buffers();
+  int weights_size =
+      mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
+  int max_weights_size = 0;
+  weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
+  weights->data.capacity = weights_size;
+  if (weights->data.mem.void_p == NULL) {
+    get_arc_scratch_buffer_max_size(&max_weights_size);
+    weights->data.mem.void_p = get_arc_scratch_buffer(max_weights_size);
+    weights->data.capacity = max_weights_size;
+    if (max_weights_size == 0) ret_val = kTfLiteError;
+  }
+  if (weights->data.mem.void_p == NULL) ret_val = kTfLiteError;
 #if (defined(__Xxy)) || (defined(__Xvdsp))
   /* strategy for FC kernels:
      first allocate input, because this cannot be sliced. (in case of batch
@@ -187,24 +189,6 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
       ret_val = kTfLiteError;
     }
   }
-
-  if (!inside_arc_ccm(weights->data.mem.void_p)) {
-    int weights_size = mli_hlp_count_elem_num(weights, 0) *
-                       mli_hlp_tensor_element_size(weights);
-    int max_weights_size = 0;
-    weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
-    weights->data.capacity = weights_size;
-    if (weights->data.mem.void_p == NULL) {
-      get_arc_scratch_buffer_max_size(&max_weights_size);
-      weights->data.mem.void_p = get_arc_scratch_buffer(max_weights_size);
-      weights->data.capacity = max_weights_size;
-      if (max_weights_size == 0) ret_val = kTfLiteError;
-    }
-    // Allocate buffer for weights transpose.
-    *weights_buffer = get_arc_scratch_buffer(weights_size);
-  }
-  if (weights->data.mem.void_p == NULL || weights_buffer == NULL)
-    ret_val = kTfLiteError;
 
   if (!inside_arc_ccm(bias->data.mem.void_p)) {
     int bias_mem_requirements =
@@ -238,12 +222,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     if (max_bias_size == 0) ret_val = kTfLiteError;
   }
   if (bias->data.mem.void_p == NULL) ret_val = kTfLiteError;
-#else
-  int weights_size =
-      mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
-  // Allocate buffer for weights transpose.
-  *weights_buffer = get_arc_scratch_buffer(weights_size);
-  if (weights_buffer == NULL) ret_val = kTfLiteError;
+
 #endif
   return ret_val;
 }
