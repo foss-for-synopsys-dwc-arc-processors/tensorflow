@@ -50,7 +50,7 @@ namespace micro {
 
 #ifndef SCRATCH_MEM_VEC_SIZE
 #ifdef core_config_vec_mem_size
-#define SCRATCH_MEM_VEC_SIZE ((core_config_vec_mem_size / 3) * 4)
+#define SCRATCH_MEM_VEC_SIZE ((core_config_vec_mem_size * 3) / 4)
 #endif
 #endif
 

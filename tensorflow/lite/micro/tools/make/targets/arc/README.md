@@ -46,7 +46,91 @@ external use
 Please consider the above when choosing whether to install Windows or Linux or
 both versions of MWDT
 
-## ARC EM Software Development Platform (ARC EM SDP)
+## VPX5 target
+
+
+### Initial Setup
+
+#### MetaWare Development Toolkit
+
+See
+[Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
+section for instructions on toolchain installation.
+
+#### Make Tool
+
+A `'make'` tool is required for both phases of deploying Tensorflow Lite Micro
+applications on ARC VPX: 
+1. Application project generation 
+2. Working with
+generated application (build and run)
+
+For the first phase you need an environment and make tool compatible with
+Tensorflow Lite for Micro build system. At the moment of this writing, this
+requires make >=3.82 and a *nix-like environment which supports shell and native
+commands for file manipulations. MWDT toolkit is not required for this phase.
+
+For the second phase, requirements are less strict. The gmake version delivered
+with MetaWare Development Toolkit is sufficient. There are no shell and *nix
+command dependencies, so Windows can be used
+
+#### CMake Tool
+
+A `'CMake'` tool version >= 3.18 is required for the
+[embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) build.
+
+### Generate Application Project for ARC VPX
+
+Before building an example or test application, you need to generate a TFLM
+project for this application from TensorFlow sources and external dependencies.
+To generate it for ARC VPX you need to set `TARGET=arc_vpx` on the
+make command line. For instance, to build the Person Detect test application,
+use a shell to execute the following command from the root directory of the
+TensorFlow repo:
+
+```
+make -f tensorflow/lite/micro/tools/make/Makefile generate_person_detection_test_int8_make_project TARGET=arc_vpx OPTIMIZED_KERNEL_DIR=arc_mli
+```
+
+The application project will be generated into
+*tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/person_detection_test_int8/make*
+
+Info on generating and building example applications for VPX
+(*tensorflow/lite/micro/examples*) can be found in the appropriate readme file
+placed in the same directory with the examples. In general, it’s the same
+process which described in this Readme.
+
+The
+[embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli)
+is used by default to speed up execution of some kernels for asymmetrically
+quantized layers. Kernels which use MLI-based implementations are kept in the
+*tensorflow/lite/micro/kernels/arc_mli* folder. For applications which may not
+benefit from MLI library, the project can be generated without these
+implementations by **removing** `OPTIMIZED_KERNEL_DIR=arc_mli` in the command line. This can reduce
+code size when the optimized kernels are not required.
+
+For more options on embARC MLI usage see
+[kernels/arc_mli/README.md](/tensorflow/lite/micro/kernels/arc_mli/README.md).
+
+### Build the Application
+
+You may need to adjust the following commands in order to use the appropriate
+make tool available in your environment (ie: `make` or `gmake`)
+
+1.  Open command shell and change the working directory to the location which
+    contains the generated project, as described in the previous section
+
+2.  Clean previous build artifacts (optional)
+
+    make clean
+
+3.  Build application
+
+    make app 
+
+<!-- ## ARC EM Software Development Platform (ARC EM SDP)
+
+NOTE: ARC EM SDP platform isn't temporary supported.
 
 This section describes how to deploy on an
 [ARC EM SDP board](https://www.synopsys.com/dw/ipdir.php?ds=arc-em-software-development-platform)
@@ -186,14 +270,11 @@ make tool available in your environment (ie: `make` or `gmake`)
 
 3.  Build application
 
-    make app
+    make app -->
 
-### Run the Application on the Board Using MetaWare Debugger
+### Run the Application with MetaWare Debugger on the nSim Simulator.
 
-In case you do not have access to the MetaWare Debugger or have chosen not to
-install the Digilent drivers, you can skip to the next section.
-
-To run the application from the console, use the following command:
+To run application from the console, use the following command:
 
 ```
    make run
@@ -208,9 +289,9 @@ To run the application in the GUI debugger, use the following command:
    make debug
 ```
 
-In both cases you will see the application output in the serial terminal.
+You will see the application output in the same console where you ran it.
 
-### Run the Application on the Board from the microSD Card
+<!-- ### Run the Application on the Board from the microSD Card
 
 1.  Use the following command in the same command shell you used for building
     the application, as described in the previous step
@@ -242,7 +323,7 @@ In both cases you will see the application output in the serial terminal.
 
 1.  Reset the board (see step 4 above)
 
-You will see the application output in the serial terminal.
+You will see the application output in the serial terminal. -->
 
 ## Custom ARC EM/HS Platform
 
@@ -254,8 +335,11 @@ MetaWare toolkit
 
 ### Initial Setup
 
-To with custom ARC EM/HS platform, you need the following : * Synopsys MetaWare
-Development Toolkit version 2019.12 or higher * Make tool (make or gmake)
+To with custom ARC EM/HS platform, you need the following : 
+* Synopsys MetaWare
+Development Toolkit version 2021.03 or higher 
+* Make tool (make or gmake)
+* CMake 3.18 or higher
 
 See
 [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
