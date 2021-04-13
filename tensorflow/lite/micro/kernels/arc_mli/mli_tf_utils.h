@@ -28,7 +28,7 @@ namespace tflite {
 namespace ops {
 namespace micro {
 
-inline void ConvertToMliTensorData(const TfLiteTensor* tfT, mli_tensor* mliT) {
+inline void ConvertToMliTensorData(const TfLiteTensor* tfT, mli_tensor* mliT, bool is_bias_tensor) {
   // Data is NULL until MliTensorAttachBuffer is called.
   mliT->data.mem.void_p = nullptr;
   if (tfT->type == kTfLiteInt8) {
@@ -39,10 +39,17 @@ inline void ConvertToMliTensorData(const TfLiteTensor* tfT, mli_tensor* mliT) {
     TF_LITE_FATAL("Wrong data type. Expected int8_t or int32_t.");
   }
 
+  const int32_t dims_count = GetTensorShape(tfT).DimensionsCount();
+
   mliT->data.capacity = tfT->bytes;
-  mliT->rank = GetTensorShape(tfT).DimensionsCount();
-  for (int i = 0; i < GetTensorShape(tfT).DimensionsCount(); i++) {
-    mliT->shape[i] = GetTensorShape(tfT).Dims(i);
+  mliT->rank = is_bias_tensor ? 1 : dims_count;
+
+  if (is_bias_tensor) {
+    mliT->shape[0] = GetTensorShape(tfT).Dims(dims_count - 1);
+  } else {
+    for (int i = 0; i < dims_count; i++) {
+      mliT->shape[i] = GetTensorShape(tfT).Dims(i);
+    }
   }
 }
 
@@ -104,14 +111,14 @@ inline void MliTensorAttachBuffer(const TfLiteEvalTensor* tfT,
 }
 
 inline void ConvertToMliTensor(const TfLiteTensor* tfT, mli_tensor* mliT) {
-  ConvertToMliTensorData(tfT, mliT);
+  ConvertToMliTensorData(tfT, mliT, false);
   ConvertToMliQuantParams(tfT, mliT);
 }
 
 inline void ConvertToMliTensorPerChannel(const TfLiteTensor* tfT,
                                          mli_tensor* mliT,
                                          bool is_bias_tensor) {
-  ConvertToMliTensorData(tfT, mliT);
+  ConvertToMliTensorData(tfT, mliT, is_bias_tensor);
   ConvertToMliQuantParamsPerChannel(tfT, mliT, is_bias_tensor);
 }
 

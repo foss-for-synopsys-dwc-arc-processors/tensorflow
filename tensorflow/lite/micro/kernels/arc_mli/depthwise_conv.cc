@@ -211,7 +211,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     // Choose group convolution function for “channel multiplier” functionality.
     const int in_ch = SizeOfDimension(input, 3);
     const int filters_num = SizeOfDimension(filter, 3);
-    if (in_ch == filters_num) {
+    const int channels_num = SizeOfDimension(filter, 1);
+    if (in_ch == filters_num && channels_num == 1) {
       data->p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32 =
           mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32;
     } else {
