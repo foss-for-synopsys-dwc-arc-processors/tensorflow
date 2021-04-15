@@ -156,18 +156,18 @@ inline void change_shape(mli_tensor* mliT, const uint8_t dim_order[]) {
 
 inline void permute_weights(const mli_tensor* weights_src,
                             const mli_permute_cfg* permute_cfg,
-                            mli_tensor* weights_dst, mli_tensor buffer) {
+                            mli_tensor* weights_dst, mli_data_container* buffer_data) {
+  mli_tensor buffer = {};
   buffer.el_params = weights_dst->el_params;
+  buffer.data = *buffer_data;
   // Weights shape is NHWC and output (buffer) shape is HWC where N_w = C_o.
   // Buffer size (H_o * W_o) must be more or equal then the weights size (H_w *
   // W_w * C_w). So, this is the reason, why buffer size (output tensor) is
   // devided by last shape and weights size
-  int buffer_size = mli_hlp_count_elem_num(&buffer, 0) *
-                    mli_hlp_tensor_element_size(&buffer) /
-                    buffer.shape[buffer.rank - 1];
+  int buffer_size = buffer_data->capacity / weights_src->shape[KRNL_C_DIM_CHW];
   int weights_size = mli_hlp_count_elem_num(weights_src, 0) *
                      mli_hlp_tensor_element_size(weights_src) /
-                     weights_src->shape[0];
+                     weights_src->shape[KRNL_C_DIM_CHW];
 
   if (buffer_size >= weights_size) {
     mli_mov_cfg_t copy_config;
@@ -190,14 +190,14 @@ inline void permute_weights(const mli_tensor* weights_src,
 
     mli_tensor weights_dst_sub_tensor;
     mli_sub_tensor_cfg sub_tensor_cfg = {};
-    sub_tensor_cfg.sub_tensor_rank = buffer.rank;
+    sub_tensor_cfg.sub_tensor_rank = weights_src->rank;
 
     // Calculate dimensions for slice accroding to buffer capacity.
     // Now, after calling change_shape() function, dst weights buffer has the
     // MLI layout (HWCN). This means, the innermost dimension (N) of dst weights
     // tensor is equal to the innermost dimension of output tensor (N).
     sub_tensor_cfg.size[weights_dst->rank - 1] =
-        src_sizes[weights_dst->rank - 1] = buffer.shape[buffer.rank - 1];
+        src_sizes[weights_dst->rank - 1] = weights_src->shape[KRNL_C_DIM_CHW];
     // Now need to calculate other shapes for weights slice. Total slice size is
     // H*W*C*N, so to calculate sizes for each axis, avaliable slice size is
     // devided by shape for each axis.

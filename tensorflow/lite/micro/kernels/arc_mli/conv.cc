@@ -401,11 +401,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     while (!w_slice.Done()) {
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
-      /* Permute weights tensor to the HWCN layout */
-      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
-      ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
-                                  out_local);
-
       /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
       tensor. because the mli kernel will process one HWC tensor at a time, the
       4 dimensional tensor needs to be sliced into nBatch 3 dimensional tensors.
@@ -428,6 +423,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
        * inside the loop easier. */
       mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
       mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
+
+      /* Permute weights tensor to the HWCN layout */
+      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
+      ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
+                                  &out_ptr->data);
 
       while (!out_slice.Done()) {
         TF_LITE_ENSURE(context, !in_slice.Done());

@@ -219,11 +219,6 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   while (!w_slice.Done()) {
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
-    /* Permute weights tensor to the HWCN layout */
-    mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
-    ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
-                                out_local);
-
     // Slice the input over the batches (one at a time with the size of a
     // complete input)
     ops::micro::TensorSlicer in_slice(data.mli_in, input_size_dimension,
@@ -240,6 +235,11 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
      * inside the loop easier. */
     mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
     mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
+
+    /* Permute weights tensor to the HWCN layout */
+    mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
+    ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
+                                &out_ptr->data);
 
     while (!out_slice.Done()) {
       // if same input copy as previous iteration, skip the copy of input
