@@ -360,7 +360,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_tensor bias_local = *data.mli_bias;
     mli_tensor in_local = *data.mli_in;
     mli_tensor out_local = *data.mli_out;
-    // Buffer for weights transpose
+    
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 

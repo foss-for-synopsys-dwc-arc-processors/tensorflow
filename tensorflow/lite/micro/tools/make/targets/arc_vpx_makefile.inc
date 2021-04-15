@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Settings for EMSDP target (ARC processor)
+# Settings for VPX target (ARC VPX processor)
 
 TARGET_ARCH := arc
 ARC_TOOLCHAIN := mwdt
@@ -23,7 +23,7 @@ ARC_MLI_TARGET := vpx5_integer_full
 MLI_LIB_DIR = arc_mli_$(ARC_MLI_TARGET)
 
 TCF_FILE = $(PWD)/$(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/hw/vpx5_integer_full.tcf
-# LCF_FILE = $(PWD)/$(MAKEFILE_DIR)/targets/arc/emsdp/emsdp.lcf
+BUILD_LIB_DIR := vpx5_integer_full
 
 
 include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
