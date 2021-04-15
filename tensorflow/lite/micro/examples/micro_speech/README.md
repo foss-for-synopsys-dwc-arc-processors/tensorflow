@@ -18,7 +18,7 @@ kilobytes of Flash.
 
 ## Table of contents
 
--   [Run on nSIM ARC VPX](#run-on-nsim-arc-vpx) <!-- -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp) -->
+-   [Run on ARC VPX Processor](#run-on-arc-vpx-processor-using-nsim-simulator) <!-- -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp) -->
 -   [Deploy to Arduino](#deploy-to-arduino)
 -   [Deploy to ESP32](#deploy-to-esp32)
 -   [Deploy to SparkFun Edge](#deploy-to-sparkfun-edge)
@@ -30,7 +30,9 @@ kilobytes of Flash.
 -   [Run the tests on a development machine](#run-the-tests-on-a-development-machine)
 -   [Train your own model](#train-your-own-model)
 
-## Run on nSIM ARC VPX
+## Run on ARC VPX Processor using NSIM Simulator
+
+:warning: **WARNING**: Current implementation uses runtime permutation, which can work much slower then release version with model preprocessing.
 
 General information and instructions on using the board with TensorFlow
 Lite Micro can be found in the common

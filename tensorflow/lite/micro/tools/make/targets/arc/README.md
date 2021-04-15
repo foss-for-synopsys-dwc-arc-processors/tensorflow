@@ -46,7 +46,7 @@ external use
 Please consider the above when choosing whether to install Windows or Linux or
 both versions of MWDT
 
-## VPX5 target
+## VPX Processor target
 
 
 ### Initial Setup
@@ -76,7 +76,7 @@ command dependencies, so Windows can be used
 
 #### CMake Tool
 
-A `'CMake'` tool version >= 3.18 is required for the
+A [CMake](cmake.org "CMake Tool Homepage") tool version >= 3.18 is required for the
 [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) build.
 
 ### Generate Application Project for ARC VPX

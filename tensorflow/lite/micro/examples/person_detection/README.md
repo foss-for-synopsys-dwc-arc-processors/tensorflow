@@ -8,7 +8,7 @@ This uses the experimental int8 quantized version of the person detection model.
 ## Table of contents
 
 -   [Getting started](#getting-started)
--   [Run on nSIM ARC VPX](#run-on-nsim-arc-vpx) <!-- -   [Running on ARC EM SDP](#running-on-arc-em-sdp) -->
+-   [Run on ARC VPX Processor](#run-on-arc-vpx-processor-using-nsim-simulator) <!-- -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp) -->
 -   [Running on Arduino](#running-on-arduino)
 -   [Running on ESP32](#running-on-esp32)
 -   [Running on HIMAX WE1 EVB](#running-on-himax-we1-evb)
@@ -17,7 +17,9 @@ This uses the experimental int8 quantized version of the person detection model.
 -   [Debugging image capture](#debugging-image-capture)
 -   [Training your own model](#training-your-own-model)
 
-## Run on nSIM ARC VPX
+## Run on ARC VPX Processor using NSIM Simulator
+
+:warning: **WARNING**: Current implementation uses runtime permutation, which can work much slower then release version with model preprocessing.
 
 General information and instructions on using the board with TensorFlow
 Lite Micro can be found in the common
