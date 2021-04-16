@@ -16,11 +16,6 @@
 
 ifeq ($(TARGET_ARCH), arc)
 
-# MLI Library is used by default for ARC platform whenever it is possible.
-# To use TFLM reference implementation MLI should be intentionally turned off 
-# by passing 'no_arc_mli' tag (make -f <tflm_main_makefile> ARC_TAGS=no_arc_mli ...)
-ifeq ($(filter no_arc_mli,$(ARC_TAGS)),)
-
 ALL_TAGS += arc_mli
 
 ifeq ($(BUILD_ARC_MLI),true)
@@ -29,8 +24,8 @@ ifeq ($(BUILD_ARC_MLI),true)
   $(eval $(call add_third_party_download,$(EMBARC_MLI_URL),$(EMBARC_MLI_MD5),$(MLI_LIB_DIR),build_embarc_mli,$(TCF_FILE)))
 
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include
-  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/libmli.a
-  MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/libmli.a
+  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/arc/libmli.a
+  MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/arc/libmli.a
 
   THIRD_PARTY_CC_HDRS += \
     third_party/$(MLI_LIB_DIR)/LICENSE
@@ -69,10 +64,6 @@ endif
     third_party/$(MLI_INCLUDE_FOLDER)/mli_types.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_helpers_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_kernels_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_avepool_spec_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_conv2d_spec_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_depthwise_conv2d_spec_api.h \
-    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_maxpool_spec_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_mov_api.h
 
     MICROLITE_CC_HDRS += tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h
@@ -98,7 +89,4 @@ generate_arc_mli_test_projects: $(foreach TEST,$(ARC_MLI_TESTS), generate_kernel
     \nCXXFLAGS += -DTF_LITE_STRIP_REFERENCE_IMPL\
     \nendif\n
 
-
-
-endif # no_embarc_mli
 endif # TARGET_ARCH

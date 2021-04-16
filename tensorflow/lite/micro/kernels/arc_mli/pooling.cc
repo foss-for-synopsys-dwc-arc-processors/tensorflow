@@ -192,20 +192,21 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   mli_mov_cfg_for_copy(&copy_config);
   TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_pooling_tensors(
       context, &in_local, &out_local));
-  bool in_is_local = in_local.data == data.mli_in->data;
-  bool out_is_local = out_local.data == data.mli_out->data;
+  bool in_is_local = in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+  bool out_is_local =
+      out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
   TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_io(
       &in_local, &out_local, cfg_local.kernel_height, cfg_local.stride_height,
       cfg_local.padding_top, cfg_local.padding_bottom, &in_slice_height,
       &out_slice_height));
 
   /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
-     tensor. because the mli kernel will process one HWC tensor at a time, the 4
-     dimensional tensor needs to be sliced into nBatch 3 dimensional tensors. on
-     top of that there could be a need to also slice in the Height dimension.
-     for that the sliceHeight has been calculated. The tensor slicer is
-     configured that it will completely slice the nBatch dimension (0) and slice
-     the height dimension (1) in chunks of 'sliceHeight' */
+   tensor. because the mli kernel will process one HWC tensor at a time, the 4
+   dimensional tensor needs to be sliced into nBatch 3 dimensional tensors. on
+   top of that there could be a need to also slice in the Height dimension.
+   for that the sliceHeight has been calculated. The tensor slicer is
+   configured that it will completely slice the nBatch dimension (0) and slice
+   the height dimension (1) in chunks of 'sliceHeight' */
   TensorSlicer in_slice(data.mli_in, height_dimension, in_slice_height,
                         cfg_local.padding_top, cfg_local.padding_bottom,
                         overlap);

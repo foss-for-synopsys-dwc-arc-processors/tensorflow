@@ -191,16 +191,18 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_weights(
       &weights_local, &bias_local, weight_out_dimension, &slice_size));
   int max_out_slice_size =
-      out_local.capacity / mli_hlp_tensor_element_size(&out_local);
+      out_local.data.capacity / mli_hlp_tensor_element_size(&out_local);
   if (slice_size > max_out_slice_size) slice_size = max_out_slice_size;
 
   /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
-  const bool in_is_local = in_local.data == data.mli_in->data;
-  const bool out_is_local = out_local.data == data.mli_out->data;
-  const bool w_is_local = weights_local.data == data.mli_weights->data;
-  const bool b_is_local = bias_local.data == data.mli_bias->data;
+  const bool in_is_local =
+      in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+  const bool out_is_local =
+      out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+  const bool b_is_local =
+      bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
 
   ops::micro::TensorSlicer w_slice(data.mli_weights, weight_out_dimension,
                                    slice_size);
@@ -209,13 +211,12 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   ops::micro::TensorSlicer out_ch_slice(data.mli_out, out_tensor_dimension,
                                         slice_size, 0, 0, 0, true);
 
-  mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
+  mli_tensor* w_ptr = &weights_local;
   mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
   void* input_buffer_ptr = NULL;
 
   while (!w_slice.Done()) {
-    mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
     // Slice the input over the batches (one at a time with the size of a
@@ -235,13 +236,23 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
     mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
 
+    /* Permute weights tensor to the HWCN layout */
+    mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
+    ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
+                                &out_ptr->data);
+
     while (!out_slice.Done()) {
       // if same input copy as previous iteration, skip the copy of input
-      if (in_slice.Sub()->data != input_buffer_ptr) {
+      if (in_slice.Sub()->data.mem.void_p != input_buffer_ptr) {
         mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
-        input_buffer_ptr = in_slice.Sub()->data;
+        input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
       }
-      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, out_ptr);
+
+      mli_fully_connected_cfg cfg;
+      cfg.relu.type = MLI_RELU_NONE;
+
+      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg,
+                                           out_ptr);
       mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 
       in_slice.Next();

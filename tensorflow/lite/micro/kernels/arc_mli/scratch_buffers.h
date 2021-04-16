@@ -57,8 +57,18 @@ static inline bool inside_arc_yccm(void* p) {
 #endif
 }
 
+static inline bool inside_arc_vccm(void* p) {
+#if core_config_vdsp4
+  return ((unsigned)p >= core_config_vec_mem_base) &&
+         ((unsigned)p < core_config_vec_mem_base + core_config_vec_mem_size);
+#else
+  return false;
+#endif
+}
+
 static inline bool inside_arc_ccm(void* p) {
-  return inside_arc_dccm(p) || inside_arc_xccm(p) || inside_arc_yccm(p);
+  return inside_arc_dccm(p) || inside_arc_xccm(p) || inside_arc_yccm(p) ||
+         inside_arc_vccm(p);
 }
 
 }  // namespace micro
