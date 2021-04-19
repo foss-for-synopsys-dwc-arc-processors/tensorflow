@@ -43,11 +43,13 @@ constexpr int kOutputTensor = 0;
 // https://www.tensorflow.org/lite/performance/quantization_spec
 constexpr int kDepthwiseConvQuantizedDimension = 3;
 
+#ifdef MLI_2_0
 typedef mli_status (*depthwise_func_ptr)(const mli_tensor* /*in*/,
                                          const mli_tensor* /*weights*/,
                                          const mli_tensor* /*bias*/,
                                          const mli_conv2d_cfg* /*cfg*/,
                                          mli_tensor* /*out*/);
+#endif
 
 struct OpData {
   TfLitePaddingValues padding;
@@ -65,7 +67,9 @@ struct OpData {
   // Per channel output multiplier and shift.
   int32_t* per_channel_output_multiplier;
   int32_t* per_channel_output_shift;
+  #ifdef MLI_2_0
   int16_t* per_channel_zero_points;
+  #endif
 
   // The range of the fused activation layer. For example for kNone and
   // uint8_t these would be 0 and 255.
@@ -82,9 +86,12 @@ struct OpData {
   mli_tensor* mli_out;
   mli_conv2d_cfg* cfg;
 
+#ifdef MLI_2_0
   // Pointer to the required depthwise function. For “channel multiplier”
   // functionality group convolution is used.
   depthwise_func_ptr p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32;
+#endif
+
 };
 
 bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
@@ -93,15 +100,26 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
   const auto* affine_quantization =
       reinterpret_cast<TfLiteAffineQuantization*>(filter->quantization.params);
 
+#ifndef MLI_2_0
+  const int in_ch = SizeOfDimension(input, 3);
+  const int filters_num = SizeOfDimension(filter, 3);
+#endif
+
   // MLI optimized version only supports int8_t datatype, dilation factor of 1
-  // and per-axis quantization of weights (no broadcasting/per-tensor).
+  // and per-axis quantization of weights (no broadcasting/per-tensor). For
+  // MLI 1.1 (in_ch == filters_num) || (in_ch == 1)) is used to prevent usage of
+  // channel multiplier logic for multichannel input.
 
   bool ret_val = (filter->type == kTfLiteInt8) &&
                  (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
                  (params->dilation_width_factor == 1) &&
                  (params->dilation_height_factor == 1) &&
                  (affine_quantization->scale->size ==
+#ifdef MLI_2_0
                   filter->dims->data[kDepthwiseConvQuantizedDimension]);
+#endif
+                  filter->dims->data[kDepthwiseConvQuantizedDimension]) &&
+                 ((in_ch == filters_num) || (in_ch == 1));
   return ret_val;
 }
 
@@ -208,6 +226,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   data->output_zero_point = output->params.zero_point;
 
   if (data->is_mli_applicable) {
+
+#ifdef MLI_2_0
     // Choose group convolution function for “channel multiplier” functionality.
     const int in_ch = SizeOfDimension(input, 3);
     const int filters_num = SizeOfDimension(filter, 3);
@@ -219,6 +239,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
       data->p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32 =
           mli_krn_group_conv2d_hwcn_sa8_sa8_sa32;
     }
+#endif
 
     data->mli_in = static_cast<mli_tensor*>(
         context->AllocatePersistentBuffer(context, sizeof(mli_tensor)));
@@ -231,27 +252,45 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     data->cfg = static_cast<mli_conv2d_cfg*>(
         context->AllocatePersistentBuffer(context, sizeof(mli_conv2d_cfg)));
 
+#ifdef MLI_2_0
     data->per_channel_zero_points =
         static_cast<int16_t*>(context->AllocatePersistentBuffer(
             context, num_channels * sizeof(int16_t)));
+#endif
 
     // Reuse space allocated for OpData parameters.
+    data->mli_weights->el_params.asym.scale.pi32 =
+        static_cast<int32_t*>(data->per_channel_output_multiplier);
+    data->mli_bias->el_params.asym.scale.pi32 =
+        static_cast<int32_t*>(data->per_channel_output_shift);
+
+#ifdef MLI_2_0
     data->mli_weights->el_params.sa.scale.mem.pi16 =
         reinterpret_cast<int16_t*>(data->per_channel_output_multiplier);
     data->mli_bias->el_params.sa.scale.mem.pi16 =
         reinterpret_cast<int16_t*>(data->per_channel_output_multiplier) +
         num_channels;
+#endif
 
+    data->mli_weights->el_params.asym.zero_point.pi16 =
+        reinterpret_cast<int16_t*>(&data->filter_zero_point);
+    data->mli_bias->el_params.asym.zero_point.pi16 =
+        reinterpret_cast<int16_t*>(&data->filter_zero_point) + sizeof(int16_t);
+
+#ifdef MLI_2_0
     data->mli_weights->el_params.sa.zero_point.mem.pi16 =
         reinterpret_cast<int16_t*>(data->per_channel_output_shift);
     data->mli_bias->el_params.sa.zero_point.mem.pi16 =
         reinterpret_cast<int16_t*>(data->per_channel_output_shift) +
         num_channels;
+#endif
 
+#ifdef MLI_2_0
     data->mli_weights->el_params.sa.scale_frac_bits.mem.pi8 =
         reinterpret_cast<int8_t*>(data->per_channel_zero_points);
     data->mli_bias->el_params.sa.scale_frac_bits.mem.pi8 =
         reinterpret_cast<int8_t*>(data->per_channel_zero_points) + num_channels;
+#endif
 
     ops::micro::ConvertToMliTensor(input, data->mli_in);
     ops::micro::ConvertToMliTensorPerChannel(filter, data->mli_weights,
@@ -346,7 +385,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const int heightDimension = 1;
     int inSliceHeight = 0;
     int outSliceHeight = 0;
-    const int kernelHeight = static_cast<int>(data.mli_weights->shape[1]);
+    //TODO: Think about defines here for MLI 1.1 and MLI 2.0
+    const int kernelHeight = static_cast<int>(data.mli_weights->shape[KRNL_DW_H_DIM_HWC]);
     const int overlap = kernelHeight - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
@@ -379,6 +419,12 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     /* is_local indicates that the tensor is already in local memory,
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
+    const bool in_is_local = in_local.data == data.mli_in->data;
+    const bool out_is_local = out_local.data == data.mli_out->data;
+    const bool w_is_local = weights_local.data == data.mli_weights->data;
+    const bool b_is_local = bias_local.data == data.mli_bias->data;
+
+#ifdef MLI_2_0
     const bool in_is_local =
         in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
     const bool out_is_local =
@@ -387,6 +433,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
     const bool b_is_local =
         bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
+#endif
 
     TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_io(
         &in_local, &out_local, kernelHeight, cfg_local.stride_height,
@@ -458,12 +505,22 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         cfg_local.padding_bottom = in_slice.GetPaddingPost();
 
         // if same input copy as previous iteration, skip the copy of input
+        if ((in_slice.Sub()->data != input_buffer_ptr) ||
+            (mli_hlp_count_elem_num(in_slice.Sub(), 0) != input_buffer_size)) {
+          mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
+          input_buffer_ptr = in_slice.Sub()->data;
+          input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
+        }
+        mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
+                                                   &cfg_local, out_ptr);
+#ifdef MLI_2_0
         if ((in_slice.Sub()->data.mem.void_p != input_buffer_ptr) ||
             (mli_hlp_count_elem_num(in_slice.Sub(), 0) != input_buffer_size)) {
           mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
           input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
+#endif
 
         uint8_t dim_order[] = {1, 2, 0, 3};
         ops::micro::change_shape(w_ptr, dim_order);
