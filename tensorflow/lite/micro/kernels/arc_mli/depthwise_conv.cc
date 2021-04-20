@@ -65,7 +65,7 @@ struct OpData {
   // Per channel output multiplier and shift.
   int32_t* per_channel_output_multiplier;
   int32_t* per_channel_output_shift;
-  int16_t* per_channel_zero_points;
+  int8_t* per_channel_scale_frac_bits;
 
   // The range of the fused activation layer. For example for kNone and
   // uint8_t these would be 0 and 255.
@@ -231,9 +231,9 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     data->cfg = static_cast<mli_conv2d_cfg*>(
         context->AllocatePersistentBuffer(context, sizeof(mli_conv2d_cfg)));
 
-    data->per_channel_zero_points =
-        static_cast<int16_t*>(context->AllocatePersistentBuffer(
-            context, num_channels * sizeof(int16_t)));
+    data->per_channel_scale_frac_bits =
+        static_cast<int8_t*>(context->AllocatePersistentBuffer(
+            context, 2 * num_channels * sizeof(int16_t)));
 
     // Reuse space allocated for OpData parameters.
     data->mli_weights->el_params.sa.scale.mem.pi16 =
@@ -249,9 +249,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
         num_channels;
 
     data->mli_weights->el_params.sa.scale_frac_bits.mem.pi8 =
-        reinterpret_cast<int8_t*>(data->per_channel_zero_points);
+        reinterpret_cast<int8_t*>(data->per_channel_scale_frac_bits);
     data->mli_bias->el_params.sa.scale_frac_bits.mem.pi8 =
-        reinterpret_cast<int8_t*>(data->per_channel_zero_points) + num_channels;
+        reinterpret_cast<int8_t*>(data->per_channel_scale_frac_bits) +
+        num_channels;
 
     ops::micro::ConvertToMliTensor(input, data->mli_in);
     ops::micro::ConvertToMliTensorPerChannel(filter, data->mli_weights,
