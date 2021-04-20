@@ -32,7 +32,8 @@ kilobytes of Flash.
 
 ## Run on ARC VPX Processor using NSIM Simulator
 
-:warning: **WARNING**: Current implementation uses runtime permutation, which can work much slower then release version with model preprocessing.
+:warning: **WARNING**: Current implementation uses runtime permutation to translate TFLM weights format layout (NHWC) into the format required by MLI kernels (HWCN).
+This runtime permutation will be much slower then using adaptation tool for model preprocessing
 
 General information and instructions on using the board with TensorFlow
 Lite Micro can be found in the common
@@ -60,16 +61,16 @@ generate_micro_speech_mock_make_project
 
 For more detailed information on building and running examples see the
 appropriate sections of general descriptions of the
-[ARC VPX usage with TFLM](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target).
+[ARC VPX usage with TFLM](/tensorflow/lite/micro/tools/make/targets/arc/README.md#vpx-processor-target).
 In the directory with generated project you can also find a
-*README_ARC_EMSDP.md* file with instructions and options on building and
+*README_ARC.md* file with instructions and options on building and
 running. Here we only briefly mention main steps which are typically enough to
 get it started.
 
-1.  Go to the generated example project director
+1.  Go to the generated example project directory
 
     ```
-    cd tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/hello_world/make
+    cd tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/micro_speech_mock/make
     ```
 
 2.  Build the example using
@@ -144,7 +145,7 @@ get it started.
     [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-board)
     and open an serial connection.
 
-2.  Go to the generated example project director
+2.  Go to the generated example project directory.
 
     ```
     cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/micro_speech_mock/make

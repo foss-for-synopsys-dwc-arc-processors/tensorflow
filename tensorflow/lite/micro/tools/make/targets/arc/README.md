@@ -13,8 +13,8 @@ TensorFlow Lite Micro for targets based on the Synopsys ARC EM/HS Processors.
 ## Table of Contents
 
 -   [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
--   [ARC EM Software Development Platform (ARC EM SDP)](#ARC-EM-Software-Development-Platform-ARC-EM-SDP)
--   [Custom ARC EM or HS Platform](#Custom-ARC-EMHS-Platform)
+-   [VPX Processor target](#VPX-Processor-target)
+-   [Custom ARC EM/HS/VPX Platform](#Custom-ARC-EMHSVPX-Platform)
 
 ## Install the Synopsys DesignWare ARC MetaWare Development Toolkit
 
@@ -76,7 +76,7 @@ command dependencies, so Windows can be used
 
 #### CMake Tool
 
-A [CMake](cmake.org "CMake Tool Homepage") tool version >= 3.18 is required for the
+A [CMake](https://cmake.org/ "CMake Tool Homepage") tool version >= 3.18 is required for the
 [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) build.
 
 ### Generate Application Project for ARC VPX
@@ -325,7 +325,7 @@ You will see the application output in the same console where you ran it.
 
 You will see the application output in the serial terminal. -->
 
-## Custom ARC EM/HS Platform
+## Custom ARC EM/HS/VPX Platform
 
 This section describes how to deploy on a Custom ARC EM/HS platform defined only
 by a TCF (Tool Configuration File, created at CPU configuration time) and

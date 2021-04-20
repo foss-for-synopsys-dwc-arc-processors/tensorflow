@@ -56,7 +56,7 @@ In the directory with generated project you can also find a
 running. Here we only briefly mention main steps which are typically enough to
 get it started.
 
-1.  Go to the generated example project director
+1.  Go to the generated example project directory.
 
     ```
     cd tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/hello_world/make
@@ -113,7 +113,7 @@ get it started.
     [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-board)
     and open an serial connection.
 
-2.  Go to the generated example project director
+2.  Go to the generated example project directory.
 
     ```
     cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/hello_world/make
