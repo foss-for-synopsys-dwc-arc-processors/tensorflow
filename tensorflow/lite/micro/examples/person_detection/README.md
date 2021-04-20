@@ -19,7 +19,8 @@ This uses the experimental int8 quantized version of the person detection model.
 
 ## Run on ARC VPX Processor using NSIM Simulator
 
-:warning: **WARNING**: Current implementation uses runtime permutation, which can work much slower then release version with model preprocessing.
+:warning: **WARNING**: Current implementation uses runtime permutation to translate TFLM weights format layout (NHWC) into the format required by MLI kernels (HWCN).
+This runtime permutation will be much slower then using adaptation tool for model preprocessing.
 
 General information and instructions on using the board with TensorFlow
 Lite Micro can be found in the common
@@ -28,7 +29,7 @@ Lite Micro can be found in the common
 ### Initial Setup
 
 Follow the instructions on the
-[ARC VPX Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target)
+[ARC VPX Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#vpx-processor-target)
 to get and install all required tools for work with ARC VPX on nSIM.
 
 ### Generate Example Project
@@ -38,8 +39,8 @@ command:
 
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile \
-TARGET=arc_emsdp ARC_TAGS=reduce_codesize \
-OPTIMIZED_KERNEL_DIR=arc_vpx \
+TARGET=arc_vpx ARC_TAGS=reduce_codesize \
+OPTIMIZED_KERNEL_DIR=arc_mli \
 generate_person_detection_int8_make_project
 ```
 
@@ -47,16 +48,16 @@ generate_person_detection_int8_make_project
 
 For more detailed information on building and running examples see the
 appropriate sections of general descriptions of the
-[ARC VPX usage with TFLM](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target).
+[ARC VPX usage with TFLM](/tensorflow/lite/micro/tools/make/targets/arc/README.md#vpx-processor-target).
 In the directory with generated project you can also find a
-*README_ARC_EMSDP.md* file with instructions and options on building and
+*README_ARC.md* file with instructions and options on building and
 running. Here we only briefly mention main steps which are typically enough to
 get it started.
 
-1.  Go to the generated example project director
+1.  Go to the generated example project directory.
 
     ```
-    cd tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/hello_world/make
+    cd tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/person_detection_int8/make
     ```
 
 2.  Build the example using
@@ -130,7 +131,7 @@ get it started.
     [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-board)
     and open an serial connection.
 
-2.  Go to the generated example project director
+2.  Go to the generated example project directory.
 
     ```
     cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/person_detection_int8/make
