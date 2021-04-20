@@ -23,6 +23,8 @@ limitations under the License.
 
 constexpr int kFracBitsQ15 = 15;
 
+#define KRNL_C_DIM_NHWC 0  // output channels
+
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -156,18 +158,18 @@ inline void change_shape(mli_tensor* mliT, const uint8_t dim_order[]) {
 
 inline void permute_weights(const mli_tensor* weights_src,
                             const mli_permute_cfg* permute_cfg,
-                            mli_tensor* weights_dst, mli_data_container* buffer_data) {
+                            mli_tensor* weights_dst,
+                            mli_data_container* buffer_data) {
   mli_tensor buffer = {};
   buffer.el_params = weights_dst->el_params;
   buffer.data = *buffer_data;
   // Weights shape is NHWC and output (buffer) shape is HWC where N_w = C_o.
   // Buffer size (H_o * W_o) must be more or equal then the weights size (H_w *
   // W_w * C_w). So, this is the reason, why buffer size (output tensor) is
-  // devided by last shape and weights size
-  int buffer_size = buffer_data->capacity / weights_src->shape[KRNL_C_DIM_CHW];
+  // divided by last shape and weights size
+  int buffer_size = buffer_data->capacity;
   int weights_size = mli_hlp_count_elem_num(weights_src, 0) *
-                     mli_hlp_tensor_element_size(weights_src) /
-                     weights_src->shape[KRNL_C_DIM_CHW];
+                     mli_hlp_tensor_element_size(weights_src);
 
   if (buffer_size >= weights_size) {
     mli_mov_cfg_t copy_config;
@@ -176,8 +178,8 @@ inline void permute_weights(const mli_tensor* weights_src,
     mli_krn_permute_sa8(&buffer, permute_cfg, weights_dst);
   } else {
     // For optimal memory usage, weights tensor slice must be equal to output
-    // tensor memory capacity.
-    uint32_t slice_size = buffer_size;
+    // tensor memory capacity divided by output channel axis shape.
+    uint32_t slice_size = buffer_size / weights_src->shape[KRNL_C_DIM_NHWC];
 
     mli_mov_cfg_t copy_config = {};
     uint32_t src_offsets[] = {0, 0, 0, 0};
@@ -197,10 +199,10 @@ inline void permute_weights(const mli_tensor* weights_src,
     // MLI layout (HWCN). This means, the innermost dimension (N) of dst weights
     // tensor is equal to the innermost dimension of output tensor (N).
     sub_tensor_cfg.size[weights_dst->rank - 1] =
-        src_sizes[weights_dst->rank - 1] = weights_src->shape[KRNL_C_DIM_CHW];
+        src_sizes[weights_dst->rank - 1] = weights_src->shape[KRNL_C_DIM_NHWC];
     // Now need to calculate other shapes for weights slice. Total slice size is
     // H*W*C*N, so to calculate sizes for each axis, avaliable slice size is
-    // devided by shape for each axis.
+    // divided by shape for each axis.
     uint32_t slice_size_left = slice_size;
     for (uint32_t i = 0; i < weights_dst->rank - 1; i++) {
       sub_tensor_cfg.size[i] = src_sizes[i] =

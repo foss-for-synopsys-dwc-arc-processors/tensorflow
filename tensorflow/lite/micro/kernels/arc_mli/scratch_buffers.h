@@ -49,7 +49,7 @@ static inline bool inside_arc_xccm(void* p) {
 }
 
 static inline bool inside_arc_yccm(void* p) {
-#if core_config_xy
+#if core_config_xy_size
   return ((unsigned)p >= core_config_xy_y_base) &&
          ((unsigned)p < core_config_xy_y_base + core_config_xy_size);
 #else
@@ -58,7 +58,7 @@ static inline bool inside_arc_yccm(void* p) {
 }
 
 static inline bool inside_arc_vccm(void* p) {
-#if core_config_vdsp4
+#if core_config_vec_mem_size
   return ((unsigned)p >= core_config_vec_mem_base) &&
          ((unsigned)p < core_config_vec_mem_base + core_config_vec_mem_size);
 #else

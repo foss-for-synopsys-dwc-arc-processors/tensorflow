@@ -237,6 +237,9 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
 
     /* Permute weights tensor to the HWCN layout */
+    // Assertion here to prevent usage non-contiguous buffer memory.
+    assert(data.mli_out->shape[out_tensor_dimension] ==
+           out_slice.Sub()->shape[FMAP_H_DIM_HWC]);
     mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
     ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
                                 &out_ptr->data);
@@ -251,8 +254,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
       mli_fully_connected_cfg cfg;
       cfg.relu.type = MLI_RELU_NONE;
 
-      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg,
-                                           out_ptr);
+      mli_krn_fully_connected_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg, out_ptr);
       mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 
       in_slice.Next();

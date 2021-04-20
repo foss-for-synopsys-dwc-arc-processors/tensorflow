@@ -61,13 +61,8 @@ namespace micro {
 #endif
 
 namespace {
-#ifdef __Xvdsp
 
-#pragma Bss(".vecmem_data")
-static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
-#pragma Bss()
-
-#elif defined(__Xxy)
+#ifdef __Xxy
 
 #pragma Bss(".Xdata")
 static int8_t scratch_mem_x[SCRATCH_MEM_X_SIZE];
@@ -79,6 +74,12 @@ static int8_t scratch_mem_y[SCRATCH_MEM_Y_SIZE];
 
 #pragma Bss(".Zdata")
 static int8_t scratch_mem_z[SCRATCH_MEM_Z_SIZE];
+#pragma Bss()
+
+#elif defined(__Xvdsp)
+
+#pragma Bss(".vecmem_data")
+static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
 #pragma Bss()
 
 #else
