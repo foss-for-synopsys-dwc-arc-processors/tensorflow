@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -163,10 +163,7 @@ inline void permute_weights(const mli_tensor* weights_src,
   mli_tensor buffer = {};
   buffer.el_params = weights_dst->el_params;
   buffer.data = *buffer_data;
-  // Weights shape is NHWC and output (buffer) shape is HWC where N_w = C_o.
-  // Buffer size (H_o * W_o) must be more or equal then the weights size (H_w *
-  // W_w * C_w). So, this is the reason, why buffer size (output tensor) is
-  // divided by last shape and weights size
+  // Compare weights tensor size and avaliable buffer capacity.
   int buffer_size = buffer_data->capacity;
   int weights_size = mli_hlp_count_elem_num(weights_src, 0) *
                      mli_hlp_tensor_element_size(weights_src);
@@ -177,8 +174,10 @@ inline void permute_weights(const mli_tensor* weights_src,
     mli_mov_tensor_sync(weights_src, &copy_config, &buffer);
     mli_krn_permute_sa8(&buffer, permute_cfg, weights_dst);
   } else {
-    // For optimal memory usage, weights tensor slice must be equal to output
-    // tensor memory capacity divided by output channel axis shape.
+    // Weights shape is NHWC and output (buffer) shape is HWC where N_w = C_o.
+    // Buffer size (H_o * W_o) must be more or equal then the weights size (H_w
+    // * W_w * C_w). So, this is the reason, why buffer size (output tensor) is
+    // divided by channel shape.
     uint32_t slice_size = buffer_size / weights_src->shape[KRNL_C_DIM_NHWC];
 
     mli_mov_cfg_t copy_config = {};

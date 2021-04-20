@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -381,7 +381,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_tensor bias_local = *data.mli_bias;
     mli_tensor in_local = *data.mli_in;
     mli_tensor out_local = *data.mli_out;
-    
+
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
@@ -460,8 +460,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
 #ifdef MLI_2_0
       /* Permute weights tensor to the HWCN layout */
       // Assertion here to prevent usage non-contiguous buffer memory.
-      assert(data.mli_out->shape[height_dimension] ==
-             out_slice.Sub()->shape[FMAP_H_DIM_HWC]);
+      assert(data.mli_out->shape[out_tensor_ch_dimension] ==
+             out_slice.Sub()->shape[FMAP_C_DIM_HWC]);
       mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
       ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
                                   &out_ptr->data);

@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -239,7 +239,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     /* Permute weights tensor to the HWCN layout */
     // Assertion here to prevent usage non-contiguous buffer memory.
     assert(data.mli_out->shape[out_tensor_dimension] ==
-           out_slice.Sub()->shape[FMAP_H_DIM_HWC]);
+           out_slice.Sub()->shape[0]);
     mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
     ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
                                 &out_ptr->data);
