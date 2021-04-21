@@ -102,6 +102,7 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                  (params->dilation_height_factor == 1) &&
                  (affine_quantization->scale->size ==
                   filter->dims->data[kDepthwiseConvQuantizedDimension]);
+  ret_val = false;
   return ret_val;
 }
 
@@ -211,7 +212,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     // Choose group convolution function for “channel multiplier” functionality.
     const int in_ch = SizeOfDimension(input, 3);
     const int filters_num = SizeOfDimension(filter, 3);
-    const int channels_num = SizeOfDimension(filter, 1);
+    const int channels_num = SizeOfDimension(filter, 0);
     if (in_ch == filters_num && channels_num == 1) {
       data->p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32 =
           mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32;
@@ -466,6 +467,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
 
+        assert(data.mli_weights->shape[weight_out_ch_dimension] ==
+               w_slice.Sub()->shape[3]);
         uint8_t dim_order[] = {1, 2, 0, 3};
         ops::micro::change_shape(w_ptr, dim_order);
 
