@@ -461,9 +461,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
       /* Permute weights tensor to the HWCN layout */
       // Assertion here to prevent usage non-contiguous buffer memory.
       assert(data.mli_out->shape[out_tensor_ch_dimension] ==
-             out_slice.Sub()->shape[FMAP_C_DIM_HWC]);
+                 out_slice.Sub()->shape[FMAP_C_DIM_HWC] &&
+             data.mli_out->shape[height_dimension] ==
+                 out_slice.Sub()->shape[FMAP_H_DIM_HWC]);
       mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
-      ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
+      ops::micro::permute_weights(w_slice.Sub(), &permute_cfg, w_ptr,
                                   &out_ptr->data);
 #endif
 
