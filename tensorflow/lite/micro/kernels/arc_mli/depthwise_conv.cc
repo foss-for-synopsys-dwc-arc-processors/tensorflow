@@ -102,7 +102,6 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                  (params->dilation_height_factor == 1) &&
                  (affine_quantization->scale->size ==
                   filter->dims->data[kDepthwiseConvQuantizedDimension]);
-  ret_val = false;
   return ret_val;
 }
 

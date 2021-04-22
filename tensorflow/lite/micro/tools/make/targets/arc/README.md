@@ -1,4 +1,4 @@
-# Building TensorFlow Lite for Microcontrollers for Synopsys DesignWare ARC EM/HS Processors
+# Building TensorFlow Lite for Microcontrollers for Synopsys DesignWare ARC EM/HS/VPX Processors
 
 ## Maintainers
 
@@ -327,7 +327,7 @@ You will see the application output in the serial terminal. -->
 
 ## Custom ARC EM/HS/VPX Platform
 
-This section describes how to deploy on a Custom ARC EM/HS platform defined only
+This section describes how to deploy on a Custom ARC EM/HS/VPX platform defined only
 by a TCF (Tool Configuration File, created at CPU configuration time) and
 optional LCF (Linker Command File). In this case, the real hardware is unknown,
 and applications can be run only in the nSIM simulator included with the
@@ -335,7 +335,7 @@ MetaWare toolkit
 
 ### Initial Setup
 
-To with custom ARC EM/HS platform, you need the following : 
+To use a custom ARC EM/HS/VPX platform, you need the following : 
 * Synopsys MetaWare
 Development Toolkit version 2021.03 or higher 
 * Make tool (make or gmake)

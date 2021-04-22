@@ -16,7 +16,7 @@ of the device.
 
 ## Table of contents
 
--   [Run on nSIM ARC VPX](#run-on-nsim-arc-vpx) <!-- -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp) -->
+-   [Run on ARC VPX Processor](#run-on-arc-vpx-processor-using-nsim-simulator) <!-- -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp) -->
 -   [Deploy to Arduino](#deploy-to-arduino)
 -   [Deploy to ESP32](#deploy-to-esp32)
 -   [Deploy to Himax WE1 EVB](#deploy-to-himax-we1-evb)
@@ -25,16 +25,16 @@ of the device.
 -   [Run the tests on a development machine](#run-the-tests-on-a-development-machine)
 -   [Train your own model](#train-your-own-model)
 
-## Run on nSIM ARC VPX
+## Run on ARC VPX Processor using NSIM Simulator
 
-General information and instructions on using the board with TensorFlow
+General information and instructions on using VPX with TensorFlow
 Lite Micro can be found in the common
 [ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
 
 ### Initial Setup
 
 Follow the instructions on the
-[ARC VPX Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target)
+[ARC VPX Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target) page
 to get and install all required tools for work with ARC VPX on nSIM.
 
 ### Generate Example Project
@@ -54,7 +54,7 @@ appropriate sections of general descriptions of the
 In the directory with generated project you can also find a
 *README_ARC_EMSDP.md* file with instructions and options on building and
 running. Here we only briefly mention main steps which are typically enough to
-get it started.
+get started.
 
 1.  Go to the generated example project directory.
 
@@ -70,7 +70,7 @@ get it started.
 
 3.  To run application from the MetaWare Debugger installed in your environment:
 
-    *   To run application from the console using it type `make run`.
+    *   From the console, type`make run`.
     *   To stop the execution type `Ctrl+C` in the console several times.
 
 In both cases (step 5 and 6) you will see the application output in the serial
@@ -87,7 +87,7 @@ Lite Micro can be found in the common
 ### Initial Setup
 
 Follow the instructions on the
-[ARC EM SDP Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-EM-Software-Development-Platform-ARC-EM-SDP)
+[ARC EM SDP Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-EM-Software-Development-Platform-ARC-EM-SDP) page
 to get and install all required tools for work with ARC EM SDP.
 
 ### Generate Example Project
@@ -107,7 +107,7 @@ appropriate sections of general descriptions of the
 In the directory with generated project you can also find a
 *README_ARC_EMSDP.md* file with instructions and options on building and
 running. Here we only briefly mention main steps which are typically enough to
-get it started.
+get started.
 
 1.  You need to
     [connect the board](/tensorflow/lite/micro/tools/make/targets/arc/README.md#connect-the-board)
@@ -147,7 +147,7 @@ get it started.
 
 6.  If you have the MetaWare Debugger installed in your environment:
 
-    *   To run application from the console using it type `make run`.
+    *   From the console, type`make run`.
     *   To stop the execution type `Ctrl+C` in the console several times.
 
 In both cases (step 5 and 6) you will see the application output in the serial

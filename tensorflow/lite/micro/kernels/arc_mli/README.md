@@ -33,10 +33,9 @@ library, projects can be generated without these implementations **removing** `O
 make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_vpx generate_person_detection_int8_make_project
 ```
 
-For ARC EM SDP board, a pre-compiled MLI library is downloaded and used in the
-application. For a custom target ARC-based platform, MLI sources are downloaded
+ For a custom target ARC-based platform, MLI sources are downloaded
 and compiled during project generation phase. To build library from sources for
-ARC EM SDP platform, add `BUILD_ARC_MLI=true` option to make command:
+ARC VPX platform, add `BUILD_ARC_MLI=true` option to make command:
 
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_vpx OPTIMIZED_KERNEL_DIR=arc_mli BUILD_ARC_MLI=true generate_person_detection_int8_make_project
