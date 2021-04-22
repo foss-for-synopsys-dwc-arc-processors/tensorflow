@@ -521,8 +521,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
-#endif
-
         assert(data.mli_weights->shape[weight_out_ch_dimension] ==
                w_slice.Sub()->shape[3]);
         uint8_t dim_order[] = {1, 2, 0, 3};
@@ -530,6 +528,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
 
         data.p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
                                                           &cfg_local, out_ptr);
+#endif
+
         mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 
         in_slice.Next();
