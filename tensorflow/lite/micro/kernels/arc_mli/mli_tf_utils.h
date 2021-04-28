@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2019-2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,10 +32,11 @@ namespace micro {
 inline void ConvertToMliTensorData(const TfLiteTensor* tfT, mli_tensor* mliT,
                                    bool is_bias_tensor) {
   // Data is NULL until MliTensorAttachBuffer is called.
-  mliT->data.mem.void_p = nullptr;
   if (tfT->type == kTfLiteInt8) {
+    mliT->data.mem.pi8 = nullptr;
     mliT->el_type = MLI_EL_SA_8;
   } else if (tfT->type == kTfLiteInt32) {
+    mliT->data.mem.pi32 = nullptr;
     mliT->el_type = MLI_EL_SA_32;
   } else {
     TF_LITE_FATAL("Wrong data type. Expected int8_t or int32_t.");
@@ -115,7 +116,7 @@ inline void MliTensorAttachBuffer(const TfLiteEvalTensor* tfT,
   // "const_cast" here used to attach const data buffer to the initially
   // non-const mli_tensor. This is required by current implementation of MLI
   // backend and planned for redesign due to this and some other aspects.
-  mliT->data.mem.void_p = const_cast<void*>(
+  mliT->data.mem.pi8 = const_cast<void*>(
       static_cast<const void*>(tflite::micro::GetTensorData<datatype>(tfT)));
 }
 
@@ -131,6 +132,8 @@ inline void ConvertToMliTensorPerChannel(const TfLiteTensor* tfT,
   ConvertToMliQuantParamsPerChannel(tfT, mliT, is_bias_tensor);
 }
 
+// Reorder an array according to given indexes. If backward is true, order of
+// index array must be reversed.
 inline static void reorder(uint32_t* arr, const uint8_t index[],
                            bool backward) {
   uint32_t temp[MLI_MAX_RANK];
@@ -145,6 +148,7 @@ inline static void reorder(uint32_t* arr, const uint8_t index[],
   }
 }
 
+// Change shape of mli tensor and recalculate mem strides.
 inline void change_shape(mli_tensor* mliT, const uint8_t dim_order[]) {
   reorder(mliT->shape, dim_order, false);
 

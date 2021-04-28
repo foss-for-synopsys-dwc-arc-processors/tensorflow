@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2017-2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -231,9 +231,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     data->cfg = static_cast<mli_conv2d_cfg*>(
         context->AllocatePersistentBuffer(context, sizeof(mli_conv2d_cfg)));
 
+    const int num_buffers = 2;
     data->per_channel_scale_frac_bits =
         static_cast<int8_t*>(context->AllocatePersistentBuffer(
-            context, 2 * num_channels * sizeof(int16_t)));
+            context, num_buffers * num_channels * sizeof(int16_t)));
 
     // Reuse space allocated for OpData parameters.
     data->mli_weights->el_params.sa.scale.mem.pi16 =
@@ -381,13 +382,13 @@ TfLiteStatus EvalMliQuantizedPerChannel(
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
     const bool in_is_local =
-        in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+        in_local.data.mem.pi8== data.mli_in->data.mem.pi8;
     const bool out_is_local =
-        out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+        out_local.data.mem.pi8== data.mli_out->data.mem.pi8;
     const bool w_is_local =
-        weights_local.data.mem.void_p == data.mli_weights->data.mem.void_p;
+        weights_local.data.mem.pi8== data.mli_weights->data.mem.pi8;
     const bool b_is_local =
-        bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
+        bias_local.data.mem.pi8== data.mli_bias->data.mem.pi8;
 
     TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_io(
         &in_local, &out_local, kernelHeight, cfg_local.stride_height,
@@ -459,10 +460,10 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         cfg_local.padding_bottom = in_slice.GetPaddingPost();
 
         // if same input copy as previous iteration, skip the copy of input
-        if ((in_slice.Sub()->data.mem.void_p != input_buffer_ptr) ||
+        if ((in_slice.Sub()->data.mem.pi8!= input_buffer_ptr) ||
             (mli_hlp_count_elem_num(in_slice.Sub(), 0) != input_buffer_size)) {
           mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
-          input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
+          input_buffer_ptr = in_slice.Sub()->data.mem.pi8;
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
 
