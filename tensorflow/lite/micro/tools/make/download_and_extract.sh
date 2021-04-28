@@ -91,15 +91,11 @@ patch_cifar10_dataset() {
 }
 
 build_embarc_mli() {
-  if [ ${2} == vpx5_integer_full.tcf ]; then
-    pushd ${1}/hw
-    tcfgen -o vpx5_integer_full.tcf -tcf=vpx5_integer_full -iccm_size=0x80000 -dccm_size=0x40000
-    popd
-    tcf=../../hw/vpx5_integer_full.tcf
+  if [[ ${ARC_TAGS} =~ "mli20_experimental" ]]; then
+    make -C ${1}/lib/make build TCF_FILE=${tcf} GEN_EXAMPLES=0 JOBS=4
   else
-    tcf=${2}
+    make -j 4 -C ${1}/lib/make TCF_FILE=${2}
   fi
-  make -C ${1}/lib/make lib TCF_FILE=${tcf} GEN_EXAMPLES=0 JOBS=4
 }
 
 setup_zephyr() {
@@ -204,6 +200,7 @@ download_and_extract() {
   elif [[ ${action} == "patch_cifar10_dataset" ]]; then
     patch_cifar10_dataset ${dir}
   elif [[ ${action} == "build_embarc_mli" ]]; then
+    # TODO: Think here how to deal with vpx
     if [[ "${action_param1}" != *.tcf || "${action_param1}" == *vpx5_integer_full.tcf ]]; then
       build_embarc_mli ${dir} ${action_param1}
     else

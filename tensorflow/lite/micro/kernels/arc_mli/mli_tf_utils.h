@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2019-2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ limitations under the License.
 
 #define KRNL_C_DIM_NHWC 0  // output channels
 
+#ifdef MLI_2_0
 constexpr int kFracBitsQ15 = 15;
-#ifndef MLI_2_0
+#else
 constexpr int kFracBitsQ31 = 31;
 #endif
 
@@ -37,15 +38,19 @@ namespace micro {
 inline void ConvertToMliTensorData(const TfLiteTensor* tfT, mli_tensor* mliT,
                                    bool is_bias_tensor) {
   // Data is NULL until MliTensorAttachBuffer is called.
-  mliT->data.mem.void_p = nullptr;
+#ifndef MLI_2_0
+  mliT->data = nullptr;
+#endif
   if (tfT->type == kTfLiteInt8) {
 #ifdef MLI_2_0
+    mliT->data.mem.pi8 = nullptr;
     mliT->el_type = MLI_EL_SA_8;
 #else
     mliT->el_type = MLI_EL_ASYM_I8;
 #endif
   } else if (tfT->type == kTfLiteInt32) {
 #ifdef MLI_2_0
+    mliT->data.mem.pi32 = nullptr;
     mliT->el_type = MLI_EL_SA_32;
 #else
     mliT->el_type = MLI_EL_ASYM_I32;
@@ -56,8 +61,13 @@ inline void ConvertToMliTensorData(const TfLiteTensor* tfT, mli_tensor* mliT,
 
   const int32_t dims_count = GetTensorShape(tfT).DimensionsCount();
 
+#ifdef MLI_2_0
   mliT->data.capacity = tfT->bytes;
   mliT->rank = is_bias_tensor ? 1 : dims_count;
+#else
+  mliT->capacity = tfT->bytes;
+  mliT->rank = is_bias_tensor ? 1 : dims_count;
+#endif
 
   if (is_bias_tensor) {
     mliT->shape[0] = GetTensorShape(tfT).Dims(dims_count - 1);
@@ -93,7 +103,6 @@ inline void ConvertToMliQuantParams(const TfLiteTensor* tfT, mli_tensor* mliT) {
   mliT->el_params.asym.scale_frac_bits = frac_bits;
   mliT->el_params.asym.scale.i32 = (int32_t)iscale;
 #endif
-
 }
 
 inline void ConvertToMliQuantParamsPerChannel(const TfLiteTensor* tfT,
@@ -175,7 +184,7 @@ inline void MliTensorAttachBuffer(const TfLiteEvalTensor* tfT,
   // non-const mli_tensor. This is required by current implementation of MLI
   // backend and planned for redesign due to this and some other aspects.
 #ifdef MLI_2_0
-  mliT->data.mem.void_p = const_cast<void*>(
+  mliT->data.mem.pi8 = const_cast<void*>(
       static_cast<const void*>(tflite::micro::GetTensorData<datatype>(tfT)));
 #else
   mliT->data = const_cast<void*>(
@@ -196,6 +205,8 @@ inline void ConvertToMliTensorPerChannel(const TfLiteTensor* tfT,
 }
 
 #ifdef MLI_2_0
+// Reorder an array according to given indexes. If backward is true, order of
+// index array must be reversed.
 inline static void reorder(uint32_t* arr, const uint8_t index[],
                            bool backward) {
   uint32_t temp[MLI_MAX_RANK];
@@ -210,6 +221,7 @@ inline static void reorder(uint32_t* arr, const uint8_t index[],
   }
 }
 
+// Change shape of mli tensor and recalculate mem strides.
 inline void change_shape(mli_tensor* mliT, const uint8_t dim_order[]) {
   reorder(mliT->shape, dim_order, false);
 

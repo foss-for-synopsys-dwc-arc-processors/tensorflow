@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2020-2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
   int grant_size_in = 0;
   int grant_size_out = 0;
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(in->data.mem.void_p)) {
+  if (!inside_arc_ccm(in->data.mem.pi8)) {
 #else
   if (!inside_arc_ccm(in->data)) {
 #endif
@@ -85,7 +85,7 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
                       mli_hlp_tensor_element_size(in);
   }
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(out->data.mem.void_p)) {
+  if (!inside_arc_ccm(out->data.mem.pi8)) {
 #else
   if (!inside_arc_ccm(out->data)) {
 #endif
@@ -101,10 +101,10 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
   get_arc_two_buffer_sizes(request_size_in, request_size_out, &grant_size_in,
                            &grant_size_out);
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(in->data.mem.void_p)) {
-    in->data.mem.void_p = get_arc_scratch_buffer(grant_size_in);
+  if (!inside_arc_ccm(in->data.mem.pi8)) {
+    in->data.mem.pi8 = get_arc_scratch_buffer(grant_size_in);
     in->data.capacity = grant_size_in;
-    if (in->data.mem.void_p == NULL) return kTfLiteError;
+    if (in->data.mem.pi8 == NULL) return kTfLiteError;
   }
 #else
   if (!inside_arc_ccm(in->data)) {
@@ -115,10 +115,10 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
 #endif
 
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(out->data.mem.void_p)) {
-    out->data.mem.void_p = get_arc_scratch_buffer(grant_size_out);
+  if (!inside_arc_ccm(out->data.mem.pi8)) {
+    out->data.mem.pi8 = get_arc_scratch_buffer(grant_size_out);
     out->data.capacity = grant_size_out;
-    if (out->data.mem.void_p == NULL) return kTfLiteError;
+    if (out->data.mem.pi8 == NULL) return kTfLiteError;
   }
 #else
   if (!inside_arc_ccm(out->data)) {
@@ -138,7 +138,7 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
                                                      mli_tensor* bias,
                                                      mli_tensor* out) {
   TfLiteStatus ret_val = kTfLiteOk;
-#if (!defined(MLI_2_0) && defined(__Xxy)))
+#if (!defined(MLI_2_0) && defined(__Xxy))
   init_arc_scratch_buffers();
   if (!inside_arc_ccm(weights->data)) {
     int weights_size = mli_hlp_count_elem_num(weights, 0) *
@@ -159,11 +159,11 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
   int weights_size =
       mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
   int max_weights_size = 0;
-  weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
+  weights->data.mem.pi8 = get_arc_scratch_buffer(weights_size);
   weights->data.capacity = weights_size;
-  if (weights->data.mem.void_p == NULL) {
+  if (weights->data.mem.pi8 == NULL) {
     get_arc_scratch_buffer_max_size(&max_weights_size);
-    weights->data.mem.void_p = get_arc_scratch_buffer(max_weights_size);
+    weights->data.mem.pi8 = get_arc_scratch_buffer(max_weights_size);
     weights->data.capacity = max_weights_size;
     if (max_weights_size == 0) ret_val = kTfLiteError;
   }
@@ -171,14 +171,14 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
 
 #if (defined(__Xxy)) || (defined(__Xvdsp))
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(bias->data.mem.void_p)) {
+  if (!inside_arc_ccm(bias->data.mem.pi8)) {
 #else
   if (!inside_arc_ccm(bias->data)) {
 #endif
     uint32_t bias_mem_requirements =
         mli_hlp_count_elem_num(bias, 0) * mli_hlp_tensor_element_size(bias);
 #ifdef MLI_2_0
-    bias->data.mem.void_p = get_arc_scratch_buffer(bias_mem_requirements);
+    bias->data.mem.pi8 = get_arc_scratch_buffer(bias_mem_requirements);
     bias->data.capacity = bias_mem_requirements;
 #else
     bias->data = get_arc_scratch_buffer(bias_mem_requirements);
@@ -191,14 +191,14 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
   }
 
 #ifdef MLI_2_0
-  if (bias->data.mem.void_p == NULL) {
+  if (bias->data.mem.pi8 == NULL) {
 #else
   if (bias->data == NULL) {
 #endif
     int max_bias_size = 0;
     get_arc_scratch_buffer_max_size(&max_bias_size);
 #ifdef MLI_2_0
-    bias->data.mem.void_p = get_arc_scratch_buffer(max_bias_size);
+    bias->data.mem.pi8 = get_arc_scratch_buffer(max_bias_size);
     bias->data.capacity = max_bias_size;
 #else
     bias->data = get_arc_scratch_buffer(max_bias_size);
@@ -206,7 +206,11 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(TfLiteContext* context,
 #endif
     if (max_bias_size == 0) ret_val = kTfLiteError;
   }
-  if (bias->data.mem.void_p == NULL) ret_val = kTfLiteError;
+#ifdef MLI_2_0
+  if (bias->data.mem.pi8 == NULL) ret_val = kTfLiteError;
+#else
+  if (bias->data == NULL) ret_val = kTfLiteError;
+#endif
 
 #endif
   return ret_val;
@@ -217,7 +221,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     mli_tensor* bias, mli_tensor* out) {
   TfLiteStatus ret_val = kTfLiteOk;
 
-#if (!defined(MLI_2_0) && defined(__Xxy)))
+#if (!defined(MLI_2_0) && defined(__Xxy))
   init_arc_scratch_buffers();
   if (!inside_arc_ccm(weights->data)) {
     int weights_size = mli_hlp_count_elem_num(weights, 0) *
@@ -238,27 +242,27 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
   int weights_size =
       mli_hlp_count_elem_num(weights, 0) * mli_hlp_tensor_element_size(weights);
   int max_weights_size = 0;
-  weights->data.mem.void_p = get_arc_scratch_buffer(weights_size);
+  weights->data.mem.pi8 = get_arc_scratch_buffer(weights_size);
   weights->data.capacity = weights_size;
-  if (weights->data.mem.void_p == NULL) {
+  if (weights->data.mem.pi8 == NULL) {
     get_arc_scratch_buffer_max_size(&max_weights_size);
-    weights->data.mem.void_p = get_arc_scratch_buffer(max_weights_size);
+    weights->data.mem.pi8 = get_arc_scratch_buffer(max_weights_size);
     weights->data.capacity = max_weights_size;
     if (max_weights_size == 0) ret_val = kTfLiteError;
   }
-  if (weights->data.mem.void_p == NULL) ret_val = kTfLiteError;
+  if (weights->data.mem.pi8 == NULL) ret_val = kTfLiteError;
 #endif
 
 #if (defined(__Xxy)) || (defined(__Xvdsp))
-    /* strategy for FC kernels:
-       first allocate input, because this cannot be sliced. (in case of batch
-       processing, only a single input needs to be allocated) then weights &
-       bias because if fully loaded, they can be reused over batches. then
-       output. The number of output channels (for weights slicing) depends on
-       size of output and size of weights&bias */
+  /* strategy for FC kernels:
+     first allocate input, because this cannot be sliced. (in case of batch
+     processing, only a single input needs to be allocated) then weights &
+     bias because if fully loaded, they can be reused over batches. then
+     output. The number of output channels (for weights slicing) depends on
+     size of output and size of weights&bias */
 
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(in->data.mem.void_p)) {
+  if (!inside_arc_ccm(in->data.mem.pi8)) {
 #else
   if (!inside_arc_ccm(in->data)) {
 #endif
@@ -268,29 +272,29 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     int size_in = mli_hlp_count_elem_num(in, in->rank - 1) *
                   mli_hlp_tensor_element_size(in);
 #ifdef MLI_2_0
-    in->data.mem.void_p = get_arc_scratch_buffer(size_in);
+    in->data.mem.pi8 = get_arc_scratch_buffer(size_in);
     in->data.capacity = size_in;
-    if (in->data.mem.void_p == NULL) {
+    if (in->data.mem.pi8 == NULL) {
       in->data.capacity = 0;
 #else
-    in->data.mem.void_p = get_arc_scratch_buffer(size_in);
-    in->data.capacity = size_in;
-    if (in->data.mem.void_p == NULL) {
-      in->data.capacity = 0;
+    in->data = get_arc_scratch_buffer(size_in);
+    in->capacity = size_in;
+    if (in->data == NULL) {
+      in->capacity = 0;
 #endif
       ret_val = kTfLiteError;
     }
   }
 
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(bias->data.mem.void_p)) {
+  if (!inside_arc_ccm(bias->data.mem.pi8)) {
 #else
   if (!inside_arc_ccm(bias->data)) {
 #endif
     int bias_mem_requirements =
         mli_hlp_count_elem_num(bias, 0) * mli_hlp_tensor_element_size(bias);
 #ifdef MLI_2_0
-    bias->data.mem.void_p = get_arc_scratch_buffer(bias_mem_requirements);
+    bias->data.mem.pi8 = get_arc_scratch_buffer(bias_mem_requirements);
     bias->data.capacity = bias_mem_requirements;
 #else
     bias->data = get_arc_scratch_buffer(bias_mem_requirements);
@@ -298,7 +302,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
 #endif
   }
 #ifdef MLI_2_0
-  if (!inside_arc_ccm(out->data.mem.void_p)) {
+  if (!inside_arc_ccm(out->data.mem.pi8)) {
 #else
   if (!inside_arc_ccm(out->data)) {
 #endif
@@ -308,9 +312,9 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
                    mli_hlp_tensor_element_size(out);
     int max_out_size = 0;
 #ifdef MLI_2_0
-    out->data.mem.void_p = get_arc_scratch_buffer(out_size);
+    out->data.mem.pi8 = get_arc_scratch_buffer(out_size);
     out->data.capacity = out_size;
-    if (out->data.mem.void_p == NULL) {
+    if (out->data.mem.pi8 == NULL) {
 #else
     out->data = get_arc_scratch_buffer(out_size);
     out->capacity = out_size;
@@ -318,7 +322,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
 #endif
       get_arc_scratch_buffer_max_size(&max_out_size);
 #ifdef MLI_2_0
-      out->data.mem.void_p = get_arc_scratch_buffer(max_out_size);
+      out->data.mem.pi8 = get_arc_scratch_buffer(max_out_size);
       out->data.capacity = max_out_size;
 #else
       out->data = get_arc_scratch_buffer(max_out_size);
@@ -327,21 +331,21 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
       if (max_out_size == 0) ret_val = kTfLiteError;
     }
 #ifdef MLI_2_0
-    if (out->data.mem.void_p == NULL) ret_val = kTfLiteError;
+    if (out->data.mem.pi8 == NULL) ret_val = kTfLiteError;
 #else
     if (out->data == NULL) ret_val = kTfLiteError;
 #endif
   }
 
 #ifdef MLI_2_0
-  if (bias->data.mem.void_p == NULL) {
+  if (bias->data.mem.pi8 == NULL) {
 #else
   if (bias->data == NULL) {
 #endif
     int max_bias_size = 0;
     get_arc_scratch_buffer_max_size(&max_bias_size);
 #ifdef MLI_2_0
-    bias->data.mem.void_p = get_arc_scratch_buffer(max_bias_size);
+    bias->data.mem.pi8 = get_arc_scratch_buffer(max_bias_size);
     bias->data.capacity = max_bias_size;
 #else
     bias->data = get_arc_scratch_buffer(max_bias_size);
@@ -350,7 +354,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     if (max_bias_size == 0) ret_val = kTfLiteError;
   }
 #ifdef MLI_2_0
-  if (bias->data.mem.void_p == NULL) ret_val = kTfLiteError;
+  if (bias->data.mem.pi8 == NULL) ret_val = kTfLiteError;
 #else
   if (bias->data == NULL) ret_val = kTfLiteError;
 #endif

@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2020-2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -193,9 +193,8 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   TF_LITE_ENSURE_STATUS(get_arc_scratch_buffer_for_pooling_tensors(
       context, &in_local, &out_local));
 #ifdef MLI_2_0
-  bool in_is_local = in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
-  bool out_is_local =
-      out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+  bool in_is_local = in_local.data.mem.pi8 == data.mli_in->data.mem.pi8;
+  bool out_is_local = out_local.data.mem.pi8 == data.mli_out->data.mem.pi8;
 #else
   bool in_is_local = in_local.data == data.mli_in->data;
   bool out_is_local = out_local.data == data.mli_out->data;

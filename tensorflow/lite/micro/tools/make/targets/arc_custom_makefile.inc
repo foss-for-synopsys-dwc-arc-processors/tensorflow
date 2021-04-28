@@ -33,4 +33,16 @@ endif
 
 include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
 
+ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
+  CXXFLAGS += -DMLI_2_0
+  CCFLAGS += -DMLI_2_0
+
+ifneq ($(BUILD_LIB_DIR), )
+  LDFLAGS += -Hlib=$(BUILD_LIB_DIR)
+else
+  $(warning BUILD_LIB_DIR variable is not specified. Default will be used.)
+endif
+
+endif
+
 MAKE_PROJECT_FILES := $(filter-out README_MAKE.md, $(MAKE_PROJECT_FILES)) README_ARC.md

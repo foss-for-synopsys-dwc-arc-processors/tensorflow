@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2020-2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -206,11 +206,11 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
      and there is no need to copy it to the local tensor*/
 #ifdef MLI_2_0
   const bool in_is_local =
-      in_local.data.mem.void_p == data.mli_in->data.mem.void_p;
+      in_local.data.mem.pi8 == data.mli_in->data.mem.pi8;
   const bool out_is_local =
-      out_local.data.mem.void_p == data.mli_out->data.mem.void_p;
+      out_local.data.mem.pi8 == data.mli_out->data.mem.pi8;
   const bool b_is_local =
-      bias_local.data.mem.void_p == data.mli_bias->data.mem.void_p;
+      bias_local.data.mem.pi8 == data.mli_bias->data.mem.pi8;
 #else
   const bool in_is_local = in_local.data == data.mli_in->data;
   const bool out_is_local = out_local.data == data.mli_out->data;
@@ -259,8 +259,12 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 #ifdef MLI_2_0
     /* Permute weights tensor to the HWCN layout */
     // Assertion here to prevent usage non-contiguous buffer memory.
-    assert(data.mli_out->shape[out_tensor_dimension] ==
-           out_slice.Sub()->shape[0]);
+    if (data.mli_out->shape[out_tensor_dimension] !=
+        out_slice.Sub()->shape[0]) {
+      TF_LITE_KERNEL_LOG(
+          context, "Slicing is not supported with real-time permutation.");
+      return kTfLiteError;
+    }
     mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
     ops::micro::permute_weights(data.mli_weights, &permute_cfg, w_ptr,
                                 &out_ptr->data);
@@ -269,9 +273,9 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     while (!out_slice.Done()) {
       // if same input copy as previous iteration, skip the copy of input
 #ifdef MLI_2_0
-      if (in_slice.Sub()->data.mem.void_p != input_buffer_ptr) {
+      if (in_slice.Sub()->data.mem.pi8 != input_buffer_ptr) {
         mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
-        input_buffer_ptr = in_slice.Sub()->data.mem.void_p;
+        input_buffer_ptr = in_slice.Sub()->data.mem.pi8;
       }
       mli_fully_connected_cfg cfg;
       cfg.relu.type = MLI_RELU_NONE;

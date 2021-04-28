@@ -29,6 +29,8 @@ BUILD_LIB_DIR := vpx5_integer_full
 include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
 
 LDFLAGS += -Hlib=vpx5_integer_full
+CXXFLAGS += -DMLI_2_0
+CCFLAGS += -DMLI_2_0
 
 MAKE_PROJECT_FILES := $(filter-out README_MAKE.md, $(MAKE_PROJECT_FILES)) README_ARC.md
 

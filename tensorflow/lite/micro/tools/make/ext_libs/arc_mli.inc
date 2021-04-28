@@ -24,8 +24,14 @@ ifeq ($(BUILD_ARC_MLI),true)
   $(eval $(call add_third_party_download,$(EMBARC_MLI_URL),$(EMBARC_MLI_MD5),$(MLI_LIB_DIR),build_embarc_mli,$(TCF_FILE)))
 
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include
+
+ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
   MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/arc/libmli.a
   MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/arc/libmli.a
+else
+  MLI_LIB = third_party/$(MLI_LIB_DIR)/bin/libmli.a
+  MICROLITE_LIBS += $(MAKEFILE_DIR)/downloads/$(MLI_LIB_DIR)/bin/libmli.a
+endif
 
   THIRD_PARTY_CC_HDRS += \
     third_party/$(MLI_LIB_DIR)/LICENSE
@@ -57,7 +63,7 @@ endif
     -I./third_party/$(MLI_INCLUDE_FOLDER) \
     -I./third_party/$(MLI_INCLUDE_FOLDER)/api
 
-
+ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
   THIRD_PARTY_CC_HDRS += \
     third_party/$(MLI_INCLUDE_FOLDER)/mli_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/mli_config.h \
@@ -65,6 +71,19 @@ endif
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_helpers_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_kernels_api.h \
     third_party/$(MLI_INCLUDE_FOLDER)/api/mli_mov_api.h
+else
+  THIRD_PARTY_CC_HDRS += \
+    third_party/$(MLI_INCLUDE_FOLDER)/mli_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/mli_config.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/mli_types.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_helpers_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_kernels_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_avepool_spec_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_conv2d_spec_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_depthwise_conv2d_spec_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_krn_maxpool_spec_api.h \
+    third_party/$(MLI_INCLUDE_FOLDER)/api/mli_mov_api.h
+endif
 
     MICROLITE_CC_HDRS += tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h
     MICROLITE_CC_SRCS += tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.cc
