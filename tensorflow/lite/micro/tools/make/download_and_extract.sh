@@ -91,7 +91,7 @@ patch_cifar10_dataset() {
 }
 
 build_embarc_mli() {
-  if [ ${2} == vpx5_integer_full.tcf ]; then
+  if [[ ${2} == vpx5_integer_full.tcf ]]; then
     pushd ${1}/hw
     tcfgen -o vpx5_integer_full.tcf -tcf=vpx5_integer_full -iccm_size=0x80000 -dccm_size=0x40000
     popd
