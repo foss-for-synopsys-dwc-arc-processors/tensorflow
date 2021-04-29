@@ -56,7 +56,7 @@ namespace micro {
 
 #else
 
-#define SCRATCH_MEM_VEC_SIZE (65536)
+#define SCRATCH_MEM_SIZE (65536)
 
 #endif
 
@@ -84,7 +84,7 @@ static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
 
 #else
 
-static int8_t scratch_mem_vec[SCRATCH_MEM_SIZE];
+static int8_t scratch_mem_stack[SCRATCH_MEM_SIZE];
 
 #endif
 }  // namespace

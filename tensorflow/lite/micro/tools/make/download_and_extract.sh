@@ -92,7 +92,7 @@ patch_cifar10_dataset() {
 
 build_embarc_mli() {
   if [[ ${ARC_TAGS} =~ "mli20_experimental" ]]; then
-    make -C ${1}/lib/make build TCF_FILE=${tcf} GEN_EXAMPLES=0 JOBS=4
+    make -C ${1}/lib/make build TCF_FILE=${2} GEN_EXAMPLES=0 JOBS=4
   else
     make -j 4 -C ${1}/lib/make TCF_FILE=${2}
   fi
