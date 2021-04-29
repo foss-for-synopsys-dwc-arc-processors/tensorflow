@@ -178,17 +178,35 @@ inline void ConvertToMliQuantParamsPerChannel(const TfLiteTensor* tfT,
 }
 
 template <typename datatype>
-inline void MliTensorAttachBuffer(const TfLiteEvalTensor* tfT,
+inline void MliTensorAttachBuffer(const TfLiteEvalTensor*, mli_tensor*);
+
+template <>
+inline void MliTensorAttachBuffer<int8_t>(const TfLiteEvalTensor* tfT,
                                   mli_tensor* mliT) {
   // "const_cast" here used to attach const data buffer to the initially
   // non-const mli_tensor. This is required by current implementation of MLI
   // backend and planned for redesign due to this and some other aspects.
 #ifdef MLI_2_0
-  mliT->data.mem.pi8 = const_cast<void*>(
-      static_cast<const void*>(tflite::micro::GetTensorData<datatype>(tfT)));
+  mliT->data.mem.pi8 =
+      const_cast<int8_t*>(tflite::micro::GetTensorData<int8_t>(tfT));
 #else
   mliT->data = const_cast<void*>(
-      static_cast<const void*>(tflite::micro::GetTensorData<datatype>(tfT)));
+      static_cast<const void*>(tflite::micro::GetTensorData<int8_t>(tfT)));
+#endif
+}
+
+template <>
+inline void MliTensorAttachBuffer<int32_t>(const TfLiteEvalTensor* tfT,
+                                           mli_tensor* mliT) {
+  // "const_cast" here used to attach const data buffer to the initially
+  // non-const mli_tensor. This is required by current implementation of MLI
+  // backend and planned for redesign due to this and some other aspects.
+#ifdef MLI_2_0
+  mliT->data.mem.pi32 =
+      const_cast<int32_t*>(tflite::micro::GetTensorData<int32_t>(tfT));
+#else
+  mliT->data = const_cast<void*>(
+      static_cast<const void*>(tflite::micro::GetTensorData<int32_t>(tfT)));
 #endif
 }
 

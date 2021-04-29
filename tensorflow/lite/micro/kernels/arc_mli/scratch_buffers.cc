@@ -84,7 +84,7 @@ static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
 
 #else
 
-static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
+static int8_t scratch_mem_vec[SCRATCH_MEM_SIZE];
 
 #endif
 }  // namespace
@@ -95,17 +95,23 @@ static int8_t* scratch_mem[] = {scratch_mem_x, scratch_mem_y, scratch_mem_z};
 static uint32_t scratch_sizes[] = {SCRATCH_MEM_X_SIZE, SCRATCH_MEM_Y_SIZE,
                                    SCRATCH_MEM_Z_SIZE};
 
-#else
+#elif defined(__Xvdsp)
+
 static int8_t* scratch_mem[] = {scratch_mem_vec};
 static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE};
 
+#else
+
+static int8_t* scratch_mem[] = {scratch_mem_stack};
+static uint32_t scratch_sizes[] = {SCRATCH_MEM_SIZE};
+
 #endif
 
-void* get_arc_scratch_buffer(int size) {
+int8_t* get_arc_scratch_buffer(int size) {
   // Function to asign fast memory from one of 3 scratch buffers.
   // Best Fit strategy - memory is allocated from that memory bank that leaves
   // the least unused memory.
-  void* buf = NULL;
+  int8_t* buf = NULL;
   int best_mem_idx = -1;
   int best_mem_delta = INT_MAX;
   const int num_mem = sizeof(scratch_mem) / sizeof(scratch_mem[0]);
@@ -119,7 +125,7 @@ void* get_arc_scratch_buffer(int size) {
     }
   }
   if (best_mem_idx >= 0) {
-    buf = static_cast<void*>(scratch_mem[best_mem_idx]);
+    buf = scratch_mem[best_mem_idx];
     scratch_mem[best_mem_idx] += size;
     scratch_sizes[best_mem_idx] -= size;
   }
@@ -163,10 +169,12 @@ void init_arc_scratch_buffers(void) {
   scratch_sizes[0] = SCRATCH_MEM_X_SIZE;
   scratch_sizes[1] = SCRATCH_MEM_Y_SIZE;
   scratch_sizes[2] = SCRATCH_MEM_Z_SIZE;
-#else
+#elif defined(__Xvdsp)
   scratch_mem[0] = scratch_mem_vec;
   scratch_sizes[0] = SCRATCH_MEM_VEC_SIZE;
-
+#else
+  scratch_mem[0] = scratch_mem_stack;
+  scratch_sizes[0] = SCRATCH_MEM_SIZE;
 #endif
 }
 

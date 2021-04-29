@@ -405,7 +405,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const bool out_is_local =
         out_local.data.mem.pi8 == data.mli_out->data.mem.pi8;
     const bool b_is_local =
-        bias_local.data.mem.pi8 == data.mli_bias->data.mem.pi8;
+        bias_local.data.mem.pi32 == data.mli_bias->data.mem.pi32;
 #else
     const bool in_is_local = in_local.data == data.mli_in->data;
     const bool out_is_local = out_local.data == data.mli_out->data;
