@@ -57,6 +57,16 @@ OPTIMIZED_KERNEL_DIR=arc_mli \
 generate_micro_speech_mock_make_project
 ```
 
+### Adapt the model
+There is a difference between TFLM weights format layout (NHWC) and format required by MLI kernels (HWCN). To transpose weights in .cc and .tflite you can use the following command:
+
+:warning: **WARNING**: TensorFlow for Python should be installed to run this command
+
+```
+python tensorflow/lite/micro/tools/make/targets/arc/adaptation_tool.py \
+tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/micro_speech_mock/make/tensorflow/lite/micro/examples/micro_speech/micro_features/model.cc 
+```
+
 ### Build and Run Example
 
 For more detailed information on building and running examples see the
