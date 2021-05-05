@@ -201,11 +201,11 @@ download_and_extract() {
     patch_cifar10_dataset ${dir}
   elif [[ ${action} == "build_embarc_mli" ]]; then
     # TODO: Think here how to deal with vpx
-    if [[ "${action_param1}" != *.tcf || "${action_param1}" == *vpx5_integer_full.tcf ]]; then
-      build_embarc_mli ${dir} ${action_param1}
-    else
+    if [[ "${action_param1}" == *.tcf ]]; then
       cp ${action_param1} ${dir}/hw/arc.tcf
       build_embarc_mli ${dir} ../../hw/arc.tcf
+    else
+      build_embarc_mli ${dir} ${action_param1}
     fi
   elif [[ ${action} == "setup_zephyr" ]]; then
     setup_zephyr ${dir}

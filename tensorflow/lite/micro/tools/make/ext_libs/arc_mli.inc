@@ -21,6 +21,10 @@ ALL_TAGS += arc_mli
 ifeq ($(BUILD_ARC_MLI),true)
   MLI_LIB_DIR ?= arc_mli_$(basename $(TCF_FILE_NAME))
 
+ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
+  MLI_LIB_DIR := $(MLI_LIB_DIR)_mli20
+endif
+
   $(eval $(call add_third_party_download,$(EMBARC_MLI_URL),$(EMBARC_MLI_MD5),$(MLI_LIB_DIR),build_embarc_mli,$(TCF_FILE)))
 
   MLI_INCLUDE_FOLDER = $(MLI_LIB_DIR)/include

@@ -23,12 +23,16 @@ ARC_TOOLCHAIN := mwdt
 # Overriding TARGET variable to change name of project folder according
 # to specified Tool Configuration File (*.tcf) passed through TCF_FILE variable
 # or default em7d_voice_audio configuration.
-ifneq ($(TCF_FILE), )
+ifneq ($(TCF_FILE),)
   override TARGET = $(basename $(notdir $(TCF_FILE)))
 else
   $(warning TCF_FILE variable is not specified. Use default em7d_voice_audio configuration)
   override TARGET = em7d_voice_audio
   TCF_FILE = em7d_voice_audio
+endif
+
+ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
+  override TARGET := $(TARGET)_mli20
 endif
 
 include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
