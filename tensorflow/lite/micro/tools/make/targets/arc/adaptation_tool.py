@@ -52,21 +52,19 @@ def transpose_weights(tensor, buffer, transpose_shape):
         .transpose(transpose_shape) \
         .flatten()
 
-    for idx in range(len(tensor.shape)):
-        tensor.shape[idx] = tensor.shape[transpose_shape[idx]]
 
     tensor.quantization.quantizedDimension = \
         transpose_shape.index(tensor.quantization.quantizedDimension)
 
 # Layer-specific adaptation functions
 def adapt_conv(operator, tensors, buffers):
-    transpose_weights(tensors[operator.inputs[1]], buffers[tensors[operator.inputs[1]].buffer], (1, 2, 3, 0))
+    transpose_weights(tensors[operator.inputs[1]], buffers[tensors[operator.inputs[1]].buffer], [1, 2, 3, 0])
 
 def adapt_dw(operator, tensors, buffers):
     return
 
 def adapt_fc(operator, tensors, buffers):
-    transpose_weights(tensors[operator.inputs[1]], buffers[tensors[operator.inputs[1]].buffer], (1, 0))
+    transpose_weights(tensors[operator.inputs[1]], buffers[tensors[operator.inputs[1]].buffer], [1, 0])
 
 # Op_codes that require additional adaptation for MLI
 adapt_op_codes = {
