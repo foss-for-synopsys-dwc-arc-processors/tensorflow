@@ -6,8 +6,13 @@ import sys
 import re
 from pathlib import Path
 
-from tensorflow.lite.python.util import convert_bytes_to_c_source, _convert_model_from_object_to_bytearray, \
+try:
+    from tensorflow.lite.python.util import convert_bytes_to_c_source, _convert_model_from_object_to_bytearray, \
         _convert_model_from_bytearray_to_object
+except:
+    print('Install TensorFlow package first to use MLI adaptation tool.')
+    sys.exit(1)
+
 
 # Model conversion functions
 def convert_c_source_to_bytes(input_cc_file):
@@ -39,11 +44,20 @@ def read_model(input_tflite_file):
 
 def write_model(model_object, output_tflite_file):
     model_bytearray = _convert_model_from_object_to_bytearray(model_object)
-    with open(output_tflite_file, 'w') as output_file:
-        output_file.write(convert_bytes_to_c_source(data=model_bytearray,
+    if output_tflite_file.endswith('.cc'):
+        mode = 'w'
+        converted_model = convert_bytes_to_c_source(data=model_bytearray,
                                                     array_name='g_' + str(Path(output_tflite_file).stem),
                                                     include_path=str(Path(output_tflite_file).with_suffix('.h')),
-                                                    use_tensorflow_license=True)[0])
+                                                    use_tensorflow_license=True)[0]
+    elif output_tflite_file.endswith('.tflite'):
+        mode = 'wb'
+        converted_model = model_bytearray
+    else:
+        raise ValueError('File format not supported')
+
+    with open(output_tflite_file, mode) as output_file:
+        output_file.write(converted_model)
 
 # Helper functions
 def transpose_weights(tensor, buffer, transpose_shape):
@@ -52,6 +66,7 @@ def transpose_weights(tensor, buffer, transpose_shape):
         .transpose(transpose_shape) \
         .flatten()
 
+    tensor.shape = tensor.shape[transpose_shape]
 
     tensor.quantization.quantizedDimension = \
         transpose_shape.index(tensor.quantization.quantizedDimension)
@@ -92,7 +107,7 @@ def main(argv):
             tflite_input = argv[1]
             tflite_output = argv[1]
     except IndexError:
-        print("Usage: %s <input cc/tflite> <output cc>" % (argv[0]))
+        print("Usage: %s <input cc/tflite> <output cc/tflite>" % (argv[0]))
     else:
         if tflite_input.endswith('.cc'):
             model = convert_c_source_to_object(tflite_input)
@@ -104,7 +119,7 @@ def main(argv):
         adapt_model_to_mli(model)
         write_model(model, tflite_output)
 
-        print('Completed!')
+        print('Model was adapted to be used with MLI.')
 
 if __name__ == "__main__":
     main(sys.argv)

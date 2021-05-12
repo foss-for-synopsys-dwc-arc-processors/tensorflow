@@ -19,9 +19,6 @@ This uses the experimental int8 quantized version of the person detection model.
 
 ## Run on ARC VPX Processor using NSIM Simulator
 
-:warning: **WARNING**: Current implementation uses runtime permutation to translate TFLM weights format layout (NHWC) into the format required by MLI kernels (HWCN).
-This runtime permutation will be much slower than doing offline permutation. A utility to do this is under development..
-
 General information and instructions on using VPX with TensorFlow
 Lite Micro can be found in the common
 [ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
@@ -42,15 +39,6 @@ make -f tensorflow/lite/micro/tools/make/Makefile \
 TARGET=arc_vpx ARC_TAGS=reduce_codesize \
 OPTIMIZED_KERNEL_DIR=arc_mli \
 generate_person_detection_int8_make_project
-```
-### Adapt the model
-There is a difference between TFLM weights format layout (NHWC) and format required by MLI kernels (HWCN). To transpose weights in .cc and .tflite you can use the following command:
-
-:warning: **WARNING**: TensorFlow for Python should be installed to run this command
-
-```
-python tensorflow/lite/micro/tools/make/targets/arc/adaptation_tool.py \
-tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/person_detection_int8/make/tensorflow/lite/micro/tools/make/downloads/person_model_int8/person_detect_model_data.cc 
 ```
 
 ### Build and Run Example

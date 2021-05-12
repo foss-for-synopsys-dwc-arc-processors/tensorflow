@@ -79,6 +79,10 @@ command dependencies, so Windows can be used
 A [CMake](https://cmake.org/ "CMake Tool Homepage") tool version >= 3.18 is required for the
 [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) build.
 
+#### TensorFlow for Python
+
+Models in TFLM format need to be pre-adapted before being used with MLI due to differences in weight tensor shapes in some kernels. Adaptation is done automatically during TFLM project generation, but requires TensorFlow to be installed.
+
 ### Generate Application Project for ARC VPX
 
 Before building an example or test application, you need to generate a TFLM
@@ -415,6 +419,14 @@ To run the application in the GUI debugger, use the following command:
 ```
 
 You will see the application output in the same console where you ran it.
+
+## Custom model adaptation
+
+If you want to use your own model, exported from TensorFlow in **.tflite** or **.cc** format you will need to adapt it manually using adaptation tool from the current folder, using the following command:
+
+```
+python adaptation_tool.py <path_to_input_model_file> <path_to_adapted_model_file>
+```
 
 ## License
 
