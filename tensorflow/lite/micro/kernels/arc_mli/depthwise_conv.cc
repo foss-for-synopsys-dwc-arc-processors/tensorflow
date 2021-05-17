@@ -376,12 +376,13 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     ops::micro::MliTensorAttachBuffer<int8_t>(output, &data.mli_out);
 
     // for height slicing
-    const int heightDimension = 1;
-    int inSliceHeight = 0;
-    int outSliceHeight = 0;
+    const int height_dimension = 1;
+    int in_slice_height = 0;
+    int out_slice_height = 0;
     // TODO: Think about defines here for MLI 1.1 and MLI 2.0
     uint32_t* mli_weights_shape = data.mli_weights.Shape();
-    const int kernelHeight = static_cast<int>(mli_weights_shape[1]);
+    const int kernel_height =
+        static_cast<int>(mli_weights_shape[height_dimension]);
     const int overlap = kernelHeight - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
@@ -414,6 +415,8 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
+    mli_tensor permuted_weights = *data.mli_weights;
+
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
         context, &in_local_interface, &weights_local_interface,
         &bias_local_interface, &out_local_interface));
@@ -431,9 +434,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
 
     TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_io(
-        &in_local_interface, &out_local_interface, kernelHeight,
+        &in_local_interface, &out_local_interface, kernel_height,
         cfg_local.stride_height, cfg_local.padding_top,
-        cfg_local.padding_bottom, &inSliceHeight, &outSliceHeight));
+        cfg_local.padding_bottom, &in_slice_height, &out_slice_height));
     TF_LITE_ENSURE_STATUS(
         ops::micro::arc_scratch_buffer_calc_slice_size_weights(
             &weights_local_interface, &bias_local_interface,
@@ -481,16 +484,16 @@ TfLiteStatus EvalMliQuantizedPerChannel(
       the sliceHeight has been calculated. The tensor slicer is configured that
       it will completely slice the nBatch dimension (0) and slice the height
       dimension (1) in chunks of 'sliceHeight' */
-      ops::micro::TensorSlicer in_slice(in_ch_slice.Sub(), heightDimension,
-                                        inSliceHeight, padding_top,
+      ops::micro::TensorSlicer in_slice(in_ch_slice.Sub(), height_dimension,
+                                        in_slice_height, padding_top,
                                         padding_bottom, overlap);
 
       /* output tensor is already sliced in the output channel dimension.
       out_ch_slice.Sub() is the tensor for the amount of output channels of this
       iteration of the weight slice loop. This tensor needs to be further
       sliced over the batch and height dimension. */
-      ops::micro::TensorSlicer out_slice(out_ch_slice.Sub(), heightDimension,
-                                         outSliceHeight);
+      ops::micro::TensorSlicer out_slice(out_ch_slice.Sub(), height_dimension,
+                                         out_slice_height);
 
       /* setup the pointers to the local or remote tensor to make the code
        * inside the loop easier. */
@@ -510,14 +513,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_ptr = in_slice.Sub()->data.mem.pi8;
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
-        // Checking conditions here to prevent usage non-contiguous buffer
-        // memory.
-        if (mli_weights_shape[weight_out_ch_dimension] !=
-            w_slice.Sub()->shape[3]) {
-          TF_LITE_KERNEL_LOG(
-              context, "Slicing is not supported with real-time permutation.");
-          return kTfLiteError;
-        }
+
         uint8_t dim_order[] = {1, 2, 0, 3};
         ops::micro::change_shape(w_ptr, dim_order);
 

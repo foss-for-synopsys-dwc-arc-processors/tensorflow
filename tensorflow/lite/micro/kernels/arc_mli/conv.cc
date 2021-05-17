@@ -361,13 +361,13 @@ TfLiteStatus EvalMliQuantizedPerChannel(
 
     // for weight slicing (on output channels)
     // NHWC layout for weights, output channel dimension is the first dimension.
-    const int weight_out_ch_dimension = 0;
+    const int weight_out_ch_dimension = 3;
     int slice_channels =
         static_cast<int>(data.mli_weights.Shape()[weight_out_ch_dimension]);
     // Batch-Height-Width-Channel layout means last dimension is output
     // channels.
     const int out_tensor_ch_dimension = 3;
-
+ 
     // Tensors for data in fast (local) memory and config to copy data from
     // external to local memory
     mli_tensor weights_local = *data.mli_weights.MliTensor();
@@ -409,10 +409,20 @@ TfLiteStatus EvalMliQuantizedPerChannel(
                             data.mli_weights.Data<int8_t>();
 #endif
 
+
+
+#ifdef MLI_2_0
     ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
-                                     weight_out_ch_dimension, slice_channels);
+                                     weight_out_ch_dimension,
+                                     slice_channels, 0, 0, 0, true);
+#else
+    ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
+                                     weight_out_ch_dimension,
+                                     slice_channels);
+#endif
     ops::micro::TensorSlicer b_slice(data.mli_bias.MliTensor(),
-                                     weight_out_ch_dimension, slice_channels);
+                                     bias_out_ch_dimension,
+                                     slice_channels);
     ops::micro::TensorSlicer out_ch_slice(data.mli_out.MliTensor(),
                                           out_tensor_ch_dimension,
                                           slice_channels, 0, 0, 0, true);
@@ -457,21 +467,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
       mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
       mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
 
-#ifdef MLI_2_0
-      /* Permute weights tensor to the HWCN layout */
-      // Checking conditions here to prevent usage non-contiguous buffer memory.
-      if (data.mli_out.Shape()[out_tensor_ch_dimension] !=
-              out_slice.Sub()->shape[FMAP_C_DIM_HWC] ||
-          data.mli_out.Shape()[height_dimension] !=
-              out_slice.Sub()->shape[FMAP_H_DIM_HWC]) {
-        TF_LITE_KERNEL_LOG(
-            context, "Slicing is not supported with real-time permutation.");
-        return kTfLiteError;
-      }
-      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
-      ops::micro::permute_weights(data.mli_weights.MliTensor(), &permute_cfg,
-                                  w_ptr, &out_ptr->data);
-#endif
 
       while (!out_slice.Done()) {
         TF_LITE_ENSURE(context, !in_slice.Done());
