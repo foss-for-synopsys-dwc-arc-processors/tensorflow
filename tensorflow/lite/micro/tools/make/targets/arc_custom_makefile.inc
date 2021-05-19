@@ -35,6 +35,7 @@ ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
   override TARGET := $(TARGET)_mli20
 endif
 
+MICROLITE_CC_SRCS := $(call substitute_specialized_implementations,$(MICROLITE_CC_SRCS),arc_custom)
 include $(MAKEFILE_DIR)/targets/arc/arc_common.inc
 
 ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
