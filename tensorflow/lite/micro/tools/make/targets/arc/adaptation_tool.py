@@ -76,7 +76,7 @@ def adapt_conv(operator, tensors, buffers):
     transpose_weights(tensors[operator.inputs[1]], buffers[tensors[operator.inputs[1]].buffer], [1, 2, 3, 0])
 
 def adapt_dw(operator, tensors, buffers):
-    return
+    tensors[operator.inputs[1]].shape = tensors[operator.inputs[1]].shape[[1, 2, 0, 3]]
 
 def adapt_fc(operator, tensors, buffers):
     transpose_weights(tensors[operator.inputs[1]], buffers[tensors[operator.inputs[1]].buffer], [1, 0])
