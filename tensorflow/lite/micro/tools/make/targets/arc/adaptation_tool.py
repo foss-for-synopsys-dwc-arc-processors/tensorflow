@@ -61,7 +61,7 @@ def write_model(model_object, output_tflite_file):
 
 # Helper functions
 def transpose_weights(tensor, buffer, transpose_shape):
-    buffer.data \
+    buffer.data = buffer.data \
         .reshape(tensor.shape) \
         .transpose(transpose_shape) \
         .flatten()
