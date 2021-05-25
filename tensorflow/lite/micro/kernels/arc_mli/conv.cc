@@ -40,7 +40,8 @@ constexpr int kOutputTensor = 0;
 
 // Conv is quantized along dimension 0:
 // https://www.tensorflow.org/lite/performance/quantization_spec
-constexpr int kConvQuantizedDimension = 0;
+//TODO: Change here according to MLI version
+constexpr int kConvQuantizedDimension = 3;
 
 // This file has 2 implementation of Conv.
 
@@ -167,8 +168,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
   int input_width = input->dims->data[2];
   int input_height = input->dims->data[1];
-  int filter_width = filter->dims->data[2];
-  int filter_height = filter->dims->data[1];
+  int filter_width = filter->dims->data[1];
+  int filter_height = filter->dims->data[0];
   int output_width = output->dims->data[2];
   int output_height = output->dims->data[1];
 
@@ -360,8 +361,15 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const int overlap = kernel_height - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
-    // NHWC layout for weights, output channel dimension is the first dimension.
+    #ifdef MLI_2_0
+    // HWCN layout for weights, output channel dimension is the first dimension.
     const int weight_out_ch_dimension = 3;
+    #else
+    // NHWC layout for weights, output channel dimension is the first dimension.
+    const int weight_out_ch_dimension = 0;
+    #endif
+    // bias has only 1 dimension
+    const int bias_out_ch_dimension = 0;
     int slice_channels =
         static_cast<int>(data.mli_weights.Shape()[weight_out_ch_dimension]);
     // Batch-Height-Width-Channel layout means last dimension is output
@@ -403,11 +411,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const bool out_is_local =
         out_local_interface.Data<int8_t>() == data.mli_out.Data<int8_t>();
     const bool b_is_local =
-        bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
-#ifndef MLI_2_0
-    const bool w_is_local = weights_local_interface.Data<int8_t>() ==
-                            data.mli_weights.Data<int8_t>();
-#endif
+        bias_local_interface.Data<int32_t>() == *data.mli_bias.Data<int32_t>();
+    const bool w_is_local = *weights_local_interface.Data<int8_t>() ==
+                            *data.mli_weights.Data<int8_t>();
 
 
 
@@ -427,11 +433,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
                                           out_tensor_ch_dimension,
                                           slice_channels, 0, 0, 0, true);
 
-#ifdef MLI_2_0
-    mli_tensor* w_ptr = &weights_local;
-#else
+
     mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
-#endif
+
 
     mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
@@ -439,9 +443,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     uint32_t input_buffer_size = 0;
 
     while (!w_slice.Done()) {
-#ifndef MLI_2_0
       mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
-#endif
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
       /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional

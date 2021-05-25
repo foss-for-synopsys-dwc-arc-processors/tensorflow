@@ -181,8 +181,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteType data_type = input->type;
   int width = SizeOfDimension(input, 2);
   int height = SizeOfDimension(input, 1);
-  int filter_width = SizeOfDimension(filter, 2);
-  int filter_height = SizeOfDimension(filter, 1);
+  int filter_width = SizeOfDimension(filter, 1);
+  int filter_height = SizeOfDimension(filter, 0);
 
   // Per channel quantization is only needed for int8 inference. For other
   // quantized types, only a single scale and zero point is needed.
@@ -381,9 +381,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     int out_slice_height = 0;
     // TODO: Think about defines here for MLI 1.1 and MLI 2.0
     uint32_t* mli_weights_shape = data.mli_weights.Shape();
-    const int kernel_height =
-        static_cast<int>(mli_weights_shape[height_dimension]);
-    const int overlap = kernelHeight - cfg_local.stride_height;
+    //TODO: Probably here change according to the MLI version
+    const int kernel_height = static_cast<int>(mli_weights_shape[0]);
+    const int overlap = kernel_height - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
     // HWCN layout for weights, output channel dimension is the first dimension.
@@ -415,7 +415,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
 
-    mli_tensor permuted_weights = *data.mli_weights;
 
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
         context, &in_local_interface, &weights_local_interface,
@@ -513,9 +512,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_ptr = in_slice.Sub()->data.mem.pi8;
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
-
-        uint8_t dim_order[] = {1, 2, 0, 3};
-        ops::micro::change_shape(w_ptr, dim_order);
 
         data.p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
                                                           &cfg_local, out_ptr);
