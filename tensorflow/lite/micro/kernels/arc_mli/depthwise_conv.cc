@@ -422,13 +422,13 @@ TfLiteStatus EvalMliQuantizedPerChannel(
      so in that case the original tensor can be used,
      and there is no need to copy it to the local tensor*/
     const bool in_is_local =
-        *in_local_interface.Data<int8_t>() == *data.mli_in.Data<int8_t>();
+        in_local_interface.Data<int8_t>() == data.mli_in.Data<int8_t>();
     const bool out_is_local =
-        *out_local_interface.Data<int8_t>() == *data.mli_out.Data<int8_t>();
-    const bool w_is_local = *weights_local_interface.Data<int8_t>() ==
-                            *data.mli_weights.Data<int8_t>();
+        out_local_interface.Data<int8_t>() == data.mli_out.Data<int8_t>();
+    const bool w_is_local = weights_local_interface.Data<int8_t>() ==
+                            data.mli_weights.Data<int8_t>();
     const bool b_is_local =
-        *bias_local_interface.Data<int32_t>() == *data.mli_bias.Data<int32_t>();
+        bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
 
     TF_LITE_ENSURE_STATUS(ops::micro::arc_scratch_buffer_calc_slice_size_io(
         &in_local_interface, &out_local_interface, kernelHeight,

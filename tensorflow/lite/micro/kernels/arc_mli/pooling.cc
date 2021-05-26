@@ -198,9 +198,9 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
       context, &in_local_interface, &out_local_interface));
 
   bool in_is_local =
-      *in_local_interface.Data<int8_t>() == *data.mli_in.Data<int8_t>();
+      in_local_interface.Data<int8_t>() == data.mli_in.Data<int8_t>();
   bool out_is_local =
-      *out_local_interface.Data<int8_t>() == *data.mli_out.Data<int8_t>();
+      out_local_interface.Data<int8_t>() == data.mli_out.Data<int8_t>();
 
   TF_LITE_ENSURE_STATUS(arc_scratch_buffer_calc_slice_size_io(
       &in_local_interface, &out_local_interface, cfg_local.kernel_height,

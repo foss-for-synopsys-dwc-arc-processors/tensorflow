@@ -22,23 +22,30 @@ namespace tflite {
 namespace ops {
 namespace micro {
 
+// Abstracts access to mli_tensor fields to use different versions of MLI
+// Library (1.x and 2.x)
+// Example:
+//    ops::micro::MliTensorInterface mli_in =
+//    ops::micro::MliTensorInterface(static_cast<mli_tensor*>(
+//        context->AllocatePersistentBuffer(context, sizeof(mli_tensor))));
+
 class MliTensorInterface {
  public:
+  // Make sure that lifetime of MliTensorInterface instance isn't bigger than
+  // related mli_tensor.
   MliTensorInterface(mli_tensor* tensor) : tensor_(tensor){};
   ~MliTensorInterface() = default;
 
 #ifdef MLI_2_0
   template <typename T>
-  T** Data();
-  template <typename T>
-  T Scale();
+  T* Data();
 #else  // MLI_1_1
   template <typename T>
-  void** Data();
-  template <typename T>
-  T Scale();
+  void* Data();
 #endif
   // Common data types
+  template <typename T>
+  T Scale();
   template <typename T>
   T ZeroPoint();
   template <typename T>
