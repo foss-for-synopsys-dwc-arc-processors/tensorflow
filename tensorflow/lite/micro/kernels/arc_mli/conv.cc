@@ -411,9 +411,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const bool out_is_local =
         out_local_interface.Data<int8_t>() == data.mli_out.Data<int8_t>();
     const bool b_is_local =
-        bias_local_interface.Data<int32_t>() == *data.mli_bias.Data<int32_t>();
-    const bool w_is_local = *weights_local_interface.Data<int8_t>() ==
-                            *data.mli_weights.Data<int8_t>();
+        bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
+    const bool w_is_local = weights_local_interface.Data<int8_t>() ==
+                            data.mli_weights.Data<int8_t>();
 
 
 

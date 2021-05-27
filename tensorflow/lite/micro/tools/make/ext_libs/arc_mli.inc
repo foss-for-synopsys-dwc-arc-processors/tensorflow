@@ -102,8 +102,8 @@ ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
 else
     MICROLITE_CC_HDRS += tensorflow/lite/micro/kernels/arc_mli/mli_interface.cc
 
-
-  MICROLITE_TEST_SRCS += $(wildcard tensorflow/lite/micro/kernels/arc_mli/*test.cc)
+    MICROLITE_TEST_SRCS += $(wildcard tensorflow/lite/micro/kernels/arc_mli/*test.cc)
+endif
 
   ARC_MLI_TESTS := conv depthwise_conv pooling fully_connected
   ARC_MLI_TESTS += $(foreach TEST,$(ARC_MLI_TESTS), $(TEST)_slicing)

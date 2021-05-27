@@ -119,11 +119,9 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
                        mli_hlp_tensor_element_size(weights->MliTensor());
     int max_weights_size = 0;
     weights->SetData<int8_t>(get_arc_scratch_buffer(weights_size), weights_size);
-    // *weights->DataCapacity() = weights_size;
     if (weights->Data<int8_t>() == NULL) {
       get_arc_scratch_buffer_max_size(&max_weights_size);
       weights->SetData<int8_t>(get_arc_scratch_buffer(max_weights_size), max_weights_size);
-      // *weights->DataCapacity() = max_weights_size;
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
     if (weights->Data<int8_t>() == NULL) ret_val = kTfLiteError;
@@ -168,11 +166,9 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
                        mli_hlp_tensor_element_size(weights->MliTensor());
     int max_weights_size = 0;
     weights->SetData<int8_t>(get_arc_scratch_buffer(weights_size), weights_size);
-    // *weights->DataCapacity() = weights_size;
     if (weights->Data<int8_t>() == NULL) {
       get_arc_scratch_buffer_max_size(&max_weights_size);
       weights->SetData<int8_t>(get_arc_scratch_buffer(max_weights_size), max_weights_size);
-      // *weights->DataCapacity() = max_weights_size;
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
     if (weights->Data<int8_t>() == NULL) ret_val = kTfLiteError;

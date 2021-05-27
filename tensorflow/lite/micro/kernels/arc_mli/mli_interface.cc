@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
+
 #include "mli_interface.h"  // NOLINT
 
 #include <math.h>
@@ -150,8 +151,7 @@ void MliTensorInterface::SetElType(TfLiteType type, uint32_t capacity) {
   } else if (type == kTfLiteInt32) {
     this->SetData<int32_t>(nullptr, capacity);
     *this->ElType() = MLI_EL_ASYM_I32;
-  }
-  else {
+  } else {
     TF_LITE_FATAL("Wrong data type. Expected int8_t or int32_t.");
   }
 }
