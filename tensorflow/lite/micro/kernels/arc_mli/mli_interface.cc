@@ -41,13 +41,15 @@ int32_t** MliTensorInterface::Scale(void) {
 }
 
 template <>
-void MliTensorInterface::SetData(int8_t* data) const {
+void MliTensorInterface::SetData(int8_t* data, uint32_t capacity) const {
   tensor_->data = data;
+  tensor_->capacity = capacity;
 }
 
 template <>
-void MliTensorInterface::SetData(int32_t* data) const {
+void MliTensorInterface::SetData(int32_t* data, uint32_t capacity) const {
   tensor_->data = data;
+  tensor_->capacity = capacity;
 }
 
 mli_tensor* MliTensorInterface::MliTensor(void) { return tensor_; }
@@ -59,13 +61,8 @@ const mli_tensor* MliTensorInterface::MliTensor(void) const {
 
 uint32_t* MliTensorInterface::Rank(void) { return &tensor_->rank; }
 
-uint32_t* MliTensorInterface::DataCapacity(void) {
-  return &tensor_->capacity;
-}
-
 const uint32_t* MliTensorInterface::DataCapacity(void) const {
-  return static_cast<const uint32_t*>(
-      const_cast<MliTensorInterface*>(this)->DataCapacity());
+  return &tensor_->capacity;
 }
 
 mli_element_type* MliTensorInterface::ElType(void) { return &tensor_->el_type; }
@@ -146,12 +143,12 @@ void MliTensorInterface::SetScalePerChannel(float* fscale,
   }
 }
 
-void MliTensorInterface::SetElType(TfLiteType type) {
+void MliTensorInterface::SetElType(TfLiteType type, uint32_t capacity) {
   if (type == kTfLiteInt8) {
-    this->SetData<int8_t>(nullptr);
+    this->SetData<int8_t>(nullptr, capacity);
     *this->ElType() = MLI_EL_ASYM_I8;
   } else if (type == kTfLiteInt32) {
-    this->SetData<int32_t>(nullptr);
+    this->SetData<int32_t>(nullptr, capacity);
     *this->ElType() = MLI_EL_ASYM_I32;
   }
   else {

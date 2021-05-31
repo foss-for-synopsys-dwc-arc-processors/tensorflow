@@ -32,10 +32,10 @@ inline void ConvertToMliTensorData(const TfLiteTensor* tfT,
                                    MliTensorInterface* mliT,
                                    bool is_bias_tensor) {
   // Data is NULL until MliTensorAttachBuffer is called.
-  mliT->SetElType(tfT->type);
+  mliT->SetElType(tfT->type, tfT->bytes);
 
   const int32_t dims_count = GetTensorShape(tfT).DimensionsCount();
-  *mliT->DataCapacity() = tfT->bytes;
+  // *mliT->DataCapacity() = tfT->bytes;
   *mliT->Rank() = is_bias_tensor ? 1 : dims_count;
 
   if (is_bias_tensor) {
@@ -102,7 +102,8 @@ inline void MliTensorAttachBuffer<int8_t>(const TfLiteEvalTensor* tfT,
   // non-const mli_tensor. This is required by current implementation of MLI
   // backend and planned for redesign due to this and some other aspects.
   mliT->SetData<int8_t>(
-      const_cast<int8_t*>(tflite::micro::GetTensorData<int8_t>(tfT)));
+      const_cast<int8_t*>(tflite::micro::GetTensorData<int8_t>(tfT)),
+      *mliT->DataCapacity());
 }
 
 template <>
@@ -112,7 +113,8 @@ inline void MliTensorAttachBuffer<int32_t>(const TfLiteEvalTensor* tfT,
   // non-const mli_tensor. This is required by current implementation of MLI
   // backend and planned for redesign due to this and some other aspects.
   mliT->SetData<int32_t>(
-      const_cast<int32_t*>(tflite::micro::GetTensorData<int32_t>(tfT)));
+      const_cast<int32_t*>(tflite::micro::GetTensorData<int32_t>(tfT)),
+      *mliT->DataCapacity());
 }
 
 inline void ConvertToMliTensor(const TfLiteTensor* tfT,

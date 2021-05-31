@@ -34,6 +34,7 @@ class MliTensorInterface {
   // Make sure that lifetime of MliTensorInterface instance isn't bigger than
   // related mli_tensor.
   MliTensorInterface(mli_tensor* tensor) : tensor_(tensor){};
+  MliTensorInterface() = default;
   ~MliTensorInterface() = default;
 
 #ifdef MLI_2_0
@@ -56,7 +57,6 @@ class MliTensorInterface {
   uint32_t* Rank();
   uint32_t* Shape();
   const uint32_t* Shape() const;
-  uint32_t* DataCapacity();
   const uint32_t* DataCapacity() const;
   uint32_t* ScaleCapacity();
   mli_element_type* ElType();
@@ -65,10 +65,10 @@ class MliTensorInterface {
   uint32_t* ZeroPointCapacity();
 
   template <typename T>
-  void SetData(T* data) const;
+  void SetData(T* data, uint32_t capacity) const;
   void SetScale(float fscale);
   void SetScalePerChannel(float* fscale, const int num_channels);
-  void SetElType(TfLiteType type);
+  void SetElType(TfLiteType type, uint32_t capacity);
 
  private:
   mli_tensor* tensor_;
