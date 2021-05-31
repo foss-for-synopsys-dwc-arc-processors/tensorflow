@@ -71,7 +71,7 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
   int request_size_out = 0;
   int grant_size_in = 0;
   int grant_size_out = 0;
-  if (!inside_arc_ccm(in->Data<int8_t>())) {
+  if (!inside_arc_ccm(*in->Data<int8_t>())) {
     // In case the input tensor contains multiple batches, it has rank 4
     // because the mli kernel cannot operate on batches, we need to have the
     // size of a single HWC tensor. that is why the start_rank is 1 in case of
@@ -80,7 +80,7 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
     request_size_in = mli_hlp_count_elem_num(in->MliTensor(), start_rank) *
                       mli_hlp_tensor_element_size(in->MliTensor());
   }
-  if (!inside_arc_ccm(out->Data<int8_t>())) {
+  if (!inside_arc_ccm(*out->Data<int8_t>())) {
     // In case the input tensor contains multiple batches, it has rank 4
     // because the mli kernel cannot operate on batches, we need to have the
     // size of a single batch. that is why the start_rank is 1 in case of input
@@ -92,14 +92,14 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
 
   get_arc_two_buffer_sizes(request_size_in, request_size_out, &grant_size_in,
                            &grant_size_out);
-  if (!inside_arc_ccm(in->Data<int8_t>())) {
-    in->SetData<int8_t>(get_arc_scratch_buffer(grant_size_in));
+  if (!inside_arc_ccm(*in->Data<int8_t>())) {
+    in->Data<int8_t>() = get_arc_scratch_buffer(grant_size_in);
     *in->DataCapacity() = grant_size_in;
     if (in->Data<int8_t>() == NULL) return kTfLiteError;
   }
 
-  if (!inside_arc_ccm(out->Data<int8_t>())) {
-    out->SetData<int8_t>(get_arc_scratch_buffer(grant_size_out));
+  if (!inside_arc_ccm(*out->Data<int8_t>())) {
+    out->Data<int8_t>() = get_arc_scratch_buffer(grant_size_out);
     *out->DataCapacity() = grant_size_out;
     if (out->Data<int8_t>() == NULL) return kTfLiteError;
   }
@@ -114,7 +114,7 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
   TfLiteStatus ret_val = kTfLiteOk;
 #if (defined(__Xxy)) || (defined(__Xvdsp))
   init_arc_scratch_buffers();
-  if (!inside_arc_ccm(weights->Data<int8_t>())) {
+  if (!inside_arc_ccm(*weights->Data<int8_t>())) {
     int weights_size = mli_hlp_count_elem_num(weights->MliTensor(), 0) *
                        mli_hlp_tensor_element_size(weights->MliTensor());
     int max_weights_size = 0;
@@ -125,14 +125,14 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
     if (weights->Data<int8_t>() == NULL) ret_val = kTfLiteError;
-  }
-  if (!inside_arc_ccm(bias->Data<int8_t>())) {
-    uint32_t bias_mem_requirements =
-        mli_hlp_count_elem_num(bias->MliTensor(), 0) *
-        mli_hlp_tensor_element_size(bias->MliTensor());
-    bias->SetData<int8_t>(get_arc_scratch_buffer(bias_mem_requirements));
-    *bias->DataCapacity() = bias_mem_requirements;
-  }
+
+    if (!inside_arc_ccm(*bias->Data<int8_t>())) {
+      uint32_t bias_mem_requirements =
+          mli_hlp_count_elem_num(bias->MliTensor(), 0) *
+          mli_hlp_tensor_element_size(bias->MliTensor());
+      bias->Data<int8_t>() = get_arc_scratch_buffer(bias_mem_requirements);
+      *bias->DataCapacity() = bias_mem_requirements;
+    }
 
     if (ret_val == kTfLiteOk) {
       ret_val = get_arc_scratch_buffer_for_io_tensors(context, in, out);
@@ -158,7 +158,7 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
 #if (defined(__Xxy)) || (defined(__Xvdsp))
     init_arc_scratch_buffers();
 
-    if (!inside_arc_ccm(weights->Data<int8_t>())) {
+    if (!inside_arc_ccm(*weights->Data<int8_t>())) {
 
     int weights_size = mli_hlp_count_elem_num(weights->MliTensor(), 0) *
                        mli_hlp_tensor_element_size(weights->MliTensor());
@@ -178,7 +178,7 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
        output. The number of output channels (for weights slicing) depends on
        size of output and size of weights&bias */
 
-    if (!inside_arc_ccm(in->Data<int8_t>())) {
+    if (!inside_arc_ccm(*in->Data<int8_t>())) {
       /* In case the input tensor contains multiple batches,
          only count the size if the inner most dimension */
       int size_in = mli_hlp_count_elem_num(in->MliTensor(), *in->Rank() - 1) *
@@ -190,25 +190,25 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
       }
     }
 
-    if (!inside_arc_ccm(bias->Data<int8_t>())) {
+    if (!inside_arc_ccm(*bias->Data<int8_t>())) {
       int bias_mem_requirements =
           mli_hlp_count_elem_num(bias->MliTensor(), 0) *
           mli_hlp_tensor_element_size(bias->MliTensor());
-      bias->SetData<int8_t>(get_arc_scratch_buffer(bias_mem_requirements));
+      bias->Data<int8_t>() = get_arc_scratch_buffer(bias_mem_requirements);
       *bias->DataCapacity() = bias_mem_requirements;
     }
-    if (!inside_arc_ccm(out->Data<int8_t>())) {
+    if (!inside_arc_ccm(*out->Data<int8_t>())) {
       /* In case the input tensor contains multiple batches,
          only count the size if the inner most dimension */
       int out_size =
           mli_hlp_count_elem_num(out->MliTensor(), *out->Rank() - 1) *
           mli_hlp_tensor_element_size(out->MliTensor());
       int max_out_size = 0;
-      out->SetData<int8_t>(get_arc_scratch_buffer(out_size));
+      out->Data<int8_t>() = get_arc_scratch_buffer(out_size);
       *out->DataCapacity() = out_size;
       if (out->Data<int8_t>() == NULL) {
         get_arc_scratch_buffer_max_size(&max_out_size);
-        out->SetData<int8_t>(get_arc_scratch_buffer(max_out_size));
+        out->Data<int8_t>() = get_arc_scratch_buffer(max_out_size);
         *out->DataCapacity() = max_out_size;
         if (max_out_size == 0) ret_val = kTfLiteError;
       }
@@ -218,7 +218,7 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
     if (bias->Data<int8_t>() == NULL) {
       int max_bias_size = 0;
       get_arc_scratch_buffer_max_size(&max_bias_size);
-      bias->SetData<int8_t>(get_arc_scratch_buffer(max_bias_size));
+      bias->Data<int8_t>() = get_arc_scratch_buffer(max_bias_size);
       *bias->DataCapacity() = max_bias_size;
       if (max_bias_size == 0) ret_val = kTfLiteError;
     }
