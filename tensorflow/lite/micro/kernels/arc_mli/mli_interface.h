@@ -37,14 +37,8 @@ class MliTensorInterface {
   MliTensorInterface() = default;
   ~MliTensorInterface() = default;
 
-#ifdef MLI_2_0
   template <typename T>
   T* Data();
-#else  // MLI_1_1
-  template <typename T>
-  void* Data();
-#endif
-  // Common data types
   template <typename T>
   T Scale();
   template <typename T>

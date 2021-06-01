@@ -21,15 +21,15 @@ namespace ops {
 namespace micro {
 
 template <>
-void* MliTensorInterface::Data<int8_t>(void) {
+int8_t* MliTensorInterface::Data<int8_t>(void) {
   TFLITE_DCHECK(tensor_->el_type == MLI_EL_ASYM_I8);
-  return tensor_->data;
+  return static_cast<int8_t*>(tensor_->data);
 }
 
 template <>
-void* MliTensorInterface::Data<int32_t>(void) {
+int32_t* MliTensorInterface::Data<int32_t>(void) {
   TFLITE_DCHECK(tensor_->el_type == MLI_EL_ASYM_I32);
-  return tensor_->data;
+  return static_cast<int32_t*>(tensor_->data);
 }
 
 template <>
