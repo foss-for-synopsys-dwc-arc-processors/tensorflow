@@ -24,11 +24,13 @@ namespace micro {
 #ifdef MLI_2_0
 template <>
 int8_t* MliTensorInterface::Data(void) {
+    TFLITE_DCHECK(tensor_->el_type == MLI_EL_SA_8);
   return tensor_->data.mem.pi8;
 }
 
 template <>
 int32_t* MliTensorInterface::Data(void) {
+    TFLITE_DCHECK(tensor_->el_type == MLI_EL_SA_32);
   return tensor_->data.mem.pi32;
 }
 
@@ -44,12 +46,14 @@ int16_t* MliTensorInterface::Scale(void) {
 
 template <>
 void MliTensorInterface::SetData(int8_t* data, uint32_t capacity) const {
+  TFLITE_DCHECK(tensor_->el_type == MLI_EL_SA_8);
   tensor_->data.mem.pi8 = data;
   tensor_->data.capacity = capacity;
 }
 
 template <>
 void MliTensorInterface::SetData(int32_t* data, uint32_t capacity) const {
+  TFLITE_DCHECK(tensor_->el_type == MLI_EL_SA_32);
   tensor_->data.mem.pi32 = data;
   tensor_->data.capacity = capacity;
 }
@@ -141,12 +145,10 @@ void MliTensorInterface::SetScalePerChannel(float* fscale,
   }
 }
 
-void MliTensorInterface::SetElType(TfLiteType type, uint32_t capacity) {
+void MliTensorInterface::SetElType(TfLiteType type) {
   if (type == kTfLiteInt8) {
-    this->SetData<int8_t>(nullptr, capacity);
     *this->ElType() = MLI_EL_SA_8;
   } else if (type == kTfLiteInt32) {
-    this->SetData<int32_t>(nullptr, capacity);
     *this->ElType() = MLI_EL_SA_32;
   }
   else {

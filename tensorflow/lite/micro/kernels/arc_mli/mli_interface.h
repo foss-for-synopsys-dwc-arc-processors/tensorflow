@@ -68,7 +68,7 @@ class MliTensorInterface {
   void SetData(T* data, uint32_t capacity) const;
   void SetScale(float fscale);
   void SetScalePerChannel(float* fscale, const int num_channels);
-  void SetElType(TfLiteType type, uint32_t capacity);
+  void SetElType(TfLiteType type);
 
  private:
   mli_tensor* tensor_;
