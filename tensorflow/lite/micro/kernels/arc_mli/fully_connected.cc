@@ -56,6 +56,7 @@ struct OpData {
   mutable ops::micro::MliTensorInterface mli_weights;
   mutable ops::micro::MliTensorInterface mli_bias;
   mutable ops::micro::MliTensorInterface mli_out;
+  mli_fully_connected_cfg *cfg;
 };
 
 constexpr int kInputTensor = 0;
@@ -70,8 +71,7 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
   // symmetric per-tensor quantization of weights (not per-axis)
   bool ret_val = (filter->type == kTfLiteInt8) &&
                  (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
-                 (params->activation == kTfLiteActNone) &&
-                 (filter->params.zero_point == 0);
+                 (filter->params.zero_point == 0); //TODO: Do I need this check?
   return ret_val;
 }
 
@@ -144,13 +144,23 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     ops::micro::ConvertToMliTensor(bias, &data->mli_bias);
     ops::micro::ConvertToMliTensor(output, &data->mli_out);
 
+    if (params->activation == kTfLiteActRelu) {
+      data->cfg->relu.type = MLI_RELU_GEN;
+    } else if (params->activation == kTfLiteActRelu6) {
+      data->cfg->relu.type = MLI_RELU_6;
+    } else if (params->activation == kTfLiteActReluN1To1) {
+      data->cfg->relu.type = MLI_RELU_1;
+    } else {
+      data->cfg->relu.type = MLI_RELU_NONE;
+    }
+
     /* The input tensor can have more than 2 dimensions. for the compute this
    doesn't make any difference because all the inputs or a batch entry will
    be used anyway. because the MLI kernel doesn't recognize the multiple
    dimensions, the tensor shape is casted to a {batchnum, inputsize} shape. */
     // TODO: Make pointers here
     data->mli_in.Shape()[0] = data->mli_out.Shape()[0];
-    data->mli_in.Shape()[1] = data->mli_weights.Shape()[1];
+    data->mli_in.Shape()[1] = data->mli_weights.Shape()[0];
     data->mli_in.Shape()[2] = 0;
     data->mli_in.Shape()[3] = 0;
     *data->mli_in.Rank() = 2;
@@ -186,7 +196,13 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 
   mli_mov_cfg_t copy_config;
   mli_mov_cfg_for_copy(&copy_config);
+#ifdef MLI_2_0
   const int weight_out_dimension = 1;
+#else
+  const int weight_out_dimension = 0;
+#endif
+  // bias has only 1 dimension
+  const int bias_out_ch_dimension = 0;
   const int out_tensor_dimension = 1;
   const int input_size_dimension = 1;
   int slice_size = data.mli_weights.Shape()[weight_out_dimension];
@@ -221,7 +237,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
                                    weight_out_dimension,
                                    slice_size, 0, 0, 0, true);
   ops::micro::TensorSlicer b_slice(data.mli_bias.MliTensor(),
-                                   weight_out_dimension,
+                                   bias_out_ch_dimension,
                                    slice_size);
   ops::micro::TensorSlicer out_ch_slice(data.mli_out.MliTensor(),
                                         out_tensor_dimension,
