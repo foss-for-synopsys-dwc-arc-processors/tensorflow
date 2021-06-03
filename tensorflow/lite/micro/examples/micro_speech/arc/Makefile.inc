@@ -1,4 +1,5 @@
 ifeq ($(TARGET), arc_vpx)
+ifeq ($(TARGET), arc_custom)
 
 # Patch of arc make project to adjust it specifically for micro speech example. 
 # In particular:
