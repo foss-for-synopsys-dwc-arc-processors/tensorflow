@@ -469,7 +469,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     int padding_bottom = cfg_local.padding_bottom;
 
     while (!w_slice.Done()) {
+      w_ptr->el_params.sa.scale.mem.pi16 = NULL;
       mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+      b_ptr->el_params.sa.scale.mem.pi16 = NULL;
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
       /* input tensor is already sliced in the  channel dimension.

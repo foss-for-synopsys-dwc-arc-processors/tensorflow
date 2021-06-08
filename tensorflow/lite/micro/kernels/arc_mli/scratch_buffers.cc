@@ -79,7 +79,9 @@ static int8_t scratch_mem_z[SCRATCH_MEM_Z_SIZE];
 #elif defined(__Xvdsp)
 
 #pragma Bss(".vecmem_data")
-static int8_t scratch_mem_vec[SCRATCH_MEM_VEC_SIZE];
+static int8_t scratch_mem_vec_1[SCRATCH_MEM_VEC_SIZE / 4];
+static int8_t scratch_mem_vec_2[SCRATCH_MEM_VEC_SIZE / 4];
+static int8_t scratch_mem_vec_3[SCRATCH_MEM_VEC_SIZE / 2];
 #pragma Bss()
 
 #else
@@ -97,8 +99,11 @@ static uint32_t scratch_sizes[] = {SCRATCH_MEM_X_SIZE, SCRATCH_MEM_Y_SIZE,
 
 #elif defined(__Xvdsp)
 
-static int8_t* scratch_mem[] = {scratch_mem_vec};
-static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE};
+static int8_t* scratch_mem[] = {scratch_mem_vec_1, scratch_mem_vec_2,
+                                scratch_mem_vec_3};
+static uint32_t scratch_sizes[] = {SCRATCH_MEM_VEC_SIZE / 4,
+                                   SCRATCH_MEM_VEC_SIZE / 4,
+                                   SCRATCH_MEM_VEC_SIZE / 2};
 
 #else
 
@@ -170,8 +175,12 @@ void init_arc_scratch_buffers(void) {
   scratch_sizes[1] = SCRATCH_MEM_Y_SIZE;
   scratch_sizes[2] = SCRATCH_MEM_Z_SIZE;
 #elif defined(__Xvdsp)
-  scratch_mem[0] = scratch_mem_vec;
-  scratch_sizes[0] = SCRATCH_MEM_VEC_SIZE;
+  scratch_mem[0] = scratch_mem_vec_1;
+  scratch_mem[1] = scratch_mem_vec_2;
+  scratch_mem[2] = scratch_mem_vec_3;
+  scratch_sizes[0] = SCRATCH_MEM_VEC_SIZE / 4;
+  scratch_sizes[1] = SCRATCH_MEM_VEC_SIZE / 4;
+  scratch_sizes[2] = SCRATCH_MEM_VEC_SIZE / 2;
 #else
   scratch_mem[0] = scratch_mem_stack;
   scratch_sizes[0] = SCRATCH_MEM_SIZE;

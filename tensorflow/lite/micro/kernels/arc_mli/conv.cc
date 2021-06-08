@@ -375,7 +375,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     // Batch-Height-Width-Channel layout means last dimension is output
     // channels.
     const int out_tensor_ch_dimension = 3;
- 
+
     // Tensors for data in fast (local) memory and config to copy data from
     // external to local memory
     mli_tensor weights_local = *data.mli_weights.MliTensor();
@@ -415,27 +415,21 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const bool w_is_local = weights_local_interface.Data<int8_t>() ==
                             data.mli_weights.Data<int8_t>();
 
-
-
 #ifdef MLI_2_0
     ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
-                                     weight_out_ch_dimension,
-                                     slice_channels, 0, 0, 0, true);
+                                     weight_out_ch_dimension, slice_channels, 0,
+                                     0, 0, true);
 #else
     ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
-                                     weight_out_ch_dimension,
-                                     slice_channels);
+                                     weight_out_ch_dimension, slice_channels);
 #endif
     ops::micro::TensorSlicer b_slice(data.mli_bias.MliTensor(),
-                                     bias_out_ch_dimension,
-                                     slice_channels);
+                                     bias_out_ch_dimension, slice_channels);
     ops::micro::TensorSlicer out_ch_slice(data.mli_out.MliTensor(),
                                           out_tensor_ch_dimension,
                                           slice_channels, 0, 0, 0, true);
 
-
     mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
-
 
     mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
@@ -443,7 +437,9 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     uint32_t input_buffer_size = 0;
 
     while (!w_slice.Done()) {
+      w_ptr->el_params.sa.scale.mem.pi16 = NULL;
       mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+      b_ptr->el_params.sa.scale.mem.pi16 = NULL;
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
       /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional

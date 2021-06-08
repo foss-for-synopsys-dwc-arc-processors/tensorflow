@@ -116,34 +116,37 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
     int weights_size = mli_hlp_count_elem_num(weights->MliTensor(), 0) *
                        mli_hlp_tensor_element_size(weights->MliTensor());
     int max_weights_size = 0;
-    weights->SetData<int8_t>(get_arc_scratch_buffer(weights_size), weights_size);
+    weights->SetData<int8_t>(get_arc_scratch_buffer(weights_size),
+                             weights_size);
     if (weights->Data<int8_t>() == NULL) {
       get_arc_scratch_buffer_max_size(&max_weights_size);
-      weights->SetData<int8_t>(get_arc_scratch_buffer(max_weights_size), max_weights_size);
+      weights->SetData<int8_t>(get_arc_scratch_buffer(max_weights_size),
+                               max_weights_size);
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
     if (weights->Data<int8_t>() == NULL) ret_val = kTfLiteError;
-
-    if (!inside_arc_ccm(bias->Data<int8_t>())) {
-      uint32_t bias_mem_requirements =
-          mli_hlp_count_elem_num(bias->MliTensor(), 0) *
-          mli_hlp_tensor_element_size(bias->MliTensor());
-      bias->SetData<int8_t>(get_arc_scratch_buffer(bias_mem_requirements), bias_mem_requirements);
-    }
-
-    if (ret_val == kTfLiteOk) {
-      ret_val = get_arc_scratch_buffer_for_io_tensors(context, in, out);
-    }
-
-    if (bias->Data<int8_t>() == NULL) {
-      int max_bias_size = 0;
-      get_arc_scratch_buffer_max_size(&max_bias_size);
-      bias->SetData<int8_t>(get_arc_scratch_buffer(max_bias_size), max_bias_size);
-      if (max_bias_size == 0) ret_val = kTfLiteError;
-    }
-    if (bias->Data<int8_t>() == NULL) ret_val = kTfLiteError;
   }
+
+  if (!inside_arc_ccm(bias->Data<int8_t>())) {
+    uint32_t bias_mem_requirements =
+        mli_hlp_count_elem_num(bias->MliTensor(), 0) * mli_hlp_tensor_element_size(bias->MliTensor());
+    bias->SetData<int8_t>(get_arc_scratch_buffer(bias_mem_requirements),
+                          bias_mem_requirements);
+  }
+
+  if (ret_val == kTfLiteOk) {
+    ret_val = get_arc_scratch_buffer_for_io_tensors(context, in, out);
+  }
+
+  if (bias->Data<int8_t>() == NULL) {
+    int max_bias_size = 0;
+    get_arc_scratch_buffer_max_size(&max_bias_size);
+    bias->SetData<int8_t>(get_arc_scratch_buffer(max_bias_size), max_bias_size);
+    if (max_bias_size == 0) ret_val = kTfLiteError;
+  }
+  if (bias->Data<int8_t>() == NULL) ret_val = kTfLiteError;
 #endif
+
     return ret_val;
   }
 

@@ -250,7 +250,9 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   void* input_buffer_ptr = NULL;
 
   while (!w_slice.Done()) {
+    w_ptr->el_params.sa.scale.mem.pi16 = NULL;
     mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+    b_ptr->el_params.sa.scale.mem.pi16 = NULL;
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
     // Slice the input over the batches (one at a time with the size of a
