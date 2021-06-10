@@ -13,9 +13,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import sys
 import re
-from pathlib import Path
+import shutil
 
 try:
   from tensorflow.lite.python.util import convert_bytes_to_c_source, _convert_model_from_object_to_bytearray, \
@@ -56,23 +57,37 @@ def convert_c_source_to_bytes(input_cc_file):
 
 def convert_c_source_to_object(input_cc_file):
   """Converts C++ source file to an object for parsing."""
+  with open(input_cc_file, 'r') as model_file:
+    include_path, array_name = None, None
+    for line in model_file:
+      if '#include' in line and not include_path:
+        include_path = line.strip('#include ').strip('"\n')
+      if re.search(r"\[\].*[=]|\[[1-9][0-9]*\].*[=]", line) and not array_name:
+        array_name = re.search(r"\w*(?=\[)", line).group()
+      if include_path and array_name:
+        break
+
   model_bytes = convert_c_source_to_bytes(input_cc_file)
-  return _convert_model_from_bytearray_to_object(model_bytes)
+  return _convert_model_from_bytearray_to_object(model_bytes), \
+         include_path, array_name
 
 
 def read_model(input_tflite_file):
   """Reads a tflite model as a python object."""
+
   with open(input_tflite_file, 'rb') as model_file:
     model_bytearray = bytearray(model_file.read())
     return _convert_model_from_bytearray_to_object(model_bytearray)
 
 
-def write_model(model_object, output_tflite_file):
+def write_model(model_object, output_tflite_file, include_path, array_name):
   """Writes the tflite model, a python object, into the output file.
 
   Args:
     model_object: A tflite model as a python object
     output_tflite_file: Full path name to the output tflite file.
+    include_path: Path to model header file
+    array_name: name of the array for .cc output
 
   Raises:
     ValueError: If file is not formatted in .cc or .tflite
@@ -82,8 +97,8 @@ def write_model(model_object, output_tflite_file):
     mode = 'w'
     converted_model = convert_bytes_to_c_source(
       data=model_bytearray,
-      array_name='g_' + str(Path(output_tflite_file).stem),
-      include_path=str(Path(output_tflite_file).with_suffix('.h')),
+      array_name=array_name,
+      include_path=include_path,
       use_tensorflow_license=True)[0]
   elif output_tflite_file.endswith('.tflite'):
     mode = 'wb'
@@ -136,7 +151,7 @@ def adapt_dw(operator, tensors, _buffers):
   Args:
     operator: Operator index
     tensors: Model tensors dict
-    buffers: Model buffers dict
+    _buffers: Model buffers dict
   """
   tensors[operator.inputs[1]].shape = \
     tensors[operator.inputs[1]].shape[[1, 2, 0, 3]]
@@ -195,15 +210,23 @@ def main(argv):
   except IndexError:
     print("Usage: %s <input cc/tflite> <output cc/tflite>" % (argv[0]))
   else:
+    if tflite_input == tflite_output:
+      path, filename = os.path.split(tflite_input)
+      try:
+        shutil.copyfile(tflite_input, path + '/orig_' + filename)
+      except OSError as err:
+        print('Error while creating backup file:', err)
     if tflite_input.endswith('.cc'):
-      model = convert_c_source_to_object(tflite_input)
+      model, include_path, array_name = convert_c_source_to_object(tflite_input)
     elif tflite_input.endswith('.tflite'):
       model = read_model(tflite_input)
+      include_path = ''
+      array_name = os.path.split(tflite_output)[1].split('.')[0]
     else:
       raise ValueError('File format not supported')
 
     adapt_model_to_mli(model)
-    write_model(model, tflite_output)
+    write_model(model, tflite_output, include_path, array_name)
 
     print('Model was adapted to be used with embARC MLI.')
 
