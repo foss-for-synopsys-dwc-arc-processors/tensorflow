@@ -92,7 +92,7 @@ patch_cifar10_dataset() {
 
 build_embarc_mli() {
   if [[ ${ARC_TAGS} =~ "mli20_experimental" ]]; then
-    make -C ${1}/lib/make build TCF_FILE=${2} GEN_EXAMPLES=0 JOBS=4
+    make -C ${1}/lib/make build TCF_FILE=${2} BUILDLIB_DIR=${BUILD_LIB_DIR} GEN_EXAMPLES=0 JOBS=4
   else
     make -j 4 -C ${1}/lib/make TCF_FILE=${2}
   fi
@@ -200,7 +200,6 @@ download_and_extract() {
   elif [[ ${action} == "patch_cifar10_dataset" ]]; then
     patch_cifar10_dataset ${dir}
   elif [[ ${action} == "build_embarc_mli" ]]; then
-    # TODO: Think here how to deal with vpx
     if [[ "${action_param1}" == *.tcf ]]; then
       cp ${action_param1} ${dir}/hw/arc.tcf
       build_embarc_mli ${dir} ../../hw/arc.tcf
