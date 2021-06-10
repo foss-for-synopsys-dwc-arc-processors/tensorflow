@@ -56,7 +56,10 @@ struct OpData {
   mutable ops::micro::MliTensorInterface mli_weights;
   mutable ops::micro::MliTensorInterface mli_bias;
   mutable ops::micro::MliTensorInterface mli_out;
+  
+#ifdef MLI_2_0
   mli_fully_connected_cfg *cfg;
+#endif
 };
 
 constexpr int kInputTensor = 0;
@@ -144,6 +147,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     ops::micro::ConvertToMliTensor(bias, &data->mli_bias);
     ops::micro::ConvertToMliTensor(output, &data->mli_out);
 
+#ifdef MLI_2_0
     if (params->activation == kTfLiteActRelu) {
       data->cfg->relu.type = MLI_RELU_GEN;
     } else if (params->activation == kTfLiteActRelu6) {
@@ -153,6 +157,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     } else {
       data->cfg->relu.type = MLI_RELU_NONE;
     }
+#endif
 
     /* The input tensor can have more than 2 dimensions. for the compute this
    doesn't make any difference because all the inputs or a batch entry will
@@ -250,9 +255,11 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   void* input_buffer_ptr = NULL;
 
   while (!w_slice.Done()) {
-    w_ptr->el_params.sa.scale.mem.pi16 = NULL;
+#ifdef MLI_2_0
+      w_ptr->el_params.sa.scale.mem.pi16 = NULL;
+      b_ptr->el_params.sa.scale.mem.pi16 = NULL;
+#endif
     mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
-    b_ptr->el_params.sa.scale.mem.pi16 = NULL;
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
     // Slice the input over the batches (one at a time with the size of a

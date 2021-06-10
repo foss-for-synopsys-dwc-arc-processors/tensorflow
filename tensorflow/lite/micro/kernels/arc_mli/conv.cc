@@ -40,8 +40,11 @@ constexpr int kOutputTensor = 0;
 
 // Conv is quantized along dimension 0:
 // https://www.tensorflow.org/lite/performance/quantization_spec
-//TODO: Change here according to MLI version
+#ifdef MLI_2_0
 constexpr int kConvQuantizedDimension = 3;
+#else
+constexpr int kConvQuantizedDimension = 0;
+#endif
 
 // This file has 2 implementation of Conv.
 
@@ -168,8 +171,13 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
   int input_width = input->dims->data[2];
   int input_height = input->dims->data[1];
+#ifdef MLI_2_0
   int filter_width = filter->dims->data[1];
   int filter_height = filter->dims->data[0];
+#else
+  int filter_width = filter->dims->data[2];
+  int filter_height = filter->dims->data[1];
+#endif
   int output_width = output->dims->data[2];
   int output_height = output->dims->data[1];
 
@@ -430,16 +438,17 @@ TfLiteStatus EvalMliQuantizedPerChannel(
                                           slice_channels, 0, 0, 0, true);
 
     mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
-
     mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
     void* input_buffer_ptr = NULL;
     uint32_t input_buffer_size = 0;
 
     while (!w_slice.Done()) {
+#ifdef MLI_2_0
       w_ptr->el_params.sa.scale.mem.pi16 = NULL;
-      mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
       b_ptr->el_params.sa.scale.mem.pi16 = NULL;
+#endif
+      mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
       /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
@@ -491,7 +500,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         mli_krn_conv2d_nhwc_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg_local,
                                          out_ptr);
 #endif
-
         mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
 
         in_slice.Next();

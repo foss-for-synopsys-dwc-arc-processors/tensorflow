@@ -181,8 +181,14 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteType data_type = input->type;
   int width = SizeOfDimension(input, 2);
   int height = SizeOfDimension(input, 1);
+
+#ifdef MLI_2_0
   int filter_width = SizeOfDimension(filter, 1);
   int filter_height = SizeOfDimension(filter, 0);
+#else
+  int filter_width = SizeOfDimension(filter, 2);
+  int filter_height = SizeOfDimension(filter, 1);
+#endif
 
   // Per channel quantization is only needed for int8 inference. For other
   // quantized types, only a single scale and zero point is needed.
@@ -382,7 +388,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     // TODO: Think about defines here for MLI 1.1 and MLI 2.0
     uint32_t* mli_weights_shape = data.mli_weights.Shape();
     //TODO: Probably here change according to the MLI version
-    const int kernel_height = static_cast<int>(mli_weights_shape[0]);
+    #ifdef MLI_2_0
+    const int kernel_height = static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HW1N]);
+    #else
+    const int kernel_height = static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HWC]);
+    #endif
     const int overlap = kernel_height - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
@@ -469,9 +479,11 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     int padding_bottom = cfg_local.padding_bottom;
 
     while (!w_slice.Done()) {
+#ifdef MLI_2_0
       w_ptr->el_params.sa.scale.mem.pi16 = NULL;
-      mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
       b_ptr->el_params.sa.scale.mem.pi16 = NULL;
+#endif
+      mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
       /* input tensor is already sliced in the  channel dimension.
