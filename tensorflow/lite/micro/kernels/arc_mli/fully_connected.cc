@@ -74,6 +74,9 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
   // symmetric per-tensor quantization of weights (not per-axis)
   bool ret_val = (filter->type == kTfLiteInt8) &&
                  (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
+#ifndef MLI_2_0
+                 (params->activation == kTfLiteActNone) &&
+#endif
                  (filter->params.zero_point == 0); //TODO: Do I need this check?
   return ret_val;
 }
@@ -163,9 +166,12 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    doesn't make any difference because all the inputs or a batch entry will
    be used anyway. because the MLI kernel doesn't recognize the multiple
    dimensions, the tensor shape is casted to a {batchnum, inputsize} shape. */
-    // TODO: Make pointers here
     data->mli_in.Shape()[0] = data->mli_out.Shape()[0];
+    #ifdef MLI_2_0
     data->mli_in.Shape()[1] = data->mli_weights.Shape()[0];
+    #else
+    data->mli_in.Shape()[1] = data->mli_weights.Shape()[1];
+    #endif
     data->mli_in.Shape()[2] = 0;
     data->mli_in.Shape()[3] = 0;
     *data->mli_in.Rank() = 2;
@@ -238,9 +244,15 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 
   const bool w_is_local = weights_local_interface.Data<int8_t>() ==
                           data.mli_weights.Data<int8_t>();
+
+#ifdef MLI_2_0
   ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
-                                   weight_out_dimension,
-                                   slice_size, 0, 0, 0, true);
+                                   weight_out_dimension, slice_size, 0, 0, 0,
+                                   true);
+#else
+  ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
+                                   weight_out_dimension, slice_size);
+#endif
   ops::micro::TensorSlicer b_slice(data.mli_bias.MliTensor(),
                                    bias_out_ch_dimension,
                                    slice_size);
