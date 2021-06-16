@@ -368,14 +368,14 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         static_cast<int>(data.mli_weights.Shape()[KRNL_H_DIM_HWC]);
     const int overlap = kernel_height - cfg_local.stride_height;
 
-    // for weight slicing (on output channels)
-    #ifdef MLI_2_0
+// for weight slicing (on output channels)
+#ifdef MLI_2_0
     // HWCN layout for weights, output channel dimension is the first dimension.
     const int weight_out_ch_dimension = 3;
-    #else
+#else
     // NHWC layout for weights, output channel dimension is the first dimension.
     const int weight_out_ch_dimension = 0;
-    #endif
+#endif
     // bias has only 1 dimension
     const int bias_out_ch_dimension = 0;
     int slice_channels =
@@ -473,7 +473,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
        * inside the loop easier. */
       mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
       mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
-
 
       while (!out_slice.Done()) {
         TF_LITE_ENSURE(context, !in_slice.Done());

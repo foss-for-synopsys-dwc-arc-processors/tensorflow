@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "mli_interface.h"  // NOLINT
-
 #include <math.h>
+
+#include "mli_interface.h"  // NOLINT
 
 namespace tflite {
 namespace ops {
@@ -83,9 +83,7 @@ uint32_t* MliTensorInterface::ZeroPointCapacity(void) {
   return &tensor_->el_params.sa.zero_point.capacity;
 }
 
-int32_t* MliTensorInterface::Dim(void) {
-  return &tensor_->el_params.sa.dim;
-}
+int32_t* MliTensorInterface::Dim(void) { return &tensor_->el_params.sa.dim; }
 
 uint32_t* MliTensorInterface::ScaleCapacity(void) {
   return &tensor_->el_params.sa.scale.capacity;
@@ -135,8 +133,9 @@ void MliTensorInterface::SetScalePerChannel(float* fscale,
   }
 
   for (int i = 0; i < num_channels; i++) {
-    int16_t iscale = (int16_t)(
-        (1ll << (*this->ScaleFracBits<int8_t**>())[i]) * fscale[i] + 0.5f);
+    int16_t iscale =
+        (int16_t)((1ll << (*this->ScaleFracBits<int8_t**>())[i]) * fscale[i] +
+                  0.5f);
     (*this->Scale<int16_t**>())[i] = iscale;
   }
 }
@@ -148,8 +147,7 @@ void MliTensorInterface::SetElType(TfLiteType type, uint32_t capacity) {
   } else if (type == kTfLiteInt32) {
     this->SetData<int32_t>(nullptr, capacity);
     *this->ElType() = MLI_EL_SA_32;
-  }
-  else {
+  } else {
     TF_LITE_FATAL("Wrong data type. Expected int8_t or int32_t.");
   }
 }

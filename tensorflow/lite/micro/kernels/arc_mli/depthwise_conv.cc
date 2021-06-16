@@ -387,12 +387,14 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     int out_slice_height = 0;
     // TODO: Think about defines here for MLI 1.1 and MLI 2.0
     uint32_t* mli_weights_shape = data.mli_weights.Shape();
-    //TODO: Probably here change according to the MLI version
-    #ifdef MLI_2_0
-    const int kernel_height = static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HW1N]);
-    #else
-    const int kernel_height = static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HWC]);
-    #endif
+// TODO: Probably here change according to the MLI version
+#ifdef MLI_2_0
+    const int kernel_height =
+        static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HW1N]);
+#else
+    const int kernel_height =
+        static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HWC]);
+#endif
     const int overlap = kernel_height - cfg_local.stride_height;
 
     // for weight slicing (on output channels)
@@ -424,7 +426,6 @@ TfLiteStatus EvalMliQuantizedPerChannel(
 
     mli_mov_cfg_t copy_config;
     mli_mov_cfg_for_copy(&copy_config);
-
 
     TF_LITE_ENSURE_STATUS(ops::micro::get_arc_scratch_buffer_for_conv_tensors(
         context, &in_local_interface, &weights_local_interface,

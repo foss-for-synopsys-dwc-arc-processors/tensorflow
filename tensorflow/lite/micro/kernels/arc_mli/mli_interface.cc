@@ -78,17 +78,11 @@ int16_t** MliTensorInterface::ZeroPoint(void) {
   return &tensor_->el_params.asym.zero_point.pi16;
 }
 
-uint32_t* MliTensorInterface::ZeroPointCapacity(void) {
-  return nullptr;
-}
+uint32_t* MliTensorInterface::ZeroPointCapacity(void) { return nullptr; }
 
-int32_t* MliTensorInterface::Dim(void) {
-  return &tensor_->el_params.asym.dim;
-}
+int32_t* MliTensorInterface::Dim(void) { return &tensor_->el_params.asym.dim; }
 
-uint32_t* MliTensorInterface::ScaleCapacity(void) {
-  return nullptr;
-}
+uint32_t* MliTensorInterface::ScaleCapacity(void) { return nullptr; }
 
 template <>
 int8_t** MliTensorInterface::ScaleFracBits(void) {
@@ -100,9 +94,7 @@ int8_t* MliTensorInterface::ScaleFracBits(void) {
   return &tensor_->el_params.asym.scale_frac_bits;
 }
 
-uint32_t* MliTensorInterface::ScaleFracBitsCapacity(void) {
-  return nullptr;
-}
+uint32_t* MliTensorInterface::ScaleFracBitsCapacity(void) { return nullptr; }
 
 int32_t* MliTensorInterface::MemStride(void) { return tensor_->mem_stride; }
 

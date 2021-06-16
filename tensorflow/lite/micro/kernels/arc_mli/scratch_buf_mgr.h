@@ -97,7 +97,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
  * @return Tf Lite status code
  */
 TfLiteStatus arc_scratch_buffer_calc_slice_size_io(
-//TODO: Look at naming - change to **_**
+    // TODO: Look at naming - change to **_**
     const MliTensorInterface* in, const MliTensorInterface* out,
     const int kernelHeight, const int strideHeight, const int padding_top,
     const int padding_bot, int* in_slice_height, int* out_slice_height);

@@ -56,9 +56,9 @@ struct OpData {
   mutable ops::micro::MliTensorInterface mli_weights;
   mutable ops::micro::MliTensorInterface mli_bias;
   mutable ops::micro::MliTensorInterface mli_out;
-  
+
 #ifdef MLI_2_0
-  mli_fully_connected_cfg *cfg;
+  mli_fully_connected_cfg* cfg;
 #endif
 };
 
@@ -72,12 +72,13 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
                      const TfLiteFullyConnectedParams* params) {
   // MLI optimized version only supports int8_t datatype and no fused Relu and
   // symmetric per-tensor quantization of weights (not per-axis)
-  bool ret_val = (filter->type == kTfLiteInt8) &&
-                 (input->type == kTfLiteInt8) && (bias->type == kTfLiteInt32) &&
+  bool ret_val =
+      (filter->type == kTfLiteInt8) && (input->type == kTfLiteInt8) &&
+      (bias->type == kTfLiteInt32) &&
 #ifndef MLI_2_0
-                 (params->activation == kTfLiteActNone) &&
+      (params->activation == kTfLiteActNone) &&
 #endif
-                 (filter->params.zero_point == 0); //TODO: Do I need this check?
+      (filter->params.zero_point == 0);  // TODO: Do I need this check?
   return ret_val;
 }
 
@@ -167,11 +168,11 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    be used anyway. because the MLI kernel doesn't recognize the multiple
    dimensions, the tensor shape is casted to a {batchnum, inputsize} shape. */
     data->mli_in.Shape()[0] = data->mli_out.Shape()[0];
-    #ifdef MLI_2_0
+#ifdef MLI_2_0
     data->mli_in.Shape()[1] = data->mli_weights.Shape()[0];
-    #else
+#else
     data->mli_in.Shape()[1] = data->mli_weights.Shape()[1];
-    #endif
+#endif
     data->mli_in.Shape()[2] = 0;
     data->mli_in.Shape()[3] = 0;
     *data->mli_in.Rank() = 2;
@@ -242,8 +243,8 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
   const bool b_is_local =
       bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
 
-  const bool w_is_local = weights_local_interface.Data<int8_t>() ==
-                          data.mli_weights.Data<int8_t>();
+  const bool w_is_local =
+      weights_local_interface.Data<int8_t>() == data.mli_weights.Data<int8_t>();
 
 #ifdef MLI_2_0
   ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
@@ -254,12 +255,10 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
                                    weight_out_dimension, slice_size);
 #endif
   ops::micro::TensorSlicer b_slice(data.mli_bias.MliTensor(),
-                                   bias_out_ch_dimension,
-                                   slice_size);
+                                   bias_out_ch_dimension, slice_size);
   ops::micro::TensorSlicer out_ch_slice(data.mli_out.MliTensor(),
-                                        out_tensor_dimension,
-                                        slice_size, 0, 0, 0, true);
-
+                                        out_tensor_dimension, slice_size, 0, 0,
+                                        0, true);
 
   mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
   mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
@@ -268,8 +267,8 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 
   while (!w_slice.Done()) {
 #ifdef MLI_2_0
-      w_ptr->el_params.sa.scale.mem.pi16 = NULL;
-      b_ptr->el_params.sa.scale.mem.pi16 = NULL;
+    w_ptr->el_params.sa.scale.mem.pi16 = NULL;
+    b_ptr->el_params.sa.scale.mem.pi16 = NULL;
 #endif
     mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
     mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
@@ -291,7 +290,6 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
      * inside the loop easier. */
     mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
     mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
-
 
     while (!out_slice.Done()) {
       // if same input copy as previous iteration, skip the copy of input
