@@ -13,6 +13,7 @@ TensorFlow Lite Micro for targets based on the Synopsys ARC EM/HS Processors.
 ## Table of Contents
 
 -   [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
+-   [Model adaptation](#Model-adaptation)
 -   [VPX Processor target](#VPX-Processor-target)
 -   [Custom ARC EM/HS/VPX Platform](#Custom-ARC-EMHSVPX-Platform)
 
@@ -46,6 +47,16 @@ external use
 Please consider the above when choosing whether to install Windows or Linux or
 both versions of MWDT
 
+## Model adaptation
+
+Models in TFLM format need to be pre-adapted before being used with MLI due to differences in weight tensor shapes in some kernels. Adaptation is done automatically during TFLM project generation, but requires TensorFlow to be installed.
+
+If you want to use your own model, exported from TensorFlow in **.tflite** or **.cc** format you will need to adapt it manually using adaptation tool from the current folder, using the following command:
+
+```
+python adaptation_tool.py <path_to_input_model_file> <path_to_adapted_model_file>
+```
+
 ## VPX Processor target
 
 
@@ -78,6 +89,10 @@ command dependencies, so Windows can be used
 
 A [CMake](https://cmake.org/ "CMake Tool Homepage") tool version >= 3.18 is required for the
 [embARC MLI Library](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli) build.
+
+#### TensorFlow for Python
+
+The package is required for [model adaptation](#model-adaptation). See [Install TensorFlow](https://github.com/tensorflow/tensorflow#install) for instructions.
 
 ### Generate Application Project for ARC VPX
 
@@ -335,11 +350,12 @@ MetaWare toolkit
 
 ### Initial Setup
 
-To with custom ARC EM/HS platform, you need the following : 
+To use a custom ARC EM/HS/VPX platform, you need the following : 
 * Synopsys MetaWare
 Development Toolkit version 2021.03 or higher 
 * Make tool (make or gmake)
 * CMake 3.18 or higher
+* TensorFlow for Python
 
 See
 [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
