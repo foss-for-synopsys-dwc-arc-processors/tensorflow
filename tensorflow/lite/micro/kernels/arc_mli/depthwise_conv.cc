@@ -385,9 +385,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const int height_dimension = 1;
     int in_slice_height = 0;
     int out_slice_height = 0;
-    // TODO: Think about defines here for MLI 1.1 and MLI 2.0
     uint32_t* mli_weights_shape = data.mli_weights.Shape();
-// TODO: Probably here change according to the MLI version
 #ifdef MLI_2_0
     const int kernel_height =
         static_cast<int>(mli_weights_shape[KRNL_DW_H_DIM_HW1N]);

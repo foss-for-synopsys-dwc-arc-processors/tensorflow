@@ -78,7 +78,7 @@ bool IsMliApplicable(TfLiteContext* context, const TfLiteTensor* input,
 #ifndef MLI_2_0
       (params->activation == kTfLiteActNone) &&
 #endif
-      (filter->params.zero_point == 0);  // TODO: Do I need this check?
+      (filter->params.zero_point == 0);
   return ret_val;
 }
 
