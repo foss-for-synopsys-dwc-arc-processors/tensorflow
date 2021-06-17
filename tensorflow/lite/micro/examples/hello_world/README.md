@@ -16,7 +16,7 @@ of the device.
 
 ## Table of contents
 
--   [Run on nSIM ARC VPX](#run-on-nsim-arc-vpx) <!-- -   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp) -->
+-   [Deploy to ARC EM SDP](#deploy-to-arc-em-sdp)
 -   [Deploy to Arduino](#deploy-to-arduino)
 -   [Deploy to ESP32](#deploy-to-esp32)
 -   [Deploy to Himax WE1 EVB](#deploy-to-himax-we1-evb)
@@ -25,58 +25,7 @@ of the device.
 -   [Run the tests on a development machine](#run-the-tests-on-a-development-machine)
 -   [Train your own model](#train-your-own-model)
 
-## Run on ARC VPX Processor using NSIM Simulator
-
-General information and instructions on using VPX with TensorFlow
-Lite Micro can be found in the common
-[ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
-
-### Initial Setup
-
-Follow the instructions on the
-[ARC VPX Initial Setup](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target) page
-to get and install all required tools for work with ARC VPX on nSIM.
-
-### Generate Example Project
-
-The example project for ARC VPX platform can be generated with the following
-command:
-
-```
-make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_vpx generate_hello_world_make_project
-```
-
-### Build and Run Example
-
-For more detailed information on building and running examples see the
-appropriate sections of general descriptions of the
-[ARC VPX usage with TFLM](/tensorflow/lite/micro/tools/make/targets/arc/README.md#VPX5-target).
-In the directory with generated project you can also find a
-*README_ARC_EMSDP.md* file with instructions and options on building and
-running. Here we only briefly mention main steps which are typically enough to
-get started.
-
-1.  Go to the generated example project directory.
-
-    ```
-    cd tensorflow/lite/micro/tools/make/gen/arc_vpx_arc_default/prj/hello_world/make
-    ```
-
-2.  Build the example using
-
-    ```
-    make app
-    ```
-
-3.  To run application from the MetaWare Debugger installed in your environment:
-
-    *   To run application from the console using it type `make run`.
-    *   To stop the execution type `Ctrl+C` in the console several times.
-
-In both cases (step 5 and 6) you will see the application output in the serial
-terminal.
-
-<!-- ## Deploy to ARC EM SDP
+## Deploy to ARC EM SDP
 
 The following instructions will help you to build and deploy this example to
 [ARC EM SDP](https://www.synopsys.com/dw/ipdir.php?ds=arc-em-software-development-platform)
@@ -96,7 +45,17 @@ The example project for ARC EM SDP platform can be generated with the following
 command:
 
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_emsdp generate_hello_world_make_project
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_emsdp \
+generate_hello_world_make_project
+```
+To build using [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA) (please check [target README](/tensorflow/lite/micro/tools/make/targets/arc/README.md) for more information):
+```
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_emsdp \
+ARC_TAGS=mli20_experimental \
+BUILD_LIB_DIR=<path_to_buildlib> \
+generate_hello_world_make_project
 ```
 
 ### Build and Run Example
@@ -151,7 +110,7 @@ get it started.
     *   To stop the execution type `Ctrl+C` in the console several times.
 
 In both cases (step 5 and 6) you will see the application output in the serial
-terminal. -->
+terminal.
 
 ## Deploy to Arduino
 
