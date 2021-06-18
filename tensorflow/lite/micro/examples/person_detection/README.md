@@ -56,15 +56,6 @@ TARGET=arc_emsdp ARC_TAGS=reduce_codesize \
 OPTIMIZED_KERNEL_DIR=arc_mli \
 generate_person_detection_int8_make_project
 ```
-To build using [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA) (please check [target README](/tensorflow/lite/micro/tools/make/targets/arc/README.md) for more information):
-```
-make -f tensorflow/lite/micro/tools/make/Makefile \
-TARGET=arc_emsdp ARC_TAGS=reduce_codesize \
-OPTIMIZED_KERNEL_DIR=arc_mli \
-ARC_TAGS=mli20_experimental \
-BUILD_LIB_DIR=<path_to_buildlib> \
-generate_person_detection_int8_make_project
-```
 
 Note that `ARC_TAGS=reduce_codesize` applies example specific changes of code to
 reduce total size of application. It can be omitted.
@@ -86,7 +77,7 @@ get it started.
 2.  Go to the generated example project directory.
 
     ```
-    cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/person_detection_int8/make
+    cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc_default/prj/person_detection_int8/make
     ```
 
 3.  Build the example using

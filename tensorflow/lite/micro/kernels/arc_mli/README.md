@@ -4,6 +4,7 @@
 
 *   [dzakhar](https://github.com/dzakhar)
 *   [JaccovG](https://github.com/JaccovG)
+*   [gerbauz](https://github.com/gerbauz)
 
 ## Introduction
 
@@ -39,9 +40,27 @@ and compiled during project generation phase. To build library from sources for
 ARC EM SDP platform, add `BUILD_ARC_MLI=true` option to make command:
 
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_vpx OPTIMIZED_KERNEL_DIR=arc_mli BUILD_ARC_MLI=true generate_person_detection_int8_make_project
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_vpx \
+OPTIMIZED_KERNEL_DIR=arc_mli \
+BUILD_ARC_MLI=true \
+generate_person_detection_int8_make_project
 ```
+---
+### Optional (experimental features):
 
+TFLM can be built using [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA) as an experimental feature.
+To build TFLM using the embARC MLI Library 2.0, add the following tag to the command:
+```
+ARC_TAGS=mli20_experimental
+```
+In this case, generated projectes will be in <tcf_file_basename>_mli20_arc_default folder.
+
+Some of configurations may require custom BUILD_LIB. Please, check MLI Library 2.0 [documentation](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA#build-configuration-options) for more details. Following option can be added:
+```
+BUILD_LIB_DIR=<path_to_buildlib>
+```
+---
 If an application exclusively uses accelerated MLI kernel implementations, one
 can strip out TFLM reference kernel implementations to reduce code size of
 application. Build application with `MLI_ONLY=true` option in generated project

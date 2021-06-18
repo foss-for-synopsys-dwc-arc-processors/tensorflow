@@ -47,14 +47,7 @@ command:
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile \
 TARGET=arc_emsdp \
-generate_hello_world_make_project
-```
-To build using [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA) (please check [target README](/tensorflow/lite/micro/tools/make/targets/arc/README.md) for more information):
-```
-make -f tensorflow/lite/micro/tools/make/Makefile \
-TARGET=arc_emsdp \
-ARC_TAGS=mli20_experimental \
-BUILD_LIB_DIR=<path_to_buildlib> \
+OPTIMIZED_KERNEL_DIR=arc_mli \
 generate_hello_world_make_project
 ```
 
@@ -75,7 +68,7 @@ get it started.
 2.  Go to the generated example project directory.
 
     ```
-    cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc/prj/hello_world/make
+    cd tensorflow/lite/micro/tools/make/gen/arc_emsdp_arc_default/prj/hello_world/make
     ```
 
 3.  Build the example using

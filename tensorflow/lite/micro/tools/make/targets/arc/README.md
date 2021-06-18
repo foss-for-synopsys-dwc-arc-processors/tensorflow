@@ -15,8 +15,8 @@ TensorFlow Lite Micro for targets based on the Synopsys ARC VPX and EM/HS Proces
 
 -   [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
 -   [ARC EM Software Development Platform (ARC EM SDP)](#ARC-EM-Software-Development-Platform-ARC-EM-SDP)
--   [Using MLI Library 2.0 (experimental feature)](#Using-MLI-Library-2.0-(experimental-feature))
--   [Model Adaptation Tool (experimental feature)](#Model-Adaptation-Tool-(experimental-feature))
+-   [Using EmbARC MLI Library 2.0 (experimental feature)](#Using-EmbARC-MLI-Library-2.0-experimental-feature)
+-   [Model Adaptation Tool (experimental feature)](#Model-Adaptation-Tool-experimental-feature)
 -   [Custom ARC EM/HS/VPX Platform](#Custom-ARC-EMHSVPX-Platform)
 
 ## Install the Synopsys DesignWare ARC MetaWare Development Toolkit
@@ -245,27 +245,31 @@ You will see the application output in the same console where you ran it.
 
 You will see the application output in the serial terminal.
 
-## Using MLI Library 2.0 (experimental feature)
+## Using EmbARC MLI Library 2.0 (experimental feature)
 
 This section describes how to build TFLM using [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA). 
 
-EmbARC MLI Library 2.0 can be used to build TFLM library and run applications (especially for VPX processors). Because of difference in weights layout (NHWC for MLI 1.1 and HWCN for MLI 2.0), TFLM models must be permuted using Adaptation Tool. For examples inside TFLM (person detection, micro speech) Adaptation Tool is applied automatically when MLI 2.0 is used, so there is no need to run it maually. For all other cases, please check [Adaptation Tool](#Model-Adaptation-Tool-(experimental-feature)) section.
+EmbARC MLI Library 2.0 can be used to build TFLM library and run applications (especially for VPX processors). Because of difference in weights layout (NHWC for MLI 1.1 and HWCN for MLI 2.0), TFLM models must be pre-adapted using Model Adaptation Tool. For examples inside TFLM (person detection, micro speech) Adaptation Tool is applied automatically when MLI 2.0 is used, so there is no need to run it maually. For all other cases, please check [Model Adaptation Tool](#Model-Adaptation-Tool-(experimental-feature)) section.
 
 To use the embARC MLI Library 2.0, you need following tools in addtition to common requirments:
 * Python 3.9 or higher
 * TensorFlow for Python version 2.5 or higher
 
-To build TFLM using the embARC MLI Library 2.0, following tag have to be added to the command:
+To build TFLM using the embARC MLI Library 2.0, add the following tag to the command:
 ```
 ARC_TAGS=mli20_experimental
 ```
-Also, some of configurations may require custom BUILD_LIB. Please, check MLI Library 2.0 [documentation](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA#build-configuration-options) for more details. For this, following option can be used:
+Also, some of configurations may require custom BUILD_LIB. Please, check MLI Library 2.0 [documentation](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA#build-configuration-options) for more details. Following option can be added:
 ```
 BUILD_LIB_DIR=<path_to_buildlib>
 ```
 Example of command to build TFLM lib for VPX5:
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile TARGET=arc_custom TCF=<path_to_tcf_file> BUILD_LIB_DIR=vpx5_integer_full ARC_TAGS=mli20_experimental microlite
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_custom \
+TCF=<path_to_tcf_file> \
+BUILD_LIB_DIR=vpx5_integer_full \
+ARC_TAGS=mli20_experimental microlite
 ```
 ## Model Adaptation Tool (experimental feature)
 
@@ -274,7 +278,7 @@ Models in TFLM format need to be pre-adapted before being used with MLI due to d
 If you want to use your own model, exported from TensorFlow in **.tflite** or **.cc** format, you will need to adapt it manually using adaptation tool from the current folder, using the following command:
 
 ```
-python adaptation_tool.py <path_to_input_model_file> <path_to_adapted_model_file>
+python adaptation_tool.py <path_to_input_model_file> \ <path_to_adapted_model_file>
 ```
 
 ## Custom ARC EM/HS/VPX Platform
@@ -316,22 +320,22 @@ For instance, to build **Person Detection** test application, use the following
 command from the root directory of the TensorFlow repo:
 
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile
-TARGET=arc_custom
-OPTIMIZED_KERNEL_DIR=arc_mli
-TCF_FILE=<path_to_tcf_file>
-LCF_FILE=<path_to_lcf_file>
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_custom \
+OPTIMIZED_KERNEL_DIR=arc_mli \
+TCF_FILE=<path_to_tcf_file> \
+LCF_FILE=<path_to_lcf_file> \
 generate_person_detection_int8_make_project
 ```
 For MLI Library 2.0 (experimental feature):
 ```
-make -f tensorflow/lite/micro/tools/make/Makefile 
-TARGET=arc_custom
-OPTIMIZED_KERNEL_DIR=arc_mli
-ARC_TAGS=mli20_experimental
-BUILD_LIB_DIR=<path_to_buildlib>
-TCF_FILE=<path_to_tcf_file>
-LCF_FILE=<path_to_lcf_file>
+make -f tensorflow/lite/micro/tools/make/Makefile \
+TARGET=arc_custom \
+OPTIMIZED_KERNEL_DIR=arc_mli \
+ARC_TAGS=mli20_experimental \
+BUILD_LIB_DIR=<path_to_buildlib> \
+TCF_FILE=<path_to_tcf_file> \
+LCF_FILE=<path_to_lcf_file> \
 generate_person_detection_int8_make_project
 ```
 
