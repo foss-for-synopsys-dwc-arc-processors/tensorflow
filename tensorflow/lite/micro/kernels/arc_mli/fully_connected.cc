@@ -168,7 +168,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    be used anyway. because the MLI kernel doesn't recognize the multiple
    dimensions, the tensor shape is casted to a {batchnum, inputsize} shape. */
     data->mli_in.Shape()[0] = data->mli_out.Shape()[0];
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
     data->mli_in.Shape()[1] = data->mli_weights.Shape()[0];
 #else
     data->mli_in.Shape()[1] = data->mli_weights.Shape()[1];
@@ -208,7 +208,7 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
 
   mli_mov_cfg_t copy_config;
   mli_mov_cfg_for_copy(&copy_config);
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
   const int weight_out_dimension = 1;
 #else
   const int weight_out_dimension = 0;
@@ -242,11 +242,12 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
       out_local_interface.Data<int8_t>() == data.mli_out.Data<int8_t>();
   const bool b_is_local =
       bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
-
+#ifndef MLI_2_0_KRNL_TEST
   const bool w_is_local =
       weights_local_interface.Data<int8_t>() == data.mli_weights.Data<int8_t>();
+#endif
 
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
   ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
                                    weight_out_dimension, slice_size, 0, 0, 0,
                                    true);
@@ -260,18 +261,25 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
                                         out_tensor_dimension, slice_size, 0, 0,
                                         0, true);
 
+#ifdef MLI_2_0_KRNL_TEST
+    mli_tensor* w_ptr = &weights_local;
+#else
   mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
+#endif
   mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
   void* input_buffer_ptr = NULL;
 
   while (!w_slice.Done()) {
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
     w_ptr->el_params.sa.scale.mem.pi16 = NULL;
     b_ptr->el_params.sa.scale.mem.pi16 = NULL;
 #endif
-    mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
-    mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
+
+#ifndef MLI_2_0_KRNL_TEST
+      mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+#endif
+      mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
     // Slice the input over the batches (one at a time with the size of a
     // complete input)
@@ -290,6 +298,20 @@ TfLiteStatus EvalMliQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
      * inside the loop easier. */
     mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
     mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
+
+#ifdef MLI_2_0_KRNL_TEST
+    /* Permute weights tensor to the HWCN layout */
+    // Assertion here to prevent usage non-contiguous buffer memory.
+    if (data.mli_out.Shape()[out_tensor_dimension] !=
+        out_slice.Sub()->shape[0]) {
+      TF_LITE_KERNEL_LOG(
+          context, "Slicing is not supported with real-time permutation.");
+      return kTfLiteError;
+    }
+    mli_permute_cfg permute_cfg = {{1, 0, 2, 3}};
+    ops::micro::permute_weights(data.mli_weights.MliTensor(), &permute_cfg,
+                                w_ptr, &out_ptr->data);
+#endif
 
     while (!out_slice.Done()) {
       // if same input copy as previous iteration, skip the copy of input

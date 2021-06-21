@@ -130,7 +130,7 @@ inline void ConvertToMliTensorPerChannel(const TfLiteTensor* tfT,
   ConvertToMliQuantParamsPerChannel(tfT, mliT, is_bias_tensor);
 }
 
-#ifdef MLI_2_0
+#ifdef MLI_2_0_KRNL_TEST
 // Reorder an array according to given indexes. If backward is true, order of
 // index array must be reversed.
 inline static void reorder(uint32_t* arr, const uint8_t index[],

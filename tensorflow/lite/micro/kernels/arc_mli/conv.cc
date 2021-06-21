@@ -40,7 +40,7 @@ constexpr int kOutputTensor = 0;
 
 // Conv is quantized along dimension 0:
 // https://www.tensorflow.org/lite/performance/quantization_spec
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
 constexpr int kConvQuantizedDimension = 3;
 #else
 constexpr int kConvQuantizedDimension = 0;
@@ -171,7 +171,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
   int input_width = input->dims->data[2];
   int input_height = input->dims->data[1];
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
   int filter_width = filter->dims->data[1];
   int filter_height = filter->dims->data[0];
 #else
@@ -369,7 +369,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     const int overlap = kernel_height - cfg_local.stride_height;
 
 // for weight slicing (on output channels)
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
     // HWCN layout for weights, output channel dimension is the first dimension.
     const int weight_out_ch_dimension = 3;
 #else
@@ -420,10 +420,12 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         out_local_interface.Data<int8_t>() == data.mli_out.Data<int8_t>();
     const bool b_is_local =
         bias_local_interface.Data<int32_t>() == data.mli_bias.Data<int32_t>();
+#ifndef MLI_2_0_KRNL_TEST
     const bool w_is_local = weights_local_interface.Data<int8_t>() ==
                             data.mli_weights.Data<int8_t>();
+#endif
 
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
     ops::micro::TensorSlicer w_slice(data.mli_weights.MliTensor(),
                                      weight_out_ch_dimension, slice_channels, 0,
                                      0, 0, true);
@@ -437,18 +439,25 @@ TfLiteStatus EvalMliQuantizedPerChannel(
                                           out_tensor_ch_dimension,
                                           slice_channels, 0, 0, 0, true);
 
+#ifdef MLI_2_0_KRNL_TEST
+    mli_tensor* w_ptr = &weights_local;
+#else
     mli_tensor* w_ptr = w_is_local ? w_slice.Sub() : &weights_local;
+#endif
     mli_tensor* b_ptr = b_is_local ? b_slice.Sub() : &bias_local;
 
     void* input_buffer_ptr = NULL;
     uint32_t input_buffer_size = 0;
 
     while (!w_slice.Done()) {
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
       w_ptr->el_params.sa.scale.mem.pi16 = NULL;
       b_ptr->el_params.sa.scale.mem.pi16 = NULL;
 #endif
+
+#ifndef MLI_2_0_KRNL_TEST
       mli_mov_tensor_sync(w_slice.Sub(), &copy_config, w_ptr);
+#endif
       mli_mov_tensor_sync(b_slice.Sub(), &copy_config, b_ptr);
 
       /* mli_in tensor contains batches of HWC tensors. so it is a 4 dimensional
@@ -473,6 +482,22 @@ TfLiteStatus EvalMliQuantizedPerChannel(
        * inside the loop easier. */
       mli_tensor* in_ptr = in_is_local ? in_slice.Sub() : &in_local;
       mli_tensor* out_ptr = out_is_local ? out_slice.Sub() : &out_local;
+
+#ifdef MLI_2_0_KRNL_TEST
+      /* Permute weights tensor to the HWCN layout */
+      // Checking conditions here to prevent usage non-contiguous buffer memory.
+      if (data.mli_out.Shape()[out_tensor_ch_dimension] !=
+              out_slice.Sub()->shape[FMAP_C_DIM_HWC] ||
+          data.mli_out.Shape()[height_dimension] !=
+              out_slice.Sub()->shape[FMAP_H_DIM_HWC]) {
+        TF_LITE_KERNEL_LOG(
+            context, "Slicing is not supported with real-time permutation.");
+        return kTfLiteError;
+      }
+      mli_permute_cfg permute_cfg = {{1, 2, 3, 0}};
+      ops::micro::permute_weights(data.mli_weights.MliTensor(), &permute_cfg,
+                                  w_ptr, &out_ptr->data);
+#endif
 
       while (!out_slice.Done()) {
         TF_LITE_ENSURE(context, !in_slice.Done());

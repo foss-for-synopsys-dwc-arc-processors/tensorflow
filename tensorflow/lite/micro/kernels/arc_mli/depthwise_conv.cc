@@ -182,7 +182,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   int width = SizeOfDimension(input, 2);
   int height = SizeOfDimension(input, 1);
 
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
   int filter_width = SizeOfDimension(filter, 1);
   int filter_height = SizeOfDimension(filter, 0);
 #else
@@ -478,7 +478,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
     int padding_bottom = cfg_local.padding_bottom;
 
     while (!w_slice.Done()) {
-#ifdef MLI_2_0
+#if defined(MLI_2_0) && !defined(MLI_2_0_KRNL_TEST)
       w_ptr->el_params.sa.scale.mem.pi16 = NULL;
       b_ptr->el_params.sa.scale.mem.pi16 = NULL;
 #endif
@@ -525,6 +525,17 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_ptr = in_slice.Sub()->data.mem.pi8;
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
+
+        // Checking conditions here to prevent usage non-contiguous buffer
+        // memory.
+        if (mli_weights_shape[weight_out_ch_dimension] !=
+            w_slice.Sub()->shape[3]) {
+          TF_LITE_KERNEL_LOG(
+              context, "Slicing is not supported with real-time permutation.");
+          return kTfLiteError;
+        }
+        uint8_t dim_order[] = {1, 2, 0, 3};
+        ops::micro::change_shape(w_ptr, dim_order);
 
         data.p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
                                                           &cfg_local, out_ptr);
