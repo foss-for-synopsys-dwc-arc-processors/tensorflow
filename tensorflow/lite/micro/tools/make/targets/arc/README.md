@@ -249,11 +249,13 @@ You will see the application output in the serial terminal.
 
 This section describes how to build TFLM using [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA). 
 
-EmbARC MLI Library 2.0 can be used to build TFLM library and run applications (especially for VPX processors). Because of difference in weights layout (NHWC for MLI 1.1 and HWCN for MLI 2.0), TFLM models must be pre-adapted using Model Adaptation Tool. For examples inside TFLM (person detection, micro speech) Adaptation Tool is applied automatically when MLI 2.0 is used, so there is no need to run it maually. For all other cases, please check [Model Adaptation Tool](#Model-Adaptation-Tool-(experimental-feature)) section.
+The EmbARC MLI Library 2.0 can be used to build TFLM library and run applications (especially for VPX processors).
 
-To use the embARC MLI Library 2.0, you need following tools in addtition to common requirments:
-* Python 3.9 or higher
-* TensorFlow for Python version 2.5 or higher
+Because of difference in weights layout, TFLM models must be pre-adapted using Model Adaptation Tool. For native TFLM examples (person detection, micro speech) Adaptation Tool is applied automatically when MLI 2.0 is used, so there is no need to run it maually.
+
+For all other cases, please check [Model Adaptation Tool](#Model-Adaptation-Tool-experimental-feature) section.
+
+To use the embARC MLI Library 2.0, you will also need to use Model Adaptation Tool for model convertion. It has extra dependencies, please have a look at the [Model Adaptation Tool](#Model-Adaptation-Tool-experimental-feature) section.
 
 To build TFLM using the embARC MLI Library 2.0, add the following tag to the command:
 ```
@@ -273,19 +275,24 @@ ARC_TAGS=mli20_experimental microlite
 ```
 ## Model Adaptation Tool (experimental feature)
 
-Models in TFLM format need to be pre-adapted before being used with MLI due to differences in weight tensor shapes in some kernels. Adaptation is done automatically during TFLM project generation, but requires TensorFlow to be installed.
+Models in TFLM format need to be pre-adapted before being used with MLI 2.0 due to differences in weight's tensor layout in some kernels. Adaptation is done automatically during TFLM project generation, but requires TensorFlow to be installed.
+
+To use the Model Adaptation Tool, you need following tools in addtition to common requirments:
+* [Python](https://www.python.org/downloads/) 3.7 or higher
+* [TensorFlow for Python](https://www.tensorflow.org/install/pip) version 2.5 or higher
 
 If you want to use your own model, exported from TensorFlow in **.tflite** or **.cc** format, you will need to adapt it manually using adaptation tool from the current folder, using the following command:
 
 ```
-python adaptation_tool.py <path_to_input_model_file> \ <path_to_adapted_model_file>
+python adaptation_tool.py <path_to_input_model_file> \
+<path_to_adapted_model_file>
 ```
 
 ## Custom ARC EM/HS/VPX Platform
 
 This section describes how to deploy on a Custom ARC VPX or EM/HS platform defined only by a TCF (Tool onfiguration File, created at CPU configuration time) and optional LCF (Linker Command File). In this case, the real hardware is unknown, and applications can be run only in the nSIM simulator included with the MetaWare toolkit.
 
-VPX support is presented as an experimental feature of supporting MLI Library version 2.0 and model adaptation.
+VPX support is presented as an experimental feature of supporting embARC MLI Library version 2.0 and model adaptation. Read more about embARC MLI Library 2.0 support in the [related section](#Using-EmbARC-MLI-Library-2.0-experimental-feature).
 
 ### Initial Setup
 
@@ -294,7 +301,7 @@ To use a custom ARC EM/HS/VPX platform, you need the following :
 Development Toolkit version 2019.12 or higher (2021.06 or higher for MLI Library 2.0) 
 * Make tool (make or gmake)
 * CMake 3.18 or higher\
-Optional (for MLI Library 2.0):
+Optional (for [Model Adaptation Tool](#Model-Adaptation-Tool-experimental-feature)):
 * Python 3.9 or higher
 * TensorFlow for Python version 2.5 or higher 
 
@@ -304,6 +311,7 @@ section for instructions on toolchain installation. See
 [MetaWare Development Toolkit](#MetaWare-Development-Toolkit) and
 [Make Tool](#Make-Tool) sections for instructions on toolchain installation and
 comments about make versions.
+
 
 ### Generate Application Project
 

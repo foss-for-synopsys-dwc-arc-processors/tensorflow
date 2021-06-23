@@ -41,7 +41,7 @@ ARC EM SDP platform, add `BUILD_ARC_MLI=true` option to make command:
 
 ```
 make -f tensorflow/lite/micro/tools/make/Makefile \
-TARGET=arc_vpx \
+TARGET=arc_emsdp \
 OPTIMIZED_KERNEL_DIR=arc_mli \
 BUILD_ARC_MLI=true \
 generate_person_detection_int8_make_project
@@ -56,7 +56,7 @@ ARC_TAGS=mli20_experimental
 ```
 In this case, generated projectes will be in <tcf_file_basename>_mli20_arc_default folder.
 
-Some of configurations may require custom BUILD_LIB. Please, check MLI Library 2.0 [documentation](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA#build-configuration-options) for more details. Following option can be added:
+Some of configurations may require a custom run-time library specified using the BUILD_LIB_DIR option. Please, check MLI Library 2.0 [documentation](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA#build-configuration-options) for more details. The following option can be added:
 ```
 BUILD_LIB_DIR=<path_to_buildlib>
 ```
