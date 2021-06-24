@@ -42,6 +42,11 @@ ifneq ($(filter $(ARC_TAGS), mli20_experimental),)
   CXXFLAGS += -DMLI_2_0
   CCFLAGS += -DMLI_2_0
 
+# If kernel tests running - using define to activate online permutation.
+ifneq ($(findstring kernel, $(MAKECMDGOALS)),)
+  PLATFORM_FLAGS += -DMLI_2_0_KRNL_TEST
+endif
+
 ifneq ($(BUILD_LIB_DIR), )
   LDFLAGS += -Hlib=$(BUILD_LIB_DIR)
 else

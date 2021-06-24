@@ -526,6 +526,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
 
+#ifdef MLI_2_0_KRNL_TEST
         // Checking conditions here to prevent usage non-contiguous buffer
         // memory.
         if (mli_weights_shape[weight_out_ch_dimension] !=
@@ -536,6 +537,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         }
         uint8_t dim_order[] = {1, 2, 0, 3};
         ops::micro::change_shape(w_ptr, dim_order);
+#endif
 
         data.p_mli_krn_depthwise_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr,
                                                           &cfg_local, out_ptr);

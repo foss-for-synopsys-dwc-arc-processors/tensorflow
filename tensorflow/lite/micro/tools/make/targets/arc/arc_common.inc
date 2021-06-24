@@ -111,10 +111,6 @@ endif
   # Use compact CRT. It requires pre-defined heap size
   PLATFORM_FLAGS += -Hcl -Hcrt_fast_memcpy -Hcrt_fast_memset 
 
-ifneq ($(findstring kernel, $(MAKECMDGOALS)),)
-  PLATFORM_FLAGS += -DMLI_2_0_KRNL_TEST
-endif
-
   PLATFORM_LDFLAGS = -tcf=$(TCF_FILE_NAME) 
   
   PLATFORM_LDFLAGS += -Hnocopyr -m -Hldopt=-Coutput=memory.map -Hheap=24K 

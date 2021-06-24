@@ -32,10 +32,12 @@ inline void ConvertToMliTensorData(const TfLiteTensor* tfT,
                                    MliTensorInterface* mliT,
                                    bool is_bias_tensor) {
   // Data is NULL until MliTensorAttachBuffer is called.
-  mliT->SetElType(tfT->type, tfT->bytes);
-
+  mliT->SetElType(tfT->type);
+  if (tfT->type == kTfLiteInt8)
+    mliT->SetData<int8_t>(nullptr, tfT->bytes);
+  else if (tfT->type == kTfLiteInt32)
+    mliT->SetData<int32_t>(nullptr, tfT->bytes);
   const int32_t dims_count = GetTensorShape(tfT).DimensionsCount();
-  // *mliT->DataCapacity() = tfT->bytes;
   *mliT->Rank() = is_bias_tensor ? 1 : dims_count;
 
   if (is_bias_tensor) {

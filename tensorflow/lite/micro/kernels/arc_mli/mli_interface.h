@@ -37,14 +37,8 @@ class MliTensorInterface {
   MliTensorInterface() = default;
   ~MliTensorInterface() = default;
 
-#ifdef MLI_2_0
   template <typename T>
   T* Data();
-#else  // MLI_1_1
-  template <typename T>
-  void* Data();
-#endif
-  // Common data types
   template <typename T>
   T Scale();
   template <typename T>
@@ -68,7 +62,7 @@ class MliTensorInterface {
   void SetData(T* data, uint32_t capacity) const;
   void SetScale(float fscale);
   void SetScalePerChannel(float* fscale, const int num_channels);
-  void SetElType(TfLiteType type, uint32_t capacity);
+  void SetElType(TfLiteType type);
 
  private:
   mli_tensor* tensor_;
