@@ -300,8 +300,8 @@ Development Toolkit version 2019.12 or higher (2021.06 or higher for MLI Library
 * Make tool (make or gmake)
 * CMake 3.18 or higher\
 If you are using the [Model Adaptation Tool](#Model-Adaptation-Tool-experimental-feature), you will also need to install:
-* Python 3.9 or higher
-* TensorFlow for Python version 2.5 or higher 
+* [Python](https://www.python.org/downloads/) 3.7 or higher
+* [TensorFlow for Python](https://www.tensorflow.org/install/pip) version 2.5 or higher
 
 See
 [Install the Synopsys DesignWare ARC MetaWare Development Toolkit](#install-the-synopsys-designware-arc-metaWare-development-toolkit)
