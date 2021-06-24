@@ -65,7 +65,7 @@ reduce total size of application. It can be omitted.
 
 For more detailed information on building and running examples see the
 appropriate sections of general descriptions of the
-[ARC EM SDP usage with TFLM](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-EM-Software-Development-Platform-ARC-EM-SDP).
+[ARC EM SDP usage with TensorFlow Lite Micro (TFLM)](/tensorflow/lite/micro/tools/make/targets/arc/README.md#ARC-EM-Software-Development-Platform-ARC-EM-SDP).
 In the directory with generated project you can also find a
 *README_ARC_EMSDP.md* file with instructions and options on building and
 running. Here we only briefly mention main steps which are typically enough to
@@ -117,13 +117,11 @@ terminal.
 
 ### **Deploy on ARC VPX processor**
 
-The [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA) support (as experimental feature) allows to run TFLM library and examples on ARC VPX platform.
-General information and instructions on using embARC MLI Library 2.0 with TensorFlow Lite Micro can be found in the common [ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
+The [embARC MLI Library 2.0](https://github.com/foss-for-synopsys-dwc-arc-processors/embarc_mli/tree/Release_2.0_EA) enables TFLM library and examples to be used with the ARC VPX processor. This is currently an experimental feature. General information and instructions on using embARC MLI Library 2.0 with TFLM can be found in the common [ARC targets description](/tensorflow/lite/micro/tools/make/targets/arc/README.md).
 
 ### Initial Setup
 
-Follow the instructions on the
-[Custom ARC EM/HS/VPX Platform](/tensorflow/lite/micro/tools/make/targets/arc/README.md#Custom-ARC-EMHSVPX-Platform) section to get and install all required tools for work with ARC VPX Processor.
+Follow the instructions in the [Custom ARC EM/HS/VPX Platform](/tensorflow/lite/micro/tools/make/targets/arc/README.md#Custom-ARC-EMHSVPX-Platform) section to get and install all the required tools for working with the ARC VPX Processor.
 
 ### Generate Example Project
 
@@ -141,7 +139,7 @@ OPTIMIZED_KERNEL_DIR=arc_mli \
 generate_person_detection_int8_make_project
 ```
 TCF file for VPX Processor can be generated using tcfgen tool which is part of [MetaWare Development Toolkit](#MetaWare-Development-Toolkit). \
-Following command can be used to generate TCF file to run application on VPX Processor using nSIM Simulator:
+The following command can be used to generate TCF file to run applications on VPX Processor using nSIM Simulator:
 ```
 tcfgen -o vpx5_integer_full.tcf -tcf=vpx5_integer_full -iccm_size=0x80000 -dccm_size=0x40000
 ```
