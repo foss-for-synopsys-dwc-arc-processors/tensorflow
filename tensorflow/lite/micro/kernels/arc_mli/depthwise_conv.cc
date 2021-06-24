@@ -278,11 +278,18 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
         static_cast<int32_t*>(data->per_channel_output_shift);
 #endif
 
+#ifdef MLI_2_0
     *data->mli_weights.ZeroPoint<int16_t**>() =
         reinterpret_cast<int16_t*>(data->per_channel_output_shift);
     *data->mli_bias.ZeroPoint<int16_t**>() =
         reinterpret_cast<int16_t*>(data->per_channel_output_shift) +
         num_channels;
+#else
+    *data->mli_weights.ZeroPoint<int16_t**>() =
+        reinterpret_cast<int16_t*>(&data->filter_zero_point);
+    *data->mli_bias.ZeroPoint<int16_t**>() =
+        reinterpret_cast<int16_t*>(&data->filter_zero_point) + sizeof(int16_t);
+#endif
 
 #ifdef MLI_2_0
     *data->mli_weights.ScaleFracBits<int8_t**>() =

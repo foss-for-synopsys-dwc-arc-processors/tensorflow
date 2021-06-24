@@ -112,11 +112,11 @@ static uint32_t scratch_sizes[] = {SCRATCH_MEM_SIZE};
 
 #endif
 
-int8_t* get_arc_scratch_buffer(int size) {
+void* get_arc_scratch_buffer(int size) {
   // Function to asign fast memory from one of 3 scratch buffers.
   // Best Fit strategy - memory is allocated from that memory bank that leaves
   // the least unused memory.
-  int8_t* buf = NULL;
+  void* buf = NULL;
   int best_mem_idx = -1;
   int best_mem_delta = INT_MAX;
   const int num_mem = sizeof(scratch_mem) / sizeof(scratch_mem[0]);

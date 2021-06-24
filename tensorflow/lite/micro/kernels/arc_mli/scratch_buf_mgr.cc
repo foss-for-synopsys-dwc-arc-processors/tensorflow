@@ -93,12 +93,12 @@ static TfLiteStatus get_arc_scratch_buffer_for_io_tensors(
   get_arc_two_buffer_sizes(request_size_in, request_size_out, &grant_size_in,
                            &grant_size_out);
   if (!inside_arc_ccm(in->Data<int8_t>())) {
-    in->SetData<int8_t>(get_arc_scratch_buffer(grant_size_in), grant_size_in);
+    in->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(grant_size_in)), grant_size_in);
     if (in->Data<int8_t>() == NULL) return kTfLiteError;
   }
 
   if (!inside_arc_ccm(out->Data<int8_t>())) {
-    out->SetData<int8_t>(get_arc_scratch_buffer(grant_size_out),
+    out->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(grant_size_out)),
                          grant_size_out);
     if (out->Data<int8_t>() == NULL) return kTfLiteError;
   }
@@ -114,31 +114,31 @@ TfLiteStatus get_arc_scratch_buffer_for_conv_tensors(
 #if (defined(__Xxy)) || (defined(__Xvdsp))
   init_arc_scratch_buffers();
 
-  if (!inside_arc_ccm(bias->Data<int8_t>())) {
+  if (!inside_arc_ccm(bias->Data<int32_t>())) {
     uint32_t bias_mem_requirements =
         mli_hlp_count_elem_num(bias->MliTensor(), 0) *
         mli_hlp_tensor_element_size(bias->MliTensor());
-    bias->SetData<int8_t>(get_arc_scratch_buffer(bias_mem_requirements),
+    bias->SetData<int32_t>(static_cast<int32_t*>(get_arc_scratch_buffer(bias_mem_requirements)),
                           bias_mem_requirements);
   }
 
-  if (bias->Data<int8_t>() == NULL) {
+  if (bias->Data<int32_t>() == NULL) {
     int max_bias_size = 0;
     get_arc_scratch_buffer_max_size(&max_bias_size);
-    bias->SetData<int8_t>(get_arc_scratch_buffer(max_bias_size), max_bias_size);
+    bias->SetData<int32_t>(static_cast<int32_t*>(get_arc_scratch_buffer(max_bias_size)), max_bias_size);
     if (max_bias_size == 0) ret_val = kTfLiteError;
   }
-  if (bias->Data<int8_t>() == NULL) ret_val = kTfLiteError;
+  if (bias->Data<int32_t>() == NULL) ret_val = kTfLiteError;
 
   if (!inside_arc_ccm(weights->Data<int8_t>())) {
     int weights_size = mli_hlp_count_elem_num(weights->MliTensor(), 0) *
                        mli_hlp_tensor_element_size(weights->MliTensor());
     int max_weights_size = 0;
-    weights->SetData<int8_t>(get_arc_scratch_buffer(weights_size),
+    weights->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(weights_size)),
                              weights_size);
     if (weights->Data<int8_t>() == NULL) {
       get_arc_scratch_buffer_max_size(&max_weights_size);
-      weights->SetData<int8_t>(get_arc_scratch_buffer(max_weights_size),
+      weights->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(max_weights_size)),
                                max_weights_size);
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
@@ -160,30 +160,30 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
 #if (defined(__Xxy)) || (defined(__Xvdsp))
   init_arc_scratch_buffers();
 
-  if (!inside_arc_ccm(bias->Data<int8_t>())) {
+  if (!inside_arc_ccm(bias->Data<int32_t>())) {
     int bias_mem_requirements = mli_hlp_count_elem_num(bias->MliTensor(), 0) *
                                 mli_hlp_tensor_element_size(bias->MliTensor());
-    bias->SetData<int8_t>(get_arc_scratch_buffer(bias_mem_requirements),
+    bias->SetData<int32_t>(static_cast<int32_t*>(get_arc_scratch_buffer(bias_mem_requirements)),
                           bias_mem_requirements);
   }
 
-  if (bias->Data<int8_t>() == NULL) {
+  if (bias->Data<int32_t>() == NULL) {
     int max_bias_size = 0;
     get_arc_scratch_buffer_max_size(&max_bias_size);
-    bias->SetData<int8_t>(get_arc_scratch_buffer(max_bias_size), max_bias_size);
+    bias->SetData<int32_t>(static_cast<int32_t*>(get_arc_scratch_buffer(max_bias_size)), max_bias_size);
     if (max_bias_size == 0) ret_val = kTfLiteError;
   }
-  if (bias->Data<int8_t>() == NULL) ret_val = kTfLiteError;
+  if (bias->Data<int32_t>() == NULL) ret_val = kTfLiteError;
 
   if (!inside_arc_ccm(weights->Data<int8_t>())) {
     int weights_size = mli_hlp_count_elem_num(weights->MliTensor(), 0) *
                        mli_hlp_tensor_element_size(weights->MliTensor());
     int max_weights_size = 0;
-    weights->SetData<int8_t>(get_arc_scratch_buffer(weights_size),
+    weights->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(weights_size)),
                              weights_size);
     if (weights->Data<int8_t>() == NULL) {
       get_arc_scratch_buffer_max_size(&max_weights_size);
-      weights->SetData<int8_t>(get_arc_scratch_buffer(max_weights_size),
+      weights->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(max_weights_size)),
                                max_weights_size);
       if (max_weights_size == 0) ret_val = kTfLiteError;
     }
@@ -202,7 +202,7 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
        only count the size if the inner most dimension */
     int size_in = mli_hlp_count_elem_num(in->MliTensor(), *in->Rank() - 1) *
                   mli_hlp_tensor_element_size(in->MliTensor());
-    in->SetData<int8_t>(get_arc_scratch_buffer(size_in), size_in);
+    in->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(size_in)), size_in);
     if (in->Data<int8_t>() == NULL) {
       in->SetData<int8_t>(nullptr, 0);
       ret_val = kTfLiteError;
@@ -214,10 +214,10 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     int out_size = mli_hlp_count_elem_num(out->MliTensor(), *out->Rank() - 1) *
                    mli_hlp_tensor_element_size(out->MliTensor());
     int max_out_size = 0;
-    out->SetData<int8_t>(get_arc_scratch_buffer(out_size), out_size);
+    out->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(out_size)), out_size);
     if (out->Data<int8_t>() == NULL) {
       get_arc_scratch_buffer_max_size(&max_out_size);
-      out->SetData<int8_t>(get_arc_scratch_buffer(max_out_size), max_out_size);
+      out->SetData<int8_t>(static_cast<int8_t*>(get_arc_scratch_buffer(max_out_size)), max_out_size);
       if (max_out_size == 0) ret_val = kTfLiteError;
     }
     if (out->Data<int8_t>() == NULL) ret_val = kTfLiteError;

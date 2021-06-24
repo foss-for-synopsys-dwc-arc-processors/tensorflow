@@ -89,11 +89,6 @@ int32_t* MliTensorInterface::Dim(void) { return &tensor_->el_params.asym.dim; }
 uint32_t* MliTensorInterface::ScaleCapacity(void) { return nullptr; }
 
 template <>
-int8_t** MliTensorInterface::ScaleFracBits(void) {
-  return nullptr;
-}
-
-template <>
 int8_t* MliTensorInterface::ScaleFracBits(void) {
   return &tensor_->el_params.asym.scale_frac_bits;
 }

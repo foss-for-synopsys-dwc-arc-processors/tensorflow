@@ -52,7 +52,9 @@ inline void ConvertToMliTensorData(const TfLiteTensor* tfT,
 inline void ConvertToMliQuantParams(const TfLiteTensor* tfT,
                                     MliTensorInterface* mliT) {
   *mliT->Dim() = -1;
+#ifdef MLI_2_0
   *mliT->ZeroPointCapacity() = 1 * sizeof(int16_t);
+#endif
   *mliT->ZeroPoint<int16_t*>() = tfT->params.zero_point;
   float fscale = tfT->params.scale;
   mliT->SetScale(fscale);
@@ -80,17 +82,21 @@ inline void ConvertToMliQuantParamsPerChannel(const TfLiteTensor* tfT,
   *mliT->Dim() = quantized_dimension;
 
   // set capacities
+#ifdef MLI_2_0
   *mliT->ScaleFracBitsCapacity() = num_channels * sizeof(int8_t);
   *mliT->ScaleCapacity() = num_channels * sizeof(int16_t);
   *mliT->ZeroPointCapacity() = num_channels * sizeof(int16_t);
-
+#endif
   float* fscale = affine_quantization->scale->data;
   mliT->SetScalePerChannel(fscale, num_channels);
 
+#ifdef MLI_2_0
   int16_t* zero_point = *mliT->ZeroPoint<int16_t**>();
   for (int i = 0; i < num_channels; i++) {
     zero_point[i] = tfT->params.zero_point;
   }
+#endif
+
 }
 
 template <typename datatype>

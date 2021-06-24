@@ -24,7 +24,7 @@ namespace ops {
 namespace micro {
 
 void init_arc_scratch_buffers(void);
-int8_t* get_arc_scratch_buffer(int size);  // Function to assign fast memory
+void* get_arc_scratch_buffer(int size);  // Function to assign fast memory
                                            // from one of 3 scratch buffers.
 
 void get_arc_scratch_buffer_max_size(int* size);
