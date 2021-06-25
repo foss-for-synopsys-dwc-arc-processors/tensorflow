@@ -275,7 +275,7 @@ ARC_TAGS=mli20_experimental microlite
 
 Models in TFLM format need to be pre-adapted before being used with MLI 2.0 due to differences in weights' tensor layout in some kernels. Adaptation is done automatically during TFLM project generation, but requires TensorFlow to be installed.
 
-To use the Model Adaptation Tool, you need the following tools in addtition to common requirments:
+To use the Model Adaptation Tool, you need the following tools in addition to common requirments:
 * [Python](https://www.python.org/downloads/) 3.7 or higher
 * [TensorFlow for Python](https://www.tensorflow.org/install/pip) version 2.5 or higher
 
