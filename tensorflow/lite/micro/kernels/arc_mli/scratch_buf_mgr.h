@@ -76,6 +76,24 @@ TfLiteStatus get_arc_scratch_buffer_for_fully_connect_tensors(
     TfLiteContext* context, MliTensorInterface* in, MliTensorInterface* weights,
     MliTensorInterface* bias, MliTensorInterface* out);
 
+
+/**
+ * @brief Function to allocate scratch buffers for the eltwise function tensors
+ *
+ * @detail This function will update the data pointers in the 3 tensors with
+ * pointers to scratch buffers in fast local memory.
+ *
+ * @param context  [I] pointer to TfLite context (needed for error handling)
+ * @param in1     [IO] pointer to the first input tensor
+ * @param in2     [IO] pointer to the second input tensor
+ * @param output  [IO] pointer to the output tensor
+ *
+ * @return Tf Lite status code
+ */
+TfLiteStatus get_arc_scratch_buffer_for_eltwise_tensors(
+    TfLiteContext* context, MliTensorInterface* in1, MliTensorInterface* in2,
+    MliTensorInterface* out);
+
 /**
  * @brief Function to calculate slice size for io tensors
  *
