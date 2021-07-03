@@ -36,6 +36,31 @@ extern volatile int32_t tflm_conv2d_mli_krn_ticks;
 extern volatile int32_t tflm_conv2d_mli_mov_ticks;
 extern volatile int32_t tflm_conv2d_no_mli_ticks;
 
+mli_status __attribute__((weak)) mli_krn_conv2d(
+    const mli_tensor* in,
+    const mli_tensor* weights,
+    const mli_tensor* bias,
+    const mli_conv2d_cfg* cfg,
+    mli_tensor* out) {
+#if defined(MLI_2_0)
+  if (weights->shape[KRNL_H_DIM_HWCN] == 5 &&
+      weights->shape[KRNL_W_DIM_HWCN] == 5) {
+    return mli_krn_conv2d_hwcn_sa8_sa8_sa32_k5x5(in, weights, bias, cfg, out);
+  } else if (weights->shape[KRNL_H_DIM_HWCN] == 3 &&
+             weights->shape[KRNL_W_DIM_HWCN] == 3) {
+    return mli_krn_conv2d_hwcn_sa8_sa8_sa32_k3x3(in, weights, bias, cfg, out);
+  } else if (weights->shape[KRNL_H_DIM_HWCN] == 1 &&
+             weights->shape[KRNL_W_DIM_HWCN] == 1 && 
+             cfg->stride_height == 1 && cfg->stride_width == 1) {
+    return mli_krn_conv2d_hwcn_sa8_sa8_sa32_k1x1(in, weights, bias, cfg, out);
+  } else {
+    return mli_krn_conv2d_hwcn_sa8_sa8_sa32(in, weights, bias, cfg, out);
+  }
+#else
+  return mli_krn_conv2d_nhwc_sa8_sa8_sa32(in, weights, bias, cfg, out);
+#endif
+};
+
 namespace tflite {
 namespace {
 
@@ -535,8 +560,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
         t0 = tflite::GetCurrentTimeTicks();
-        mli_krn_conv2d_hwcn_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg_local,
-                                         out_ptr);
+        mli_krn_conv2d(in_ptr, w_ptr, b_ptr, &cfg_local, out_ptr);
         tflm_conv2d_mli_krn_ticks += tflite::GetCurrentTimeTicks() - t0;
 #else
         if ((in_slice.Sub()->data != input_buffer_ptr) ||
@@ -550,8 +574,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
           input_buffer_size = mli_hlp_count_elem_num(in_slice.Sub(), 0);
         }
         t0 = tflite::GetCurrentTimeTicks();
-        mli_krn_conv2d_nhwc_sa8_sa8_sa32(in_ptr, w_ptr, b_ptr, &cfg_local,
-                                         out_ptr);
+        mli_krn_conv2d(in_ptr, w_ptr, b_ptr, &cfg_local, out_ptr);
         tflm_conv2d_mli_krn_ticks += tflite::GetCurrentTimeTicks() - t0;
 #endif
         
