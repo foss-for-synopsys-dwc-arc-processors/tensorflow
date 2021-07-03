@@ -33,6 +33,11 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
+#include "tensorflow/lite/micro/micro_time.h"
+
+extern volatile int32_t tflm_add_mli_krn_ticks;
+extern volatile int32_t tflm_add_mli_mov_ticks;
+extern volatile int32_t tflm_add_no_mli_ticks;
 
 namespace tflite {
 namespace ops {
@@ -271,6 +276,7 @@ TfLiteStatus EvalMLIAddInt8(TfLiteContext* context, TfLiteNode* node,
   TF_LITE_ENSURE(context, input2->type == kTfLiteInt8);
   TF_LITE_ENSURE(context, output->type == kTfLiteInt8);
 
+  int32_t t0 = 0;
   ops::micro::MliTensorAttachBuffer<int8_t>(input1, &data->mli_input1);
   ops::micro::MliTensorAttachBuffer<int8_t>(input2, &data->mli_input2);
   ops::micro::MliTensorAttachBuffer<int8_t>(output, &data->mli_out);
@@ -323,12 +329,18 @@ TfLiteStatus EvalMLIAddInt8(TfLiteContext* context, TfLiteNode* node,
                                      : out_local.MliTensor();
 
   while (!out_slice.Done()) {
+    t0 = tflite::GetCurrentTimeTicks();
     mli_mov_tensor_sync(input1_slice.Sub(), &copy_config, input1_tsr);
     mli_mov_tensor_sync(input2_slice.Sub(), &copy_config, input2_tsr);
+    tflm_add_mli_mov_ticks += tflite::GetCurrentTimeTicks() - t0;
 
+    t0 = tflite::GetCurrentTimeTicks();
     mli_krn_eltwise_add_sa8(input1_tsr, input2_tsr, out_tsr);
+    tflm_add_mli_krn_ticks += tflite::GetCurrentTimeTicks() - t0;
 
+    t0 = tflite::GetCurrentTimeTicks();
     mli_mov_tensor_sync(out_tsr, &copy_config, out_slice.Sub());
+    tflm_add_mli_mov_ticks += tflite::GetCurrentTimeTicks() - t0;
     input1_slice.Next();
     input2_slice.Next();
     out_slice.Next();
@@ -365,6 +377,9 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 }
 
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+  const int32_t t_start = tflite::GetCurrentTimeTicks();
+  const int32_t t_mli_krn_before = tflm_add_mli_krn_ticks;
+  const int32_t t_mli_mov_before = tflm_add_mli_mov_ticks;
   TfLiteStatus ret_val = kTfLiteOk;
   auto* params = reinterpret_cast<TfLiteAddParams*>(node->builtin_data);
 
@@ -399,6 +414,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     }
   }
 
+  const int32_t t_end = tflite::GetCurrentTimeTicks();
+  int32_t no_mli_ticks_current = t_end - t_start;
+  no_mli_ticks_current -= tflm_add_mli_krn_ticks - t_mli_krn_before;
+  no_mli_ticks_current -= tflm_add_mli_mov_ticks - t_mli_mov_before;
+  tflm_add_no_mli_ticks += no_mli_ticks_current;
+  
   return ret_val;
 }
 

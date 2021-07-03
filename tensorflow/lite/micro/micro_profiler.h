@@ -60,7 +60,7 @@ class MicroProfiler {
   // Maximum number of events that this class can keep track of. If we call
   // AddEvent more than kMaxEvents number of times, then the oldest event's
   // profiling information will be overwritten.
-  static constexpr int kMaxEvents = 50;
+  static constexpr int kMaxEvents = 100;
 
   const char* tags_[kMaxEvents];
   int32_t start_ticks_[kMaxEvents];
@@ -70,7 +70,7 @@ class MicroProfiler {
   TF_LITE_REMOVE_VIRTUAL_DELETE;
 };
 
-#if defined(NDEBUG)
+#if defined(TF_LITE_STRIP_ERROR_STRINGS)
 // For release builds, the ScopedMicroProfiler is a noop.
 //
 // This is done because the ScipedProfiler is used as part of the

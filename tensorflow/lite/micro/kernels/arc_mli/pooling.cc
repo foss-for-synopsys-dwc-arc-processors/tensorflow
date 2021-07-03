@@ -25,6 +25,15 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/arc_mli/scratch_buf_mgr.h"
 #include "tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "tensorflow/lite/micro/micro_time.h"
+
+extern volatile int32_t tflm_max_pool_mli_krn_ticks;
+extern volatile int32_t tflm_max_pool_mli_mov_ticks;
+extern volatile int32_t tflm_max_pool_no_mli_ticks;
+
+extern volatile int32_t tflm_ave_pool_mli_krn_ticks;
+extern volatile int32_t tflm_ave_pool_mli_mov_ticks;
+extern volatile int32_t tflm_ave_pool_no_mli_ticks;
 
 namespace tflite {
 namespace ops {
@@ -174,6 +183,11 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
                      const OpData& data, const TfLiteEvalTensor* input,
                      TfLiteEvalTensor* output,
                      const MliPoolingType pooling_type) {
+  int32_t t0 = 0;
+  volatile int32_t* tflm_pool_mli_krn_ticks = (pooling_type == MaxPooling) ?
+              &tflm_max_pool_mli_krn_ticks : &tflm_ave_pool_mli_krn_ticks;
+  volatile int32_t* tflm_pool_mli_mov_ticks = (pooling_type == MaxPooling) ?
+              &tflm_max_pool_mli_mov_ticks : &tflm_ave_pool_mli_mov_ticks;
   mli_pool_cfg cfg_local = *data.cfg;
 
   ops::micro::MliTensorAttachBuffer<int8_t>(input, &data.mli_in);
@@ -229,13 +243,21 @@ TfLiteStatus EvalMli(TfLiteContext* context, const TfLitePoolParams* params,
   while (!out_slice.Done()) {
     cfg_local.padding_top = in_slice.GetPaddingPre();
     cfg_local.padding_bottom = in_slice.GetPaddingPost();
-
+    
+    t0 = tflite::GetCurrentTimeTicks();
     mli_mov_tensor_sync(in_slice.Sub(), &copy_config, in_ptr);
+    *tflm_pool_mli_mov_ticks += tflite::GetCurrentTimeTicks() - t0;
+    
+    t0 = tflite::GetCurrentTimeTicks();
     if (pooling_type == AveragePooling)
       mli_krn_avepool_hwc_sa8(in_ptr, &cfg_local, out_ptr);
     else if (pooling_type == MaxPooling)
       mli_krn_maxpool_hwc_sa8(in_ptr, &cfg_local, out_ptr);
+    *tflm_pool_mli_krn_ticks += tflite::GetCurrentTimeTicks() - t0;
+  
+    t0 = tflite::GetCurrentTimeTicks();
     mli_mov_tensor_sync(out_ptr, &copy_config, out_slice.Sub());
+    *tflm_pool_mli_mov_ticks += tflite::GetCurrentTimeTicks() - t0;
 
     in_slice.Next();
     out_slice.Next();
@@ -341,6 +363,9 @@ void MaxEvalQuantized(TfLiteContext* context, TfLiteNode* node,
 
 TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
   TFLITE_DCHECK(node->builtin_data != nullptr);
+  const int32_t t_start = tflite::GetCurrentTimeTicks();
+  const int32_t t_mli_krn_before = tflm_ave_pool_mli_krn_ticks;
+  const int32_t t_mli_mov_before = tflm_ave_pool_mli_mov_ticks;
   auto* params = reinterpret_cast<TfLitePoolParams*>(node->builtin_data);
 
   const TfLiteEvalTensor* input =
@@ -369,10 +394,18 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
                          TfLiteTypeGetName(input->type));
       return kTfLiteError;
   }
+  const int32_t t_end = tflite::GetCurrentTimeTicks();
+  int32_t no_mli_ticks_current = t_end - t_start;
+  no_mli_ticks_current -= tflm_ave_pool_mli_krn_ticks - t_mli_krn_before;
+  no_mli_ticks_current -= tflm_ave_pool_mli_mov_ticks - t_mli_mov_before;
+  tflm_ave_pool_no_mli_ticks += no_mli_ticks_current;
   return kTfLiteOk;
 }
 
 TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
+  const int32_t t_start = tflite::GetCurrentTimeTicks();
+  const int32_t t_mli_krn_before = tflm_max_pool_mli_krn_ticks;
+  const int32_t t_mli_mov_before = tflm_max_pool_mli_mov_ticks;
   auto* params = reinterpret_cast<TfLitePoolParams*>(node->builtin_data);
 
   const TfLiteEvalTensor* input =
@@ -400,6 +433,11 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
                          TfLiteTypeGetName(input->type));
       return kTfLiteError;
   }
+  const int32_t t_end = tflite::GetCurrentTimeTicks();
+  int32_t no_mli_ticks_current = t_end - t_start;
+  no_mli_ticks_current -= tflm_max_pool_mli_krn_ticks - t_mli_krn_before;
+  no_mli_ticks_current -= tflm_max_pool_mli_mov_ticks - t_mli_mov_before;
+  tflm_max_pool_no_mli_ticks += no_mli_ticks_current;
   return kTfLiteOk;
 }
 

@@ -48,9 +48,10 @@ int32_t MicroProfiler::GetTotalTicks() const {
 
 void MicroProfiler::Log() const {
 #if !defined(TF_LITE_STRIP_ERROR_STRINGS)
+  MicroPrintf("\nTag,Total");
   for (int i = 0; i < num_events_; ++i) {
-    int32_t ticks = end_ticks_[i] - start_ticks_[i];
-    MicroPrintf("%s took %d ticks (%d ms).", tags_[i], ticks, TicksToMs(ticks));
+    const int32_t ticks = end_ticks_[i] - start_ticks_[i];
+    MicroPrintf("%s,%d", tags_[i], ticks);
   }
 #endif
 }
